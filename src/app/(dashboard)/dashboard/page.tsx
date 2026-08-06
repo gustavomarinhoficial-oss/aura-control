@@ -272,7 +272,7 @@ function GustavoDashboard() {
                 <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#7c3aed" stopOpacity={0.2} /><stop offset="95%" stopColor="#7c3aed" stopOpacity={0} /></linearGradient></defs>
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} />
                 <YAxis hide />
-                <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }} formatter={(v: number) => [formatBRL(v), 'Receita']} />
+                <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }} formatter={(v) => [formatBRL(Number(v)), 'Receita']} />
                 <Area type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2} fill="url(#pg)" dot={{ fill: '#7c3aed', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#a78bfa' }} />
               </AreaChart>
             </ResponsiveContainer>

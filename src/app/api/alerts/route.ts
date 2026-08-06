@@ -38,7 +38,8 @@ export async function GET() {
   // Se contract_end não existir ainda, ignora renovals
 
   // Filtra: só mostra como alerta se não tem serviço vinculado OU se o serviço ainda está ativo
-  const filterActive = (list: typeof overdueRes.data) =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filterActive = (list: any[] | null) =>
     (list ?? []).filter((c: { service_id: string | null; services?: { active: boolean } | null }) =>
       !c.service_id || c.services?.active !== false
     )
