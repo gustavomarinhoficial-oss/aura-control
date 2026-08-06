@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, ROLE_NAME, JULIA_NAV, type Role } from '@/lib/roles'
-import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, Kanban, Layers, Newspaper, Brain } from 'lucide-react'
+import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, Kanban, Layers, Newspaper, Brain, Download } from 'lucide-react'
 
 const ALL_NAV = [
   { href: '/dashboard',    label: 'Dashboard',   icon: LayoutDashboard },
@@ -35,8 +35,9 @@ export function Sidebar() {
   const router   = useRouter()
   const supabase = createClient()
 
-  const [role, setRole]       = useState<Role>('default')
-  const [userName, setUserName] = useState('')
+  const [role, setRole]         = useState<Role>('default')
+  const [userName, setUserName]   = useState('')
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -47,6 +48,19 @@ export function Sidebar() {
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  async function handleInstall() {
+    if (!installPrompt) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (installPrompt as any).prompt()
+    setInstallPrompt(null)
+  }
 
   const nav = role === 'julia'
     ? ALL_NAV.filter(n => JULIA_NAV.includes(n.href))
@@ -61,7 +75,7 @@ export function Sidebar() {
   const accentColor = ROLE_COLOR[role]
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-[200px] bg-[#0d0d0d] border-r border-[#1f1f1f] flex flex-col z-40">
+    <aside className="fixed left-0 top-0 h-full w-[200px] bg-[#0d0d0d] border-r border-[#1f1f1f] hidden md:flex flex-col z-40">
       {/* Logo */}
       <div className="px-6 py-6">
         <div>
@@ -110,7 +124,16 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-6 border-t border-[#1f1f1f]">
+      <div className="px-3 py-4 border-t border-[#1f1f1f] flex flex-col gap-1">
+        {installPrompt && (
+          <button
+            onClick={handleInstall}
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-[#a78bfa] hover:bg-[#7c3aed]/10 transition-colors"
+          >
+            <Download size={16} strokeWidth={1.5} />
+            Instalar app
+          </button>
+        )}
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors"

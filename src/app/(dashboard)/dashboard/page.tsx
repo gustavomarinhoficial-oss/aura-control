@@ -232,7 +232,7 @@ function GustavoDashboard() {
             <div className="flex items-center gap-2"><Kanban size={14} className="text-[#a78bfa]" /><h2 className="text-sm font-medium">Receita potencial</h2></div>
             <Link href="/pipeline" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">Ver pipeline <ArrowUpRight size={10} /></Link>
           </div>
-          <div className="grid grid-cols-3 gap-4 mb-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
             <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">MRR atual</p><p className="text-lg font-semibold">{formatBRL(data.mrr)}</p></div>
             <div className="bg-[#111111] border border-[#f97316]/30 rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">Quase fechando</p><p className="text-lg font-semibold text-[#f97316]">{formatBRL(hotTotal)}</p><p className="text-[9px] text-muted-foreground">{hotLeads.length} lead{hotLeads.length !== 1 ? 's' : ''}</p></div>
             <div className="bg-[#111111] border border-[#7c3aed]/30 rounded-lg p-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/10 to-transparent pointer-events-none" /><p className="text-[10px] text-muted-foreground mb-1">Se tudo fechar</p><p className="text-lg font-semibold text-[#a78bfa]">{formatBRL(data.mrr + pipelineTotal)}</p><p className="text-[9px] text-[#7c3aed]">+{formatBRL(pipelineTotal)}</p></div>
@@ -375,7 +375,7 @@ function GabrielDashboard() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Posts esta semana',     value: String(thisWeek.length),  color: '#34d399', icon: CalendarDays },
           { label: 'Aguardando aprovação',  value: String(awaiting.length),  color: '#f59e0b', icon: Bell },
@@ -544,7 +544,7 @@ function ThomasDashboard() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Projetos atrasados',    value: String(overdue.length),          color: overdue.length > 0 ? '#ef4444' : '#22c55e' },
           { label: 'Vencendo esta semana',  value: String(thisWeek.length),         color: thisWeek.length > 0 ? '#f59e0b' : '#22c55e' },
@@ -629,7 +629,7 @@ function ThomasDashboard() {
           <div className="flex items-center gap-2"><Users size={13} className="text-[#60a5fa]" /><h2 className="text-sm font-medium">Carteira de clientes</h2></div>
           <Link href="/clientes" className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">Ver todos <ArrowUpRight size={10} /></Link>
         </div>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'Ativos',   value: clientStatus.ativo,   color: '#22c55e' },
             { label: 'Trial',    value: clientStatus.trial,   color: '#f59e0b' },

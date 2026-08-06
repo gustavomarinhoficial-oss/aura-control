@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { MobileNav } from '@/components/layout/MobileNav'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -11,8 +12,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
-      <main className="ml-[200px] min-h-screen">
-        <div className="max-w-6xl mx-auto px-8 py-8">
+      <MobileNav />
+      <main className="md:ml-[200px] min-h-screen pb-20 md:pb-0">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-8">
           {children}
         </div>
       </main>

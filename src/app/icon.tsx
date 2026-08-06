@@ -19,11 +19,12 @@ export default function Icon() {
       <span
         style={{
           color: '#a78bfa',
-          fontSize: 300,
+          fontSize: 280,
           fontWeight: 900,
           lineHeight: 1,
-          letterSpacing: '-20px',
-          fontFamily: 'serif',
+          letterSpacing: '-4px',
+          fontFamily: 'Georgia, serif',
+          marginBottom: -20,
         }}
       >
         a.

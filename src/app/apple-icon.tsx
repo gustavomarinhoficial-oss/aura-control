@@ -18,11 +18,12 @@ export default function AppleIcon() {
       <span
         style={{
           color: '#a78bfa',
-          fontSize: 108,
+          fontSize: 100,
           fontWeight: 900,
           lineHeight: 1,
-          letterSpacing: '-8px',
-          fontFamily: 'serif',
+          letterSpacing: '-2px',
+          fontFamily: 'Georgia, serif',
+          marginBottom: -8,
         }}
       >
         a.
