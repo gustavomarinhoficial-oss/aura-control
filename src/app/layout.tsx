@@ -1,24 +1,38 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
 const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: "Aura Control",
-  description: "Sistema de controle financeiro e organizacional da Aura MKT.CLUB",
-};
+  title: 'Aura Control',
+  description: 'Gestão interna da Aura MKT.CLUB',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Aura',
+  },
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#111111',
+}
+
+export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
     <html lang="pt-BR" className={`h-full ${inter.variable}`}>
       <body className="min-h-full flex flex-col bg-background text-foreground antialiased">
         {children}
       </body>
     </html>
-  );
+  )
 }
