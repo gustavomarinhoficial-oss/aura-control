@@ -1,0 +1,163 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { formatBRL, formatDate } from '@/lib/utils/format'
+import { Plus, Search, ChevronRight, ExternalLink } from 'lucide-react'
+import { ClientSheet } from '@/components/domain/ClientSheet'
+import { NewClientModal } from '@/components/domain/NewClientModal'
+import Link from 'next/link'
+import type { Client, Service } from '@/lib/supabase/types'
+
+type ClientWithServices = Client & { services: Service[] }
+
+const statusLabel: Record<string, string> = { ativo: 'Ativo', pausado: 'Pausado', encerrado: 'Encerrado' }
+const statusColor: Record<string, string> = {
+  ativo: 'text-[#22c55e] bg-[#22c55e]/10',
+  pausado: 'text-[#f59e0b] bg-[#f59e0b]/10',
+  encerrado: 'text-muted-foreground bg-[#2a2a2a]',
+}
+
+export default function ClientesPage() {
+  const [clients, setClients] = useState<ClientWithServices[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filterStatus, setFilterStatus] = useState('todos')
+  const [selected, setSelected] = useState<string | null>(null)
+  const [showNew, setShowNew] = useState(false)
+
+  const load = useCallback(() => {
+    fetch('/api/clients')
+      .then(r => r.json())
+      .then(d => { setClients(d); setLoading(false) })
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const filtered = clients.filter(c => {
+    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase())
+    const matchStatus = filterStatus === 'todos' || c.status === filterStatus
+    return matchSearch && matchStatus
+  })
+
+  function clientMRR(c: ClientWithServices) {
+    return (c.services ?? [])
+      .filter(s => s.type === 'recorrente' && s.active)
+      .reduce((sum, s) => sum + Number(s.amount), 0)
+  }
+
+  function activeServices(c: ClientWithServices) {
+    return (c.services ?? []).filter(s => s.active).length
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Clientes</h1>
+          <p className="text-sm text-muted-foreground mt-1">{clients.filter(c => c.status === 'ativo').length} ativos</p>
+        </div>
+        <button
+          onClick={() => setShowNew(true)}
+          className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <Plus size={14} />
+          Novo cliente
+        </button>
+      </div>
+
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar cliente..."
+            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg pl-8 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+          />
+        </div>
+        <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1">
+          {['todos', 'ativo', 'pausado', 'encerrado'].map(s => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
+                filterStatus === s ? 'bg-[#2a2a2a] text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+            {search || filterStatus !== 'todos' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'}
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-[#2a2a2a]">
+                {['Nome', 'Status', 'Serviços', 'MRR', 'Desde', ''].map(h => (
+                  <th key={h} className="text-left text-xs text-muted-foreground font-medium px-5 py-3">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(c => (
+                <tr
+                  key={c.id}
+                  onClick={() => setSelected(c.id)}
+                  className="border-b border-[#2a2a2a] last:border-0 hover:bg-[#222222] cursor-pointer transition-colors"
+                >
+                  <td className="px-5 py-4 text-sm font-medium">{c.name}</td>
+                  <td className="px-5 py-4">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor[c.status]}`}>
+                      {statusLabel[c.status]}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-sm text-muted-foreground">{activeServices(c)}</td>
+                  <td className="px-5 py-4 text-sm font-medium">{formatBRL(clientMRR(c))}</td>
+                  <td className="px-5 py-4 text-sm text-muted-foreground">{formatDate(c.started_at)}</td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/clientes/${c.id}`}
+                        onClick={e => e.stopPropagation()}
+                        className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
+                        title="Ver perfil completo"
+                      >
+                        <ExternalLink size={13} />
+                      </Link>
+                      <ChevronRight size={14} className="text-muted-foreground" />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {selected && (
+        <ClientSheet
+          clientId={selected}
+          onClose={() => setSelected(null)}
+          onRefresh={load}
+        />
+      )}
+
+      {showNew && (
+        <NewClientModal
+          onClose={() => setShowNew(false)}
+          onCreated={() => { setShowNew(false); load() }}
+        />
+      )}
+    </div>
+  )
+}

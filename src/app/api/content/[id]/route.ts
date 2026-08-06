@@ -1,0 +1,32 @@
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createServiceClient()
+  const body = await request.json()
+
+  const allowed = ['title', 'caption', 'platform', 'status', 'scheduled_date', 'published_at', 'responsible', 'result', 'notes', 'client_id', 'media_url']
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  for (const key of allowed) {
+    if (key in body) update[key] = body[key] === '' ? null : body[key]
+  }
+
+  const { data, error } = await supabase
+    .from('content_posts')
+    .update(update)
+    .eq('id', id)
+    .select('*, clients(id, name)')
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
+
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createServiceClient()
+  const { error } = await supabase.from('content_posts').delete().eq('id', id)
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

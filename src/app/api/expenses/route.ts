@@ -1,0 +1,35 @@
+import { NextResponse } from 'next/server'
+import { createServiceClient } from '@/lib/supabase/server'
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const month = searchParams.get('month') // YYYY-MM
+  const supabase = await createServiceClient()
+
+  let query = supabase.from('expenses').select('*').order('due_date', { ascending: true })
+  if (month) {
+    query = query.gte('due_date', `${month}-01`).lte('due_date', `${month}-31`)
+  }
+
+  const { data, error } = await query
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
+
+export async function POST(request: Request) {
+  const supabase = await createServiceClient()
+  const body = await request.json()
+
+  const { data, error } = await supabase.from('expenses').insert({
+    description: body.description,
+    amount: Number(body.amount),
+    category: body.category || 'outro',
+    due_date: body.due_date,
+    paid_at: body.paid_at || null,
+    recurrent: body.recurrent ?? false,
+    notes: body.notes || null,
+  }).select().single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data, { status: 201 })
+}
