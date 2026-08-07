@@ -5,7 +5,7 @@
 const USER_EMAILS: Record<string, string> = {
   gustavo: 'gustavomarinhoficial@gmail.com',
   gabriel: 'gabriel.almeidamr@gmail.com',
-  thomas:  '', // ← cole o email do Thomas quando tiver
+  thomas:  'ThomasMacedobr@gmail.com', // ← email do Thomas
   admin:   '', // ← email geral da Aura (vê tudo)
   julia:   '', // ← cole o email da Julia quando tiver
 }
@@ -15,12 +15,12 @@ export type Role = 'gustavo' | 'gabriel' | 'thomas' | 'admin' | 'julia' | 'defau
 const EMAIL_TO_ROLE: Record<string, Role> = Object.fromEntries(
   Object.entries(USER_EMAILS)
     .filter(([, email]) => email.trim() !== '')
-    .map(([role, email]) => [email, role as Role])
+    .map(([role, email]) => [email.toLowerCase(), role as Role])
 )
 
 export function getRole(email: string | undefined | null): Role {
   if (!email) return 'default'
-  return EMAIL_TO_ROLE[email] ?? 'default'
+  return EMAIL_TO_ROLE[email.toLowerCase()] ?? 'default'
 }
 
 export const ROLE_NAME: Record<Role, string> = {
