@@ -101,10 +101,10 @@ export default function ClientesPage() {
             {search || filterStatus !== 'todos' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'}
           </div>
         ) : filtered.map(c => (
-          <button
+          <Link
             key={c.id}
-            onClick={() => setSelected(c.id)}
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-4 flex items-center gap-3 text-left hover:border-[#3a3a3a] active:bg-[#222] transition-colors"
+            href={`/clientes/${c.id}`}
+            className="block bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-4 flex items-center gap-3 hover:border-[#3a3a3a] active:bg-[#222] transition-colors"
           >
             {/* avatar */}
             <div className="w-10 h-10 rounded-full bg-[#7c3aed]/15 flex items-center justify-center shrink-0">
@@ -126,7 +126,7 @@ export default function ClientesPage() {
               </div>
             </div>
             <ChevronRight size={16} className="text-muted-foreground shrink-0" />
-          </button>
+          </Link>
         ))}
       </div>
 
