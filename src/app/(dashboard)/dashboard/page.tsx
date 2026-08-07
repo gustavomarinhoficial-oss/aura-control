@@ -99,11 +99,11 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
           </div>
         </div>
       </div>
-      <p className={`text-2xl font-semibold tracking-tight ${highlight ? 'text-[#ef4444]' : 'text-foreground'} ${hide && isCurrency ? 'blur-sm select-none' : ''}`}>{value}</p>
+      <p className={`text-2xl font-semibold tracking-tight ${highlight ? 'text-[#ef4444]' : 'text-foreground'} ${hide ? 'blur-sm select-none' : ''}`}>{value}</p>
       {goal ? (
         <div className="mt-1 space-y-1.5">
           <div className="flex items-center justify-between">
-            <p className={`text-xs ${overGoal ? 'text-[#22c55e]' : 'text-muted-foreground'}`}>
+            <p className={`text-xs ${overGoal ? 'text-[#22c55e]' : 'text-muted-foreground'} ${hide ? 'blur-sm select-none' : ''}`}>
               {overGoal ? '✓ meta atingida' : `${Math.round(pct ?? 0)}% de ${isCurrency ? formatBRL(goal) : goal}`}
             </p>
             <button onClick={clearGoal} className="text-[9px] text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">limpar</button>
@@ -112,7 +112,7 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: barColor }} />
           </div>
         </div>
-      ) : sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      ) : sub && <p className={`text-xs text-muted-foreground mt-1 ${hide ? 'blur-sm select-none' : ''}`}>{sub}</p>}
       {editing && (
         <div className="absolute inset-0 bg-[#1a1a1a] rounded-xl p-4 flex flex-col justify-center z-10" onClick={e => e.stopPropagation()}>
           <p className="text-xs text-muted-foreground mb-2">Meta para <strong className="text-foreground">{label}</strong></p>
@@ -237,13 +237,13 @@ function GustavoDashboard() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Clientes ativos" value={String(data.activeClients)} numericValue={data.activeClients} sub="na carteira" icon={Users} goalKey="activeClients" />
+        <KpiCard label="Clientes ativos" value={String(data.activeClients)} numericValue={data.activeClients} sub="na carteira" icon={Users} goalKey="activeClients" hide={hideNums} />
         <KpiCard label="MRR" value={formatBRL(data.mrr)} numericValue={data.mrr} sub="receita recorrente" icon={TrendingUp} accent goalKey="mrr" isCurrency hide={hideNums} />
         <KpiCard label="Ticket médio" value={data.activeClients > 0 ? formatBRL(data.mrr / data.activeClients) : '—'} numericValue={data.activeClients > 0 ? data.mrr / data.activeClients : 0} sub="por cliente ativo" icon={TrendingUp} goalKey="ticketMedio" isCurrency hide={hideNums} />
         <KpiCard label="Receita do mês" value={formatBRL(data.receivedMonth)} numericValue={data.receivedMonth} sub={`${pctReceived}% de ${formatBRL(data.estimatedMonth)}`} icon={DollarSign} goalKey="receivedMonth" isCurrency hide={hideNums} />
-        <KpiCard label="Churn de clientes" value={String(data.clientChurn)} numericValue={data.clientChurn} sub={data.clientChurn === 0 ? 'nenhum cancelamento este mês' : `cancelamento${data.clientChurn !== 1 ? 's' : ''} este mês`} icon={Users} highlight={data.clientChurn > 0} goalKey="clientChurn" />
+        <KpiCard label="Churn de clientes" value={String(data.clientChurn)} numericValue={data.clientChurn} sub={data.clientChurn === 0 ? 'nenhum cancelamento este mês' : `cancelamento${data.clientChurn !== 1 ? 's' : ''} este mês`} icon={Users} highlight={data.clientChurn > 0} goalKey="clientChurn" hide={hideNums} />
         <KpiCard label="Churn de MRR" value={data.mrrChurn > 0 ? formatBRL(data.mrrChurn) : 'R$ 0'} numericValue={data.mrrChurn} sub={data.mrrChurn === 0 ? 'sem perda de receita' : 'receita perdida este mês'} icon={DollarSign} highlight={data.mrrChurn > 0} goalKey="mrrChurn" isCurrency hide={hideNums} />
-        <KpiCard label="Inadimplentes" value={String(data.overdueCount)} numericValue={data.overdueCount} sub="cobranças em atraso" icon={AlertCircle} highlight={data.overdueCount > 0} goalKey="overdue" />
+        <KpiCard label="Inadimplentes" value={String(data.overdueCount)} numericValue={data.overdueCount} sub="cobranças em atraso" icon={AlertCircle} highlight={data.overdueCount > 0} goalKey="overdue" hide={hideNums} />
         <KpiCard label="Pipeline ativo" value={formatBRL(pipelineTotal)} numericValue={pipelineTotal} sub={`${activeLeads.length} lead${activeLeads.length !== 1 ? 's' : ''} em aberto`} icon={Kanban} accent={pipelineTotal > 0} goalKey="pipeline" isCurrency hide={hideNums} />
       </div>
 
@@ -255,7 +255,7 @@ function GustavoDashboard() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
             <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">MRR atual</p><p className={`text-lg font-semibold ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr)}</p></div>
-            <div className="bg-[#111111] border border-[#f97316]/30 rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">Quase fechando</p><p className={`text-lg font-semibold text-[#f97316] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(hotTotal)}</p><p className="text-[9px] text-muted-foreground">{hotLeads.length} lead{hotLeads.length !== 1 ? 's' : ''}</p></div>
+            <div className="bg-[#111111] border border-[#f97316]/30 rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">Quase fechando</p><p className={`text-lg font-semibold text-[#f97316] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(hotTotal)}</p><p className={`text-[9px] text-muted-foreground ${hideNums ? 'blur-sm select-none' : ''}`}>{hotLeads.length} lead{hotLeads.length !== 1 ? 's' : ''}</p></div>
             <div className="bg-[#111111] border border-[#7c3aed]/30 rounded-lg p-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/10 to-transparent pointer-events-none" /><p className="text-[10px] text-muted-foreground mb-1">Se tudo fechar</p><p className={`text-lg font-semibold text-[#a78bfa] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr + pipelineTotal)}</p><p className={`text-[9px] text-[#7c3aed] ${hideNums ? 'blur-sm select-none' : ''}`}>+{formatBRL(pipelineTotal)}</p></div>
           </div>
           <div className="space-y-2">
@@ -269,8 +269,8 @@ function GustavoDashboard() {
                   <div className="w-[100px] shrink-0"><span className="text-[10px] text-muted-foreground">{meta.label}</span></div>
                   <div className="flex-1 h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden"><div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: meta.color }} /></div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] font-medium w-[70px] text-right" style={{ color: meta.color }}>{formatBRL(sv)}</span>
-                    <span className="text-[9px] text-muted-foreground w-[50px]">{sl.length} lead{sl.length !== 1 ? 's' : ''}</span>
+                    <span className={`text-[10px] font-medium w-[70px] text-right ${hideNums ? 'blur-sm select-none' : ''}`} style={{ color: meta.color }}>{formatBRL(sv)}</span>
+                    <span className={`text-[9px] text-muted-foreground w-[50px] ${hideNums ? 'blur-sm select-none' : ''}`}>{sl.length} lead{sl.length !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               )
