@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts'
-import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, Bell, Clock, X, Kanban, Pencil, Check, CalendarDays, Layers, ImageIcon, AlertTriangle } from 'lucide-react'
+import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, Bell, Clock, X, Kanban, Pencil, Check, CalendarDays, Layers, ImageIcon, AlertTriangle, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, type Role } from '@/lib/roles'
@@ -55,9 +55,9 @@ const STAGE_META: Record<string, { label: string; color: string }> = {
 }
 
 // ── KpiCard (reused) ───────────────────────────────────────────────────────────
-function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accent, goalKey, isCurrency }: {
+function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accent, goalKey, isCurrency, hide }: {
   label: string; value: string; numericValue: number; sub?: string
-  icon: React.ElementType; highlight?: boolean; accent?: boolean; goalKey: string; isCurrency?: boolean
+  icon: React.ElementType; highlight?: boolean; accent?: boolean; goalKey: string; isCurrency?: boolean; hide?: boolean
 }) {
   const storageKey = `kpi_goal_${goalKey}`
   const [goal, setGoal]     = useState<number | null>(null)
@@ -99,7 +99,7 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
           </div>
         </div>
       </div>
-      <p className={`text-2xl font-semibold tracking-tight ${highlight ? 'text-[#ef4444]' : 'text-foreground'}`}>{value}</p>
+      <p className={`text-2xl font-semibold tracking-tight ${highlight ? 'text-[#ef4444]' : 'text-foreground'} ${hide && isCurrency ? 'blur-sm select-none' : ''}`}>{value}</p>
       {goal ? (
         <div className="mt-1 space-y-1.5">
           <div className="flex items-center justify-between">
@@ -140,6 +140,17 @@ function GustavoDashboard() {
   const [leads, setLeads]       = useState<Lead[]>([])
   const [dismissed, setDismissed] = useState(false)
   const [loading, setLoading]   = useState(true)
+  const [hideNums, setHideNums] = useState(false)
+
+  useEffect(() => {
+    setHideNums(localStorage.getItem('aura_hideNums') === '1')
+  }, [])
+
+  function toggleHide() {
+    const next = !hideNums
+    setHideNums(next)
+    localStorage.setItem('aura_hideNums', next ? '1' : '0')
+  }
 
   useEffect(() => {
     Promise.all([
@@ -186,7 +197,7 @@ function GustavoDashboard() {
                   <span className="text-[#ef4444] font-medium shrink-0">Atrasado</span>
                   <span className="text-muted-foreground truncate">{c.clients?.name} · {c.description}</span>
                 </div>
-                <span className="text-[#ef4444] shrink-0 font-medium">{formatBRL(c.amount)}</span>
+                <span className={`text-[#ef4444] shrink-0 font-medium ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(c.amount)}</span>
               </div>
             ))}
             {alerts.upcoming.map(c => (
@@ -196,7 +207,7 @@ function GustavoDashboard() {
                   <span className="text-[#f59e0b] font-medium shrink-0">Vence em breve</span>
                   <span className="text-muted-foreground truncate">{c.clients?.name} · {c.description} · {formatDate(c.due_date)}</span>
                 </div>
-                <span className="text-foreground shrink-0 font-medium">{formatBRL(c.amount)}</span>
+                <span className={`text-foreground shrink-0 font-medium ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(c.amount)}</span>
               </div>
             ))}
             {alerts.renewals.map(s => (
@@ -215,17 +226,25 @@ function GustavoDashboard() {
           <h1 className="text-xl font-semibold tracking-tight">Olá, Gustavo 👋</h1>
           <p className="text-sm text-muted-foreground mt-1">Sua visão comercial — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
         </div>
+        <button
+          onClick={toggleHide}
+          title={hideNums ? 'Mostrar valores' : 'Ocultar valores'}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors"
+        >
+          {hideNums ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+          <span className="text-xs hidden sm:inline">{hideNums ? 'Mostrar' : 'Ocultar'}</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Clientes ativos" value={String(data.activeClients)} numericValue={data.activeClients} sub="na carteira" icon={Users} goalKey="activeClients" />
-        <KpiCard label="MRR" value={formatBRL(data.mrr)} numericValue={data.mrr} sub="receita recorrente" icon={TrendingUp} accent goalKey="mrr" isCurrency />
-        <KpiCard label="Ticket médio" value={data.activeClients > 0 ? formatBRL(data.mrr / data.activeClients) : '—'} numericValue={data.activeClients > 0 ? data.mrr / data.activeClients : 0} sub="por cliente ativo" icon={TrendingUp} goalKey="ticketMedio" isCurrency />
-        <KpiCard label="Receita do mês" value={formatBRL(data.receivedMonth)} numericValue={data.receivedMonth} sub={`${pctReceived}% de ${formatBRL(data.estimatedMonth)}`} icon={DollarSign} goalKey="receivedMonth" isCurrency />
+        <KpiCard label="MRR" value={formatBRL(data.mrr)} numericValue={data.mrr} sub="receita recorrente" icon={TrendingUp} accent goalKey="mrr" isCurrency hide={hideNums} />
+        <KpiCard label="Ticket médio" value={data.activeClients > 0 ? formatBRL(data.mrr / data.activeClients) : '—'} numericValue={data.activeClients > 0 ? data.mrr / data.activeClients : 0} sub="por cliente ativo" icon={TrendingUp} goalKey="ticketMedio" isCurrency hide={hideNums} />
+        <KpiCard label="Receita do mês" value={formatBRL(data.receivedMonth)} numericValue={data.receivedMonth} sub={`${pctReceived}% de ${formatBRL(data.estimatedMonth)}`} icon={DollarSign} goalKey="receivedMonth" isCurrency hide={hideNums} />
         <KpiCard label="Churn de clientes" value={String(data.clientChurn)} numericValue={data.clientChurn} sub={data.clientChurn === 0 ? 'nenhum cancelamento este mês' : `cancelamento${data.clientChurn !== 1 ? 's' : ''} este mês`} icon={Users} highlight={data.clientChurn > 0} goalKey="clientChurn" />
-        <KpiCard label="Churn de MRR" value={data.mrrChurn > 0 ? formatBRL(data.mrrChurn) : 'R$ 0'} numericValue={data.mrrChurn} sub={data.mrrChurn === 0 ? 'sem perda de receita' : 'receita perdida este mês'} icon={DollarSign} highlight={data.mrrChurn > 0} goalKey="mrrChurn" isCurrency />
+        <KpiCard label="Churn de MRR" value={data.mrrChurn > 0 ? formatBRL(data.mrrChurn) : 'R$ 0'} numericValue={data.mrrChurn} sub={data.mrrChurn === 0 ? 'sem perda de receita' : 'receita perdida este mês'} icon={DollarSign} highlight={data.mrrChurn > 0} goalKey="mrrChurn" isCurrency hide={hideNums} />
         <KpiCard label="Inadimplentes" value={String(data.overdueCount)} numericValue={data.overdueCount} sub="cobranças em atraso" icon={AlertCircle} highlight={data.overdueCount > 0} goalKey="overdue" />
-        <KpiCard label="Pipeline ativo" value={formatBRL(pipelineTotal)} numericValue={pipelineTotal} sub={`${activeLeads.length} lead${activeLeads.length !== 1 ? 's' : ''} em aberto`} icon={Kanban} accent={pipelineTotal > 0} goalKey="pipeline" isCurrency />
+        <KpiCard label="Pipeline ativo" value={formatBRL(pipelineTotal)} numericValue={pipelineTotal} sub={`${activeLeads.length} lead${activeLeads.length !== 1 ? 's' : ''} em aberto`} icon={Kanban} accent={pipelineTotal > 0} goalKey="pipeline" isCurrency hide={hideNums} />
       </div>
 
       {pipelineTotal > 0 && (
@@ -235,9 +254,9 @@ function GustavoDashboard() {
             <Link href="/pipeline" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">Ver pipeline <ArrowUpRight size={10} /></Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-            <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">MRR atual</p><p className="text-lg font-semibold">{formatBRL(data.mrr)}</p></div>
-            <div className="bg-[#111111] border border-[#f97316]/30 rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">Quase fechando</p><p className="text-lg font-semibold text-[#f97316]">{formatBRL(hotTotal)}</p><p className="text-[9px] text-muted-foreground">{hotLeads.length} lead{hotLeads.length !== 1 ? 's' : ''}</p></div>
-            <div className="bg-[#111111] border border-[#7c3aed]/30 rounded-lg p-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/10 to-transparent pointer-events-none" /><p className="text-[10px] text-muted-foreground mb-1">Se tudo fechar</p><p className="text-lg font-semibold text-[#a78bfa]">{formatBRL(data.mrr + pipelineTotal)}</p><p className="text-[9px] text-[#7c3aed]">+{formatBRL(pipelineTotal)}</p></div>
+            <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">MRR atual</p><p className={`text-lg font-semibold ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr)}</p></div>
+            <div className="bg-[#111111] border border-[#f97316]/30 rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">Quase fechando</p><p className={`text-lg font-semibold text-[#f97316] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(hotTotal)}</p><p className="text-[9px] text-muted-foreground">{hotLeads.length} lead{hotLeads.length !== 1 ? 's' : ''}</p></div>
+            <div className="bg-[#111111] border border-[#7c3aed]/30 rounded-lg p-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/10 to-transparent pointer-events-none" /><p className="text-[10px] text-muted-foreground mb-1">Se tudo fechar</p><p className={`text-lg font-semibold text-[#a78bfa] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr + pipelineTotal)}</p><p className={`text-[9px] text-[#7c3aed] ${hideNums ? 'blur-sm select-none' : ''}`}>+{formatBRL(pipelineTotal)}</p></div>
           </div>
           <div className="space-y-2">
             {Object.entries(STAGE_META).map(([key, meta]) => {
@@ -264,7 +283,7 @@ function GustavoDashboard() {
         <div className="lg:col-span-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#3a3a3a] transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-medium">Receita — últimos 6 meses</h2>
-            {hasChartData && <span className="text-xs text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">{formatBRL(data.chartData.reduce((s, d) => s + d.value, 0))} total</span>}
+            {hasChartData && <span className={`text-xs text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.chartData.reduce((s, d) => s + d.value, 0))} total</span>}
           </div>
           {!hasChartData ? (
             <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">Nenhum pagamento registrado ainda</div>
@@ -292,7 +311,7 @@ function GustavoDashboard() {
               {data.upcoming.map(c => (
                 <div key={c.id} className="flex items-start justify-between gap-2 py-2 border-b border-[#2a2a2a] last:border-0 last:pb-0">
                   <div className="min-w-0"><p className="text-sm font-medium truncate">{c.clients?.name ?? '—'}</p><p className="text-xs text-muted-foreground truncate">{c.description}</p><p className="text-xs text-muted-foreground">{formatDate(c.due_date)}</p></div>
-                  <span className="text-sm font-semibold whitespace-nowrap">{formatBRL(c.amount)}</span>
+                  <span className={`text-sm font-semibold whitespace-nowrap ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(c.amount)}</span>
                 </div>
               ))}
             </div>
