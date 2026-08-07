@@ -90,7 +90,48 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
+      {/* ── Mobile: cards ── */}
+      <div className="md:hidden space-y-2">
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center h-40 text-sm text-muted-foreground bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
+            {search || filterStatus !== 'todos' ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado ainda'}
+          </div>
+        ) : filtered.map(c => (
+          <button
+            key={c.id}
+            onClick={() => setSelected(c.id)}
+            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-4 flex items-center gap-3 text-left hover:border-[#3a3a3a] active:bg-[#222] transition-colors"
+          >
+            {/* avatar */}
+            <div className="w-10 h-10 rounded-full bg-[#7c3aed]/15 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-[#a78bfa]">{c.name[0].toUpperCase()}</span>
+            </div>
+            {/* info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{c.name}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor[c.status]}`}>
+                  {statusLabel[c.status]}
+                </span>
+                {clientMRR(c) > 0 && (
+                  <span className="text-[10px] text-muted-foreground">{formatBRL(clientMRR(c))}/mês</span>
+                )}
+                {activeServices(c) > 0 && (
+                  <span className="text-[10px] text-muted-foreground">{activeServices(c)} serv.</span>
+                )}
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+          </button>
+        ))}
+      </div>
+
+      {/* ── Desktop: tabela ── */}
+      <div className="hidden md:block bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-40">
             <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
