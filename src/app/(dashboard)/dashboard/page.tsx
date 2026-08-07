@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts'
 import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, Bell, Clock, X, Kanban, Pencil, Check, CalendarDays, Layers, ImageIcon, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -23,8 +23,10 @@ interface AlertData {
   renewals: { id: string; name: string; contract_end: string; clients: { name: string } | null }[]
 }
 interface ContentPost {
-  id: string; title: string; platform: string; status: string; scheduled_date: string | null
+  id: string; client_id: string; title: string; platform: string; status: string
+  scheduled_date: string | null; published_at: string | null
   media_url: string | null; responsible: string | null
+  result: Record<string, number>
   clients?: { id: string; name: string } | null
 }
 interface Project {
@@ -334,15 +336,18 @@ function GustavoDashboard() {
 function GabrielDashboard() {
   const [posts, setPosts]       = useState<ContentPost[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [clients, setClients]   = useState<Client[]>([])
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
     Promise.all([
       fetch('/api/content').then(r => r.json()).catch(() => []),
       fetch('/api/projects').then(r => r.json()).catch(() => []),
-    ]).then(([p, pr]) => {
+      fetch('/api/clients').then(r => r.json()).catch(() => []),
+    ]).then(([p, pr, cl]) => {
       setPosts(Array.isArray(p) ? p : [])
       setProjects(Array.isArray(pr) ? pr : [])
+      setClients(Array.isArray(cl) ? cl : [])
       setLoading(false)
     })
   }, [])
@@ -491,6 +496,140 @@ function GabrielDashboard() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Engajamento por cliente */}
+      <EngajamentoClientes posts={posts} clients={clients} />
+    </div>
+  )
+}
+
+// ── Engajamento por cliente (usado no GabrielDashboard) ───────────────────────
+function EngajamentoClientes({ posts, clients }: { posts: ContentPost[]; clients: Client[] }) {
+  const now   = new Date()
+  const year  = now.getFullYear()
+  const month = now.getMonth()
+  const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+  // últimos 6 meses para o gráfico de barras comparativo
+  const last6 = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(year, month - (5 - i), 1)
+    return { year: d.getFullYear(), month: d.getMonth(), label: MONTH_NAMES[d.getMonth()].slice(0, 3) }
+  })
+
+  function calcClient(clientId: string, y: number, m: number) {
+    const filtered = posts.filter(p => {
+      if (p.client_id !== clientId || p.status !== 'publicado') return false
+      const d = p.published_at ? p.published_at.split('T')[0] : p.scheduled_date
+      if (!d) return false
+      const [py, pm] = d.split('-').map(Number)
+      return py === y && pm - 1 === m
+    })
+    const curtidas    = filtered.reduce((s, p) => s + (p.result?.curtidas    ?? 0), 0)
+    const comentarios = filtered.reduce((s, p) => s + (p.result?.comentarios ?? 0), 0)
+    const salvamentos = filtered.reduce((s, p) => s + (p.result?.salvamentos ?? 0), 0)
+    const alcance     = filtered.reduce((s, p) => s + (p.result?.alcance     ?? 0), 0)
+    const rate        = alcance > 0 ? parseFloat(((curtidas + comentarios + salvamentos) / alcance * 100).toFixed(2)) : 0
+    return { total: filtered.length, curtidas, comentarios, salvamentos, alcance, rate }
+  }
+
+  const activeClients = clients.filter(c => c.status === 'ativo' || c.status === 'trial')
+  const clientMetrics = activeClients.map(c => ({
+    ...c,
+    cur: calcClient(c.id, year, month),
+  })).filter(c => c.cur.total > 0 || posts.some(p => p.client_id === c.id && p.status === 'publicado'))
+    .sort((a, b) => b.cur.rate - a.cur.rate)
+
+  const maxRate = Math.max(...clientMetrics.map(c => c.cur.rate), 0.01)
+
+  // gráfico comparativo: taxa média de engajamento de todos os clientes por mês
+  const chartData = last6.map(m => {
+    const rates = activeClients
+      .map(c => calcClient(c.id, m.year, m.month).rate)
+      .filter(r => r > 0)
+    const avg = rates.length > 0 ? parseFloat((rates.reduce((s, r) => s + r, 0) / rates.length).toFixed(2)) : 0
+    return { name: m.label, taxa: avg }
+  })
+
+  const hasAnyData = clientMetrics.length > 0
+
+  return (
+    <div className="bg-[#1a1a1a] border border-[#34d399]/20 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={13} className="text-[#34d399]" />
+          <h2 className="text-sm font-medium">Engajamento por cliente — {MONTH_NAMES[month]}</h2>
+        </div>
+        <Link href="/conteudo" className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          Ver métricas <ArrowUpRight size={10} />
+        </Link>
+      </div>
+
+      {!hasAnyData ? (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          Publique posts com resultados para ver o engajamento aqui
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Cards por cliente */}
+          <div className="space-y-3">
+            {clientMetrics.map((c, idx) => {
+              const barPct = maxRate > 0 ? (c.cur.rate / maxRate) * 100 : 0
+              const medal  = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : null
+              return (
+                <div key={c.id} className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-4 hover:border-[#3a3a3a] transition-colors">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      {medal && <span className="text-sm shrink-0">{medal}</span>}
+                      <p className="text-sm font-medium truncate">{c.name}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-3">
+                      <span className="text-[10px] text-muted-foreground">{c.cur.total} post{c.cur.total !== 1 ? 's' : ''}</span>
+                      <span className="text-base font-bold text-[#34d399]">
+                        {c.cur.rate > 0 ? c.cur.rate.toFixed(2) + '%' : '—'}
+                      </span>
+                    </div>
+                  </div>
+                  {/* mini barra */}
+                  <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${barPct}%`,
+                        background: idx === 0 ? '#34d399' : idx === 1 ? '#60a5fa' : '#a78bfa',
+                      }}
+                    />
+                  </div>
+                  {c.cur.alcance > 0 && (
+                    <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                      <span>♥ {c.cur.curtidas.toLocaleString('pt-BR')}</span>
+                      <span>👁 {c.cur.alcance.toLocaleString('pt-BR')}</span>
+                      {c.cur.comentarios > 0 && <span>💬 {c.cur.comentarios.toLocaleString('pt-BR')}</span>}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Gráfico tendência média */}
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3">Tendência — taxa média todos clientes</p>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} tickFormatter={v => v + '%'} />
+                <Tooltip
+                  contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: unknown) => [Number(v).toFixed(2) + '%', 'Engajamento médio']}
+                  labelStyle={{ color: '#888' }}
+                />
+                <Bar dataKey="taxa" fill="#34d399" fillOpacity={0.8} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
