@@ -3,9 +3,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
-  Trash2, BarChart2,
+  Trash2, BarChart2, TrendingUp,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, Bar, CartesianGrid,
+} from 'recharts'
 
 // ── tipos ──────────────────────────────────────────────────────────────────────
 interface Client { id: string; name: string; status: string }
@@ -682,13 +686,175 @@ function ContentList({ posts, showClient, onPostClick }: {
   )
 }
 
+// ── MetricasView ───────────────────────────────────────────────────────────────
+function aggMonth(posts: ContentPost[], y: number, m: number) {
+  const filtered = posts.filter(p => {
+    if (p.status !== 'publicado') return false
+    const d = p.published_at ? p.published_at.split('T')[0] : p.scheduled_date
+    if (!d) return false
+    const [py, pm] = d.split('-').map(Number)
+    return py === y && pm - 1 === m
+  })
+  const curtidas     = filtered.reduce((s, p) => s + (p.result?.curtidas     ?? 0), 0)
+  const comentarios  = filtered.reduce((s, p) => s + (p.result?.comentarios  ?? 0), 0)
+  const salvamentos  = filtered.reduce((s, p) => s + (p.result?.salvamentos  ?? 0), 0)
+  const alcance      = filtered.reduce((s, p) => s + (p.result?.alcance      ?? 0), 0)
+  const impressoes   = filtered.reduce((s, p) => s + (p.result?.impressoes   ?? 0), 0)
+  const engagements  = curtidas + comentarios + salvamentos
+  const rate         = alcance > 0 ? parseFloat((engagements / alcance * 100).toFixed(2)) : 0
+  return { total: filtered.length, curtidas, comentarios, salvamentos, alcance, impressoes, engagements, rate, posts: filtered }
+}
+
+function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: number; year: number }) {
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(year, month - (5 - i), 1)
+    return { year: d.getFullYear(), month: d.getMonth(), label: MONTH_NAMES[d.getMonth()].slice(0, 3) }
+  })
+
+  const chartData = months.map(m => {
+    const a = aggMonth(posts, m.year, m.month)
+    return { name: m.label, taxa: a.rate, curtidas: a.curtidas, posts: a.total }
+  })
+
+  const cur = aggMonth(posts, year, month)
+  const prev = aggMonth(posts, month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1)
+  const rateDiff = cur.rate - prev.rate
+
+  const noData = cur.total === 0 && chartData.every(d => d.taxa === 0 && d.curtidas === 0)
+
+  return (
+    <div className="space-y-5">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Posts publicados',   value: String(cur.total),                          color: '#22c55e' },
+          { label: 'Curtidas totais',    value: cur.curtidas.toLocaleString('pt-BR'),        color: '#e1306c' },
+          { label: 'Alcance total',      value: cur.alcance.toLocaleString('pt-BR'),         color: '#a78bfa' },
+          { label: 'Taxa de engajamento',value: cur.rate.toFixed(2) + '%',                  color: '#f59e0b',
+            sub: prev.rate > 0 ? (rateDiff >= 0 ? '+' : '') + rateDiff.toFixed(2) + '% vs mês ant.' : undefined },
+        ].map(k => (
+          <div key={k.label} className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-4">
+            <p className="text-[11px] text-muted-foreground mb-1">{k.label}</p>
+            <p className="text-2xl font-bold" style={{ color: k.color }}>{k.value}</p>
+            {'sub' in k && k.sub && (
+              <p className={`text-[10px] mt-1 ${rateDiff >= 0 ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>{k.sub}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Engagement rate trend */}
+        <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp size={13} className="text-[#a78bfa]" />
+            <h3 className="text-sm font-medium">Taxa de engajamento — 6 meses</h3>
+          </div>
+          {noData ? (
+            <div className="h-[180px] flex items-center justify-center">
+              <p className="text-xs text-muted-foreground">Publique posts com resultados para ver o gráfico</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="engGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} tickFormatter={v => v + '%'} />
+                <Tooltip
+                  contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: unknown) => [Number(v).toFixed(2) + '%', 'Engajamento']}
+                  labelStyle={{ color: '#888' }}
+                />
+                <Area type="monotone" dataKey="taxa" stroke="#7c3aed" strokeWidth={2} fill="url(#engGrad)" dot={{ fill: '#7c3aed', r: 3 }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Curtidas bar chart */}
+        <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart2 size={13} className="text-[#e1306c]" />
+            <h3 className="text-sm font-medium">Curtidas — 6 meses</h3>
+          </div>
+          {noData ? (
+            <div className="h-[180px] flex items-center justify-center">
+              <p className="text-xs text-muted-foreground">Sem dados ainda</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }}
+                  formatter={(v: unknown) => [Number(v).toLocaleString('pt-BR'), 'Curtidas']}
+                  labelStyle={{ color: '#888' }}
+                />
+                <Bar dataKey="curtidas" fill="#e1306c" fillOpacity={0.8} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {/* Posts table */}
+      <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#1a1a1a] flex items-center justify-between">
+          <h3 className="text-sm font-medium">Posts publicados neste mês</h3>
+          <span className="text-xs text-muted-foreground">{cur.total} post{cur.total !== 1 ? 's' : ''}</span>
+        </div>
+        {cur.posts.length === 0 ? (
+          <div className="flex items-center justify-center h-24">
+            <p className="text-sm text-muted-foreground">Nenhum post publicado neste mês</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-[#1a1a1a]">
+            {cur.posts.map(post => {
+              const c   = post.result?.curtidas    ?? 0
+              const al  = post.result?.alcance     ?? 0
+              const co  = post.result?.comentarios ?? 0
+              const sa  = post.result?.salvamentos ?? 0
+              const rate = al > 0 ? ((c + co + sa) / al * 100).toFixed(1) : null
+              return (
+                <div key={post.id} className="px-5 py-3 flex items-center gap-3">
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0"
+                    style={{ background: pColor(post.platform) + '28', color: pColor(post.platform) }}>
+                    {pLabel(post.platform)}
+                  </span>
+                  <p className="text-sm flex-1 truncate">{post.title}</p>
+                  <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
+                    {c  > 0 && <span>♥ {c.toLocaleString('pt-BR')}</span>}
+                    {al > 0 && <span>👁 {al.toLocaleString('pt-BR')}</span>}
+                    {co > 0 && <span>💬 {co.toLocaleString('pt-BR')}</span>}
+                  </div>
+                  {rate && (
+                    <span className="text-[11px] font-semibold text-[#f59e0b] shrink-0">{rate}%</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── ConteudoPage ───────────────────────────────────────────────────────────────
 export default function ConteudoPage() {
   const [clients, setClients]         = useState<Client[]>([])
   const [posts, setPosts]             = useState<ContentPost[]>([])
   const [loading, setLoading]         = useState(true)
   const [activeClient, setActiveClient] = useState<string>('todos')
-  const [viewMode, setViewMode]       = useState<'calendario' | 'lista'>('calendario')
+  const [viewMode, setViewMode]       = useState<'calendario' | 'lista' | 'metricas'>('calendario')
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date()
     return { year: now.getFullYear(), month: now.getMonth() }
@@ -824,7 +990,7 @@ export default function ConteudoPage() {
           </div>
 
           {/* KPI cards */}
-          <div className="grid grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {[
               { label: 'Total de posts',      value: kpis.total,      color: '#a78bfa' },
               { label: 'Publicados',           value: kpis.publicado,  color: '#22c55e' },
@@ -864,9 +1030,20 @@ export default function ConteudoPage() {
                 <List size={14} />
                 Lista
               </button>
+              <button
+                onClick={() => setViewMode('metricas')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  viewMode === 'metricas'
+                    ? 'bg-[#7c3aed]/15 text-[#a78bfa]'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <TrendingUp size={14} />
+                Métricas
+              </button>
             </div>
 
-            {viewMode === 'calendario' && (
+            {(viewMode === 'calendario' || viewMode === 'metricas') && (
               <div className="flex items-center gap-2">
                 <button
                   onClick={prevMonth}
@@ -898,6 +1075,12 @@ export default function ConteudoPage() {
               month={currentMonth.month}
               year={currentMonth.year}
               onPostClick={setSelectedPost}
+            />
+          ) : viewMode === 'metricas' ? (
+            <MetricasView
+              posts={posts}
+              month={currentMonth.month}
+              year={currentMonth.year}
             />
           ) : (
             <ContentList
