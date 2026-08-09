@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
   Mail, Phone, Calendar, FileText, TrendingUp, DollarSign, AlertCircle,
   MessageCircle, Copy, Trash2, Clock, Upload, Download, File,
-  Eye, EyeOff, Link, AtSign, Globe, Lock, User2
+  Eye, EyeOff, Link, AtSign, Globe, Lock, User2, Folder, ChevronLeft
 } from 'lucide-react'
 import type { Client, Service, ClientStatusHistory, Charge, Task } from '@/lib/supabase/types'
 
@@ -49,16 +49,20 @@ export default function ClientProfilePage() {
   const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados'>('visao')
   type FileEntry = { name: string; metadata?: { size?: number } }
   type FilesGrouped = { contratos: FileEntry[]; 'identidade-visual': FileEntry[]; financeiro: FileEntry[] }
-  const FOLDERS = [
-    { key: 'contratos', label: 'Contratos' },
-    { key: 'identidade-visual', label: 'Identidade Visual' },
-    { key: 'financeiro', label: 'Financeiro' },
-  ] as const
+  type FolderKey = 'contratos' | 'identidade-visual' | 'financeiro'
+  const FOLDERS: { key: FolderKey; label: string; color: string; required: string[] }[] = [
+    { key: 'contratos', label: 'Contratos', color: '#a78bfa', required: ['Contrato assinado'] },
+    { key: 'identidade-visual', label: 'Identidade Visual', color: '#fbbf24', required: ['Manual de marca','Logo vetor (AI/EPS/SVG)','Logo PNG','Logo JPG','Logo colorida','Logo preto e branco','Logo negativa','Logo monocromática','Logo horizontal','Logo vertical','Símbolo isolado','Paleta de cores (hex/RGB/CMYK)','Tipografia'] },
+    { key: 'financeiro', label: 'Financeiro', color: '#4ade80', required: ['Notas fiscais emitidas','Comprovantes de pagamento','Relatórios de performance enviados'] },
+  ]
   const [files, setFiles] = useState<FilesGrouped>({ contratos: [], 'identidade-visual': [], financeiro: [] })
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
-  const [pendingFolder, setPendingFolder] = useState<typeof FOLDERS[number]['key']>('contratos')
+  const [pendingFolder, setPendingFolder] = useState<FolderKey>('contratos')
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [openFolder, setOpenFolder] = useState<FolderKey | null>(null)
+  const [pendingSlot, setPendingSlot] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [whatsAppCharge, setWhatsAppCharge] = useState<(Charge & { status: string }) | null>(null)
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -92,19 +96,36 @@ export default function ClientProfilePage() {
     setFiles({ contratos: res.contratos ?? [], 'identidade-visual': res['identidade-visual'] ?? [], financeiro: res.financeiro ?? [] })
   }, [id])
 
-  function detectFolder(filename: string): typeof FOLDERS[number]['key'] {
-    const n = filename.toLowerCase()
-    if (/contrat|acordo|proposta|nda|distrat|aditiv|term/.test(n)) return 'contratos'
-    if (/logo|brand|identidade|visual|marca|icon|fonte|paleta|cor|design|arte|criativ/.test(n)) return 'identidade-visual'
-    if (/comprovante|pagamento|recibo|nota.?fiscal|boleto|pix|transf|fatura|invoice|financ|pgto|receit/.test(n)) return 'financeiro'
-    return 'contratos'
+  function slugify(s: string) {
+    return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  }
+
+  function filesForSlot(folderFiles: FileEntry[], slotLabel: string): FileEntry[] {
+    const slug = slugify(slotLabel) + '_'
+    return folderFiles.filter(f => {
+      const original = f.name.replace(/^\d+_/, '')
+      return original.toLowerCase().startsWith(slug)
+    })
+  }
+
+  function extraFiles(folderFiles: FileEntry[], required: string[]): FileEntry[] {
+    const prefixes = required.map(r => slugify(r) + '_')
+    return folderFiles.filter(f => {
+      const original = f.name.replace(/^\d+_/, '').toLowerCase()
+      return !prefixes.some(p => original.startsWith(p))
+    })
+  }
+
+  function openFilePicker(folder: FolderKey, slot?: string) {
+    setPendingFolder(folder)
+    setPendingSlot(slot ?? null)
+    fileInputRef.current?.click()
   }
 
   function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setPendingFile(file)
-    setPendingFolder(detectFolder(file.name))
     e.target.value = ''
   }
 
@@ -112,15 +133,19 @@ export default function ClientProfilePage() {
     if (!pendingFile) return
     setUploading(true)
     setUploadError('')
-    const form = new FormData()
-    form.append('file', pendingFile)
-    form.append('folder', pendingFolder)
-    const res = await fetch(`/api/clients/${id}/files`, { method: 'POST', body: form })
+    const fd = new FormData()
+    const uploadName = pendingSlot
+      ? `${slugify(pendingSlot)}_${pendingFile.name}`
+      : pendingFile.name
+    fd.append('file', pendingFile, uploadName)
+    fd.append('folder', pendingFolder)
+    const res = await fetch(`/api/clients/${id}/files`, { method: 'POST', body: fd })
     if (!res.ok) {
       const d = await res.json().catch(() => ({}))
       setUploadError(d.error ?? 'Erro ao enviar arquivo')
     } else {
       setPendingFile(null)
+      setPendingSlot(null)
       await loadFiles()
     }
     setUploading(false)
@@ -661,105 +686,254 @@ export default function ClientProfilePage() {
       {/* Tab: Documentos */}
       {activeTab === 'documentos' && (
         <div className="space-y-4">
-          {/* Upload */}
-          {!pendingFile ? (
-            <div className="bg-[#1a1a1a] border border-dashed border-[#3a3a3a] hover:border-[#7c3aed]/50 rounded-xl p-6 transition-colors">
-              <label className="flex flex-col items-center gap-3 cursor-pointer">
-                <div className="w-10 h-10 rounded-full bg-[#7c3aed]/10 flex items-center justify-center">
-                  <Upload size={18} className="text-[#a78bfa]" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium">Clique para anexar um arquivo</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">PDF, Word, Excel, imagens — até 50 MB</p>
-                </div>
-                <input type="file" className="hidden" onChange={onFileSelected}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp" />
-              </label>
-            </div>
-          ) : (
-            <div className="bg-[#1a1a1a] border border-[#7c3aed]/30 rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center shrink-0">
-                  <File size={15} className="text-[#a78bfa]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{pendingFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {pendingFile.size > 1024 * 1024
-                      ? `${(pendingFile.size / 1024 / 1024).toFixed(1)} MB`
-                      : `${Math.round(pendingFile.size / 1024)} KB`}
-                  </p>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1.5">Pasta detectada automaticamente</label>
-                <select
-                  value={pendingFolder}
-                  onChange={e => setPendingFolder(e.target.value as typeof pendingFolder)}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
-                >
-                  {FOLDERS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
-                </select>
-              </div>
-              {uploadError && (
-                <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={12} />{uploadError}</p>
-              )}
-              <div className="flex gap-3">
-                <button onClick={() => { setPendingFile(null); setUploadError('') }}
-                  className="flex-1 border border-[#2a2a2a] text-sm py-2 rounded-lg hover:bg-[#222] transition-colors">
-                  Cancelar
-                </button>
-                <button onClick={confirmUpload} disabled={uploading}
-                  className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
-                  {uploading ? 'Enviando...' : 'Enviar'}
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Input oculto controlado por ref */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            onChange={onFileSelected}
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.svg,.ai,.eps,.zip"
+          />
 
-          {/* Pastas */}
-          {FOLDERS.map(({ key, label }) => {
-            const folderFiles = files[key] ?? []
-            return (
-              <div key={key} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
-                <div className="px-5 py-3.5 flex items-center gap-3 border-b border-[#2a2a2a]">
-                  <FileText size={13} className="text-[#a78bfa] shrink-0" />
-                  <span className="text-sm font-medium">{label}</span>
-                  <span className="text-xs text-muted-foreground ml-auto">{folderFiles.length} arquivo{folderFiles.length !== 1 ? 's' : ''}</span>
-                </div>
-                {folderFiles.length === 0 ? (
-                  <p className="px-5 py-4 text-xs text-muted-foreground">Nenhum arquivo nesta pasta</p>
-                ) : (
-                  <div className="divide-y divide-[#2a2a2a]">
-                    {folderFiles.map(f => {
-                      const original = f.name.replace(/^\d+_/, '')
-                      const size = f.metadata?.size
-                      const sizeLabel = size
-                        ? size > 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`
-                        : ''
-                      return (
-                        <div key={f.name} className="px-5 py-3 flex items-center gap-3">
-                          <File size={13} className="text-muted-foreground shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm truncate">{original}</p>
-                            {sizeLabel && <p className="text-[11px] text-muted-foreground">{sizeLabel}</p>}
+          {openFolder === null ? (
+            /* ── Vista: grade de pastas ── */
+            <div className="grid grid-cols-3 gap-4">
+              {FOLDERS.map(folder => {
+                const folderFiles = files[folder.key] ?? []
+                const filled = folder.required.filter(r => filesForSlot(folderFiles, r).length > 0).length
+                const total = folder.required.length
+                const pct = total > 0 ? Math.round((filled / total) * 100) : null
+                const allDone = pct === 100
+                return (
+                  <button
+                    key={folder.key}
+                    onClick={() => setOpenFolder(folder.key)}
+                    className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 flex flex-col items-center gap-3 hover:border-[#3a3a3a] hover:bg-[#1f1f1f] transition-all text-center group"
+                  >
+                    {/* Ícone de pasta */}
+                    <div className="relative mt-1">
+                      <Folder
+                        size={64}
+                        strokeWidth={1}
+                        style={{ color: folder.color }}
+                        className="drop-shadow-sm"
+                      />
+                      {folderFiles.length > 0 && (
+                        <span
+                          className="absolute -top-1 -right-2 text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center text-[#111]"
+                          style={{ background: folder.color }}
+                        >
+                          {folderFiles.length}
+                        </span>
+                      )}
+                      {allDone && (
+                        <CheckCircle size={16} className="absolute -bottom-1 -right-2 text-[#22c55e] bg-[#1a1a1a] rounded-full" />
+                      )}
+                    </div>
+                    {/* Nome e progresso */}
+                    <div className="w-full">
+                      <p className="text-sm font-medium">{folder.label}</p>
+                      {pct !== null && (
+                        <>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {filled}/{total} obrigatórios
+                          </p>
+                          <div className="w-full h-1 bg-[#2a2a2a] rounded-full overflow-hidden mt-2">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{ width: `${pct}%`, backgroundColor: folder.color }}
+                            />
                           </div>
-                          <button onClick={() => downloadFile(key, f.name, original)}
-                            className="text-muted-foreground hover:text-[#a78bfa] transition-colors" title="Baixar">
-                            <Download size={14} />
-                          </button>
-                          <button onClick={() => deleteFile(key, f.name)}
-                            className="text-muted-foreground hover:text-[#ef4444] transition-colors" title="Apagar">
-                            <Trash2 size={14} />
-                          </button>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (() => {
+            /* ── Vista: interior de uma pasta ── */
+            const folder = FOLDERS.find(f => f.key === openFolder)!
+            const folderFiles = files[openFolder] ?? []
+            const extras = extraFiles(folderFiles, folder.required)
+
+            return (
+              <div className="space-y-4">
+                {/* Header da pasta */}
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={() => { setOpenFolder(null); setPendingFile(null); setUploadError('') }}
+                    className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ChevronLeft size={15} /> Pastas
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <Folder size={16} strokeWidth={1.5} style={{ color: folder.color }} />
+                    <span className="text-sm font-semibold">{folder.label}</span>
+                  </div>
+                  <button
+                    onClick={() => openFilePicker(openFolder)}
+                    className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#7c3aed]/40 text-muted-foreground hover:text-[#a78bfa] px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Upload size={11} /> Novo arquivo
+                  </button>
+                </div>
+
+                {/* Confirmação de upload */}
+                {pendingFile && (
+                  <div className="bg-[#1a1a1a] border border-[#7c3aed]/30 rounded-xl p-5 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center shrink-0">
+                        <File size={15} className="text-[#a78bfa]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{pendingFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pendingSlot ? `→ ${pendingSlot}` : folder.label} ·{' '}
+                          {pendingFile.size > 1024 * 1024
+                            ? `${(pendingFile.size / 1024 / 1024).toFixed(1)} MB`
+                            : `${Math.round(pendingFile.size / 1024)} KB`}
+                        </p>
+                      </div>
+                    </div>
+                    {uploadError && (
+                      <p className="text-xs text-[#ef4444] flex items-center gap-1">
+                        <AlertCircle size={12} />{uploadError}
+                      </p>
+                    )}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => { setPendingFile(null); setPendingSlot(null); setUploadError('') }}
+                        className="flex-1 border border-[#2a2a2a] text-sm py-2 rounded-lg hover:bg-[#222] transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={confirmUpload}
+                        disabled={uploading}
+                        className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60"
+                      >
+                        {uploading ? 'Enviando...' : 'Enviar'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Itens obrigatórios */}
+                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
+                  <div className="px-5 py-3 border-b border-[#2a2a2a] flex items-center justify-between">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Documentos obrigatórios</p>
+                    <span className="text-[10px] text-muted-foreground">
+                      {folder.required.filter(r => filesForSlot(folderFiles, r).length > 0).length}/{folder.required.length}
+                    </span>
+                  </div>
+                  <div className="divide-y divide-[#1a1a1a]">
+                    {folder.required.map(slot => {
+                      const slotFiles = filesForSlot(folderFiles, slot)
+                      const done = slotFiles.length > 0
+                      return (
+                        <div
+                          key={slot}
+                          className={`px-5 py-3.5 flex items-center gap-3 ${done ? 'bg-[#1a1a1a]' : 'bg-[#161616]'}`}
+                        >
+                          {done
+                            ? <CheckCircle size={14} className="text-[#22c55e] shrink-0" />
+                            : <div className="w-3.5 h-3.5 rounded-full border-2 border-[#3a3a3a] shrink-0" />
+                          }
+                          <span className={`text-sm flex-1 min-w-0 truncate ${done ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {slot}
+                          </span>
+                          {done ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              {slotFiles.map(f => {
+                                const slotSlug = slugify(slot) + '_'
+                                const original = f.name.replace(/^\d+_/, '').replace(new RegExp(`^${slotSlug}`, 'i'), '') || slot
+                                const size = f.metadata?.size
+                                const sizeLabel = size
+                                  ? size > 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)}MB` : `${Math.round(size / 1024)}KB`
+                                  : ''
+                                return (
+                                  <div key={f.name} className="flex items-center gap-1.5">
+                                    <span className="text-[10px] text-muted-foreground hidden sm:block max-w-[110px] truncate">
+                                      {original}{sizeLabel ? ` · ${sizeLabel}` : ''}
+                                    </span>
+                                    <button
+                                      onClick={() => downloadFile(openFolder, f.name, original)}
+                                      className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-0.5"
+                                      title="Baixar"
+                                    >
+                                      <Download size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteFile(openFolder, f.name)}
+                                      className="text-muted-foreground hover:text-[#ef4444] transition-colors p-0.5"
+                                      title="Apagar"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => openFilePicker(openFolder, slot)}
+                              className="shrink-0 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-[#a78bfa] border border-[#2a2a2a] hover:border-[#7c3aed]/40 px-2 py-1 rounded-md transition-colors"
+                            >
+                              <Upload size={10} /> Upload
+                            </button>
+                          )}
                         </div>
                       )
                     })}
                   </div>
+                </div>
+
+                {/* Outros arquivos */}
+                {extras.length > 0 && (
+                  <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
+                    <div className="px-5 py-3 border-b border-[#2a2a2a]">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Outros arquivos ({extras.length})
+                      </p>
+                    </div>
+                    <div className="divide-y divide-[#1a1a1a]">
+                      {extras.map(f => {
+                        const original = f.name.replace(/^\d+_/, '')
+                        const size = f.metadata?.size
+                        const sizeLabel = size
+                          ? size > 1024 * 1024 ? `${(size / 1024 / 1024).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`
+                          : ''
+                        return (
+                          <div key={f.name} className="px-5 py-3 flex items-center gap-3 bg-[#1a1a1a]">
+                            <File size={13} className="text-muted-foreground shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm truncate">{original}</p>
+                              {sizeLabel && <p className="text-[11px] text-muted-foreground">{sizeLabel}</p>}
+                            </div>
+                            <button
+                              onClick={() => downloadFile(openFolder, f.name, original)}
+                              className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
+                              title="Baixar"
+                            >
+                              <Download size={14} />
+                            </button>
+                            <button
+                              onClick={() => deleteFile(openFolder, f.name)}
+                              className="text-muted-foreground hover:text-[#ef4444] transition-colors"
+                              title="Apagar"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             )
-          })}
+          })()}
         </div>
       )}
 
