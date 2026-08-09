@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
-import { Plus, Search, ChevronRight, ExternalLink } from 'lucide-react'
-import { ClientSheet } from '@/components/domain/ClientSheet'
+import { Plus, Search, ChevronRight } from 'lucide-react'
 import { NewClientModal } from '@/components/domain/NewClientModal'
 import Link from 'next/link'
 import type { Client, Service } from '@/lib/supabase/types'
@@ -18,11 +18,11 @@ const statusColor: Record<string, string> = {
 }
 
 export default function ClientesPage() {
+  const router = useRouter()
   const [clients, setClients] = useState<ClientWithServices[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('todos')
-  const [selected, setSelected] = useState<string | null>(null)
   const [showNew, setShowNew] = useState(false)
 
   const load = useCallback(() => {
@@ -153,7 +153,7 @@ export default function ClientesPage() {
               {filtered.map(c => (
                 <tr
                   key={c.id}
-                  onClick={() => setSelected(c.id)}
+                  onClick={() => router.push(`/clientes/${c.id}`)}
                   className="border-b border-[#2a2a2a] last:border-0 hover:bg-[#222222] cursor-pointer transition-colors"
                 >
                   <td className="px-5 py-4 text-sm font-medium">{c.name}</td>
@@ -166,17 +166,7 @@ export default function ClientesPage() {
                   <td className="px-5 py-4 text-sm font-medium">{formatBRL(clientMRR(c))}</td>
                   <td className="px-5 py-4 text-sm text-muted-foreground">{formatDate(c.started_at)}</td>
                   <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/clientes/${c.id}`}
-                        onClick={e => e.stopPropagation()}
-                        className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
-                        title="Ver perfil completo"
-                      >
-                        <ExternalLink size={13} />
-                      </Link>
-                      <ChevronRight size={14} className="text-muted-foreground" />
-                    </div>
+                    <ChevronRight size={14} className="text-muted-foreground" />
                   </td>
                 </tr>
               ))}
@@ -184,14 +174,6 @@ export default function ClientesPage() {
           </table>
         )}
       </div>
-
-      {selected && (
-        <ClientSheet
-          clientId={selected}
-          onClose={() => setSelected(null)}
-          onRefresh={load}
-        />
-      )}
 
       {showNew && (
         <NewClientModal
