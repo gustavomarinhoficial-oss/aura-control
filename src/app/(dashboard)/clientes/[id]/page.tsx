@@ -969,21 +969,6 @@ export default function ClientProfilePage() {
       {activeTab === 'dados' && (
         <div className="space-y-5">
 
-          {/* Responsável */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <User2 size={14} className="text-muted-foreground" />
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Responsável pelo cliente</h3>
-            </div>
-            <input
-              value={extras.responsavel}
-              onChange={e => setExtras(x => ({ ...x, responsavel: e.target.value }))}
-              onBlur={() => saveExtras()}
-              placeholder="Nome do responsável interno (opcional)"
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
-            />
-          </div>
-
           {/* Objetivos */}
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-3">
             <div className="flex items-center gap-2">
