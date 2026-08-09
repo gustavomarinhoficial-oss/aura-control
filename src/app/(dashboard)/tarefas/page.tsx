@@ -125,7 +125,7 @@ export default function TarefasPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<TaskStatus | 'todas'>('todas')
+  const [activeTab, setActiveTab] = useState<'todas' | 'concluidas'>('todas')
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -177,16 +177,24 @@ export default function TarefasPage() {
     })
   }
 
-  const filtered = filterStatus === 'todas' ? tasks : tasks.filter(t => t.status === filterStatus)
-
-  const counts = {
-    pendente: tasks.filter(t => t.status === 'pendente').length,
-    em_andamento: tasks.filter(t => t.status === 'em_andamento').length,
-    concluido: tasks.filter(t => t.status === 'concluido').length,
-  }
-
   const today = new Date().toISOString().split('T')[0]
   const overdueCount = tasks.filter(t => t.due_date && t.due_date < today && t.status !== 'concluido').length
+
+  const openTasks = tasks
+    .filter(t => t.status !== 'concluido')
+    .sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+      return a.due_date.localeCompare(b.due_date)
+    })
+  const doneTasks = tasks.filter(t => t.status === 'concluido')
+  const filtered = activeTab === 'todas' ? openTasks : doneTasks
+
+  const counts = {
+    open: openTasks.length,
+    concluido: doneTasks.length,
+  }
 
   return (
     <div className="space-y-6">
@@ -194,7 +202,7 @@ export default function TarefasPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Tarefas</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {counts.pendente + counts.em_andamento} abertas · {counts.concluido} concluídas
+            {counts.open} abertas · {counts.concluido} concluídas
             {overdueCount > 0 && <span className="text-[#ef4444] ml-2">· {overdueCount} atrasadas</span>}
           </p>
         </div>
@@ -207,14 +215,14 @@ export default function TarefasPage() {
         </button>
       </div>
 
-      {/* Filtros */}
+      {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit">
-        {([['todas', 'Todas'], ['pendente', 'Pendentes'], ['em_andamento', 'Em andamento'], ['concluido', 'Concluídas']] as const).map(([val, lbl]) => (
+        {([['todas', 'Todas'], ['concluidas', 'Concluídas']] as const).map(([val, lbl]) => (
           <button
             key={val}
-            onClick={() => setFilterStatus(val)}
+            onClick={() => setActiveTab(val)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              filterStatus === val ? 'bg-[#2a2a2a] text-foreground' : 'text-muted-foreground hover:text-foreground'
+              activeTab === val ? 'bg-[#2a2a2a] text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {lbl}
@@ -232,7 +240,7 @@ export default function TarefasPage() {
           <div>
             <p className="text-sm font-medium">Nenhuma tarefa</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {filterStatus !== 'todas' ? 'Sem tarefas nesta categoria' : 'Crie sua primeira tarefa'}
+              {activeTab === 'concluidas' ? 'Nenhuma tarefa concluída ainda' : 'Crie sua primeira tarefa'}
             </p>
           </div>
         </div>

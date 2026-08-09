@@ -6,11 +6,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const supabase = await createServiceClient()
   const body = await request.json()
 
+  const allowed = ['target_value', 'current_value', 'title', 'client_id', 'deadline', 'unit', 'type', 'period']
+  const update: Record<string, unknown> = {}
+  for (const key of allowed) {
+    if (key in body) update[key] = body[key]
+  }
+
   const { data, error } = await supabase
     .from('goals')
-    .update({ target_value: body.target_value })
+    .update(update)
     .eq('id', id)
-    .select()
+    .select('*, clients(id, name)')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

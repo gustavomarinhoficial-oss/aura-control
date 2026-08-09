@@ -2,7 +2,7 @@ export type ClientStatus = 'ativo' | 'pausado' | 'encerrado'
 export type ServiceType = 'recorrente' | 'avulso'
 export type ServiceRecurrence = 'mensal' | 'trimestral' | 'anual' | 'único'
 export type ChargeStatus = 'pendente' | 'pago' | 'atrasado'
-export type GoalType = 'mrr' | 'clientes'
+export type GoalType = 'mrr' | 'clientes' | 'custom'
 
 export interface Client {
   id: string
@@ -58,6 +58,12 @@ export interface Goal {
   type: GoalType
   target_value: number
   created_at: string
+  title: string | null
+  client_id: string | null
+  deadline: string | null
+  current_value: number
+  unit: string | null
+  clients?: { id: string; name: string } | null
 }
 
 export type TaskStatus = 'pendente' | 'em_andamento' | 'concluido'
