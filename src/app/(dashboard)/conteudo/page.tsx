@@ -423,11 +423,13 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     caption:        '',
     media_url:      '',
   })
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving]   = useState(false)
+  const [createErr, setCreateErr] = useState<string | null>(null)
 
   async function create() {
     if (!form.title.trim()) return
     setSaving(true)
+    setCreateErr(null)
     const res = await fetch('/api/content', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -443,6 +445,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
       }),
     })
     if (res.ok) { const post = await res.json(); onCreated(post) }
+    else { const j = await res.json().catch(() => ({})); setCreateErr(j.error ?? `Erro ${res.status}`) }
     setSaving(false)
   }
 
@@ -533,7 +536,10 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        {createErr && (
+          <p className="mt-4 text-xs text-[#ef4444] bg-[#ef4444]/10 rounded-lg px-3 py-2">{createErr}</p>
+        )}
+        <div className="flex gap-3 mt-4">
           <button onClick={onClose} className="flex-1 py-2.5 text-sm text-muted-foreground hover:text-foreground border border-[#2a2a2a] rounded-lg transition-colors">
             Cancelar
           </button>
