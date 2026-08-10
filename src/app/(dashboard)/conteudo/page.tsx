@@ -426,7 +426,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
   const [saving, setSaving] = useState(false)
 
   async function create() {
-    if (!form.title.trim() || !form.client_id) return
+    if (!form.title.trim()) return
     setSaving(true)
     const res = await fetch('/api/content', {
       method: 'POST',
