@@ -506,8 +506,13 @@ export default function ProjetosPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Project | null>(null)
   const [showNew, setShowNew] = useState(false)
-  const [dragId, setDragId] = useState<string | null>(null)
-  const [dragOver, setDragOver] = useState<string | null>(null)
+  const [activeDrag, setActiveDrag]  = useState<Project | null>(null)
+  const [dragPos, setDragPos]        = useState({ x: 0, y: 0 })
+  const [overCol, setOverCol]        = useState<string | null>(null)
+  const pendingDrag = useRef<{ project: Project; x: number; y: number; pointerId: number; el: Element } | null>(null)
+  const isDraggingRef = useRef(false)
+  const overColRef    = useRef<string | null>(null)
+  const colRefs       = useRef<Map<string, Element>>(new Map())
   const [filterStatus, setFilterStatus] = useState<string>('todos')
   const [activeOwner, setActiveOwner] = useState<string>('todos')
 
@@ -524,21 +529,41 @@ export default function ProjetosPage() {
 
   useEffect(() => { load() }, [load])
 
-  // ── drag & drop ────────────────────────────────────────────────────────────
-  async function handleDrop(colKey: string) {
-    if (!dragId || dragId === colKey) return
-    const project = projects.find(p => p.id === dragId)
-    if (!project || project.status === colKey) { setDragId(null); setDragOver(null); return }
+  // ── drag & drop (pointer events — funciona em touch + mouse) ──────────────
+  function startDrag(e: React.PointerEvent, project: Project) {
+    pendingDrag.current = { project, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el: e.currentTarget as Element }
+    isDraggingRef.current = false
+  }
 
-    setProjects(ps => ps.map(p => p.id === dragId ? { ...p, status: colKey } : p))
-    setDragId(null)
-    setDragOver(null)
+  function moveDrag(e: React.PointerEvent) {
+    const p = pendingDrag.current
+    if (!p) return
+    if (!isDraggingRef.current && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return
+    if (!isDraggingRef.current) { isDraggingRef.current = true; p.el.setPointerCapture(p.pointerId) }
+    setActiveDrag(p.project)
+    setDragPos({ x: e.clientX, y: e.clientY })
+    let found: string | null = null
+    for (const [col, el] of colRefs.current.entries()) {
+      const r = el.getBoundingClientRect()
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) { found = col; break }
+    }
+    overColRef.current = found
+    setOverCol(found)
+  }
 
-    await fetch(`/api/projects/${dragId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: colKey }),
-    })
+  function endDrag() {
+    const p = pendingDrag.current
+    if (isDraggingRef.current && p && overColRef.current && overColRef.current !== p.project.status) {
+      const colKey = overColRef.current
+      setProjects(ps => ps.map(pr => pr.id === p.project.id ? { ...pr, status: colKey } : pr))
+      fetch(`/api/projects/${p.project.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: colKey }),
+      })
+    }
+    pendingDrag.current = null; isDraggingRef.current = false
+    setActiveDrag(null); setOverCol(null); overColRef.current = null
   }
 
   function onSaved(updated: Project) {
@@ -564,14 +589,12 @@ export default function ProjetosPage() {
       (filterStatus === 'todos' || filterStatus === col.key) &&
       (activeOwner === 'todos' || p.owner === activeOwner)
     )
-    const isDragTarget = dragOver === col.key
+    const isDragTarget = overCol === col.key
     return (
       <div
         key={col.key}
+        ref={el => { if (el) colRefs.current.set(col.key, el); else colRefs.current.delete(col.key) }}
         className="flex flex-col"
-        onDragOver={e => { e.preventDefault(); setDragOver(col.key) }}
-        onDragLeave={() => setDragOver(null)}
-        onDrop={() => handleDrop(col.key)}
       >
         {/* column header */}
         <div className="flex items-center justify-between mb-3 px-1">
@@ -587,21 +610,30 @@ export default function ProjetosPage() {
           </button>
         </div>
         {/* drop zone */}
-        <div className={`rounded-xl border-2 border-dashed transition-all p-2 space-y-2 min-h-[160px] ${
+        <div className={`rounded-xl border-2 border-dashed transition-all p-2 space-y-2 min-h-[80px] md:min-h-[160px] ${
           isDragTarget ? 'border-[#7c3aed]/60 bg-[#7c3aed]/5' : 'border-transparent'
         }`}>
           {colProjects.length === 0 && !isDragTarget && (
-            <div className="flex items-center justify-center h-20 text-xs text-muted-foreground/30">Vazio</div>
+            <div className="flex items-center justify-center h-10 md:h-20 text-xs text-muted-foreground/30">Vazio</div>
           )}
           {colProjects.map(project => (
-            <ProjectCard
+            <div
               key={project.id}
-              project={project}
-              onSelect={() => setSelected(project)}
-              onDragStart={() => setDragId(project.id)}
-              onDragEnd={() => { setDragId(null); setDragOver(null) }}
-              isDragging={dragId === project.id}
-            />
+              onPointerDown={e => startDrag(e, project)}
+              onPointerMove={moveDrag}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              onClick={() => { if (!isDraggingRef.current) setSelected(project) }}
+              style={{ touchAction: 'none', opacity: activeDrag?.id === project.id ? 0.35 : 1 }}
+            >
+              <ProjectCard
+                project={project}
+                onSelect={() => {}}
+                onDragStart={() => {}}
+                onDragEnd={() => {}}
+                isDragging={false}
+              />
+            </div>
           ))}
         </div>
       </div>
@@ -617,11 +649,11 @@ export default function ProjetosPage() {
   const done = projects.filter(p => p.status === 'concluido').length
 
   return (
-    <div className="flex flex-col h-full -m-6 overflow-hidden">
+    <div className="flex flex-col md:h-full -mx-4 -my-6 md:-mx-8 md:-my-8 md:overflow-hidden">
 
       {/* header */}
       <div className="border-b border-[#2a2a2a] bg-[#0d0d0d] shrink-0">
-        <div className="flex items-center justify-between px-6 pt-5 pb-4">
+        <div className="flex items-center justify-between px-4 md:px-6 pt-5 pb-4">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Projetos</h1>
             <p className="text-xs text-muted-foreground mt-0.5">{total} ativos · {done} concluídos{overdue > 0 ? ` · ${overdue} atrasados` : ''}</p>
@@ -632,7 +664,7 @@ export default function ProjetosPage() {
           </button>
         </div>
         {/* abas por sócio */}
-        <div className="flex px-6 gap-1">
+        <div className="flex px-4 md:px-6 gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {[['todos', 'Todos os projetos'], ...PARTNERS.map(p => [p, p])].map(([key, label]) => (
             <button
               key={key}
@@ -662,15 +694,35 @@ export default function ProjetosPage() {
           <div className="w-6 h-6 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          {/* linha 1: A fazer · Em andamento · Em aprovação */}
-          <div className="grid grid-cols-3 gap-4">
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:p-6 space-y-3 md:space-y-4">
+          {/* mobile: stack vertical · desktop: grid */}
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-3 md:gap-4">
             {COLUMNS.slice(0, 3).map(col => renderColumn(col))}
           </div>
-          {/* linha 2: Concluído · Arquivo */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-2 md:gap-4">
             {COLUMNS.slice(3).map(col => renderColumn(col))}
           </div>
+        </div>
+      )}
+
+      {/* Ghost card during drag */}
+      {activeDrag && (
+        <div
+          style={{
+            position: 'fixed',
+            left: dragPos.x - 100,
+            top: dragPos.y - 28,
+            width: 200,
+            zIndex: 9999,
+            pointerEvents: 'none',
+            transform: 'rotate(2deg)',
+          }}
+          className="bg-[#1a1a1a] border border-[#7c3aed] rounded-xl p-4 shadow-2xl opacity-90"
+        >
+          <p className="text-sm font-medium truncate">{activeDrag.title}</p>
+          {activeDrag.clients && (
+            <p className="text-[10px] text-muted-foreground mt-1 truncate">{activeDrag.clients.name}</p>
+          )}
         </div>
       )}
 

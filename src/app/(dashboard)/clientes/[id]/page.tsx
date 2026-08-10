@@ -362,7 +362,7 @@ export default function ClientProfilePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit overflow-x-auto max-w-full">
         {([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados']] as const).map(([tab, lbl]) => (
           <button
             key={tab}

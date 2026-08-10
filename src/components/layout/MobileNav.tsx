@@ -123,7 +123,7 @@ export function MobileNav() {
       )}
 
       {/* Barra inferior */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0d0d0d]/95 backdrop-blur-md border-t border-[#1f1f1f] flex md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0d0d0d]/95 backdrop-blur-md border-t border-[#1f1f1f] flex md:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {PINNED.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
           return (

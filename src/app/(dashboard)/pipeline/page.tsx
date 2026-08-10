@@ -49,7 +49,13 @@ export default function PipelinePage() {
   const [addingStage, setAddingStage] = useState<string | null>(null)
   const [newForm, setNewForm] = useState({ ...EMPTY_FORM })
   const [addSaving, setAddSaving] = useState(false)
-  const draggingId = useRef<string | null>(null)
+  const [activeDrag, setActiveDrag] = useState<Lead | null>(null)
+  const [dragPos, setDragPos]       = useState({ x: 0, y: 0 })
+  const [overStage, setOverStage]   = useState<string | null>(null)
+  const pendingDrag = useRef<{ lead: Lead; x: number; y: number; pointerId: number; el: Element } | null>(null)
+  const isDraggingRef = useRef(false)
+  const overStageRef  = useRef<string | null>(null)
+  const colRefs       = useRef<Map<string, Element>>(new Map())
 
   const load = useCallback(async () => {
     const data = await fetch('/api/leads').then(r => r.json()).catch(() => [])
@@ -149,10 +155,34 @@ export default function PipelinePage() {
     setAddSaving(false)
   }
 
-  function onDragStart(id: string) { draggingId.current = id }
-  function onDrop(stage: string) {
-    if (draggingId.current) moveLead(draggingId.current, stage)
-    draggingId.current = null
+  function startDrag(e: React.PointerEvent, lead: Lead) {
+    pendingDrag.current = { lead, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el: e.currentTarget as Element }
+    isDraggingRef.current = false
+  }
+
+  function moveDrag(e: React.PointerEvent) {
+    const p = pendingDrag.current
+    if (!p) return
+    if (!isDraggingRef.current && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return
+    if (!isDraggingRef.current) { isDraggingRef.current = true; p.el.setPointerCapture(p.pointerId) }
+    setActiveDrag(p.lead)
+    setDragPos({ x: e.clientX, y: e.clientY })
+    let found: string | null = null
+    for (const [stage, el] of colRefs.current.entries()) {
+      const r = el.getBoundingClientRect()
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) { found = stage; break }
+    }
+    overStageRef.current = found
+    setOverStage(found)
+  }
+
+  function endDrag() {
+    const p = pendingDrag.current
+    if (isDraggingRef.current && p && overStageRef.current && overStageRef.current !== p.lead.stage) {
+      moveLead(p.lead.id, overStageRef.current)
+    }
+    pendingDrag.current = null; isDraggingRef.current = false
+    setActiveDrag(null); setOverStage(null); overStageRef.current = null
   }
 
   const stageLeads = (stage: string) => leads.filter(l => l.stage === stage)
@@ -198,10 +228,13 @@ export default function PipelinePage() {
             return (
               <div
                 key={s.key}
-                className="flex flex-col rounded-xl min-h-[60px] w-full"
-                style={{ background: s.bg, border: `1px solid ${s.color}22` }}
-                onDragOver={e => e.preventDefault()}
-                onDrop={() => onDrop(s.key)}
+                ref={el => { if (el) colRefs.current.set(s.key, el); else colRefs.current.delete(s.key) }}
+                className="flex flex-col rounded-xl min-h-[60px] w-full transition-all"
+                style={{
+                  background: s.bg,
+                  border: `1px solid ${overStage === s.key ? s.color + '88' : s.color + '22'}`,
+                  boxShadow: overStage === s.key ? `0 0 0 2px ${s.color}33` : 'none',
+                }}
               >
                 {/* Cabeçalho */}
                 <div className="px-3 pt-3 pb-2">
@@ -246,9 +279,14 @@ export default function PipelinePage() {
                 {/* Cards */}
                 <div className="px-2 pb-3 space-y-2 flex-1">
                   {cards.map(lead => (
-                    <div key={lead.id} draggable onDragStart={() => onDragStart(lead.id)}
-                      onClick={() => openEdit(lead)}
-                      className="bg-[#111111] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg p-3 cursor-pointer transition-all group select-none">
+                    <div key={lead.id}
+                      onPointerDown={e => startDrag(e, lead)}
+                      onPointerMove={moveDrag}
+                      onPointerUp={endDrag}
+                      onPointerCancel={endDrag}
+                      onClick={() => { if (!isDraggingRef.current) openEdit(lead) }}
+                      style={{ touchAction: 'none', opacity: activeDrag?.id === lead.id ? 0.35 : 1 }}
+                      className="bg-[#111111] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all group select-none">
                       <div className="flex items-start justify-between gap-1 mb-1">
                         <p className="text-xs font-semibold leading-snug line-clamp-2">{lead.company_name}</p>
                         <Pencil size={10} className="shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
@@ -286,6 +324,30 @@ export default function PipelinePage() {
             )
           })}
         </div>
+        </div>
+      )}
+
+      {/* Ghost card during drag */}
+      {activeDrag && (
+        <div
+          style={{
+            position: 'fixed',
+            left: dragPos.x - 110,
+            top: dragPos.y - 28,
+            width: 220,
+            zIndex: 9999,
+            pointerEvents: 'none',
+            transform: 'rotate(2deg)',
+          }}
+          className="bg-[#111111] border border-[#7c3aed] rounded-lg p-3 shadow-2xl opacity-90"
+        >
+          <p className="text-xs font-semibold truncate">{activeDrag.company_name}</p>
+          {activeDrag.estimated_value && (
+            <p className="text-[10px] text-[#a78bfa] mt-0.5">{formatBRL(activeDrag.estimated_value)}</p>
+          )}
+          {activeDrag.contact_name && (
+            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{activeDrag.contact_name}</p>
+          )}
         </div>
       )}
 

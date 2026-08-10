@@ -82,6 +82,13 @@
   --sidebar-ring: #7c3aed;
 }
 
+/* Safe-area bottom padding for mobile nav clearance */
+@layer utilities {
+  .pb-safe-nav {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -90,6 +97,7 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
   html {
     color-scheme: dark;
