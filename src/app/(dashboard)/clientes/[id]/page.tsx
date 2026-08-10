@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
@@ -10,6 +10,19 @@ import {
   Eye, EyeOff, Link, AtSign, Globe, Lock, User2, Folder, ChevronLeft
 } from 'lucide-react'
 import type { Client, Service, ClientStatusHistory, Charge, Task } from '@/lib/supabase/types'
+
+interface EditorialLine {
+  id: string
+  client_id: string
+  pdf_name: string
+  pdf_path: string
+  valid_from: string
+  valid_until: string
+  notified_30: boolean
+  notified_15: boolean
+  notified_5: boolean
+  created_at: string
+}
 
 type FullClient = Client & { services: Service[]; status_history: ClientStatusHistory[] }
 
@@ -31,6 +44,7 @@ const chargeStatusLabel: Record<string, string> = { pago: 'Pago', pendente: 'Pen
 export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [client, setClient] = useState<FullClient | null>(null)
   const [charges, setCharges] = useState<Charge[]>([])
@@ -46,7 +60,7 @@ export default function ClientProfilePage() {
   const [editingService, setEditingService] = useState<string | null>(null)
   const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '' })
   const [savingEditService, setSavingEditService] = useState(false)
-  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados'>('visao')
+  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados' | 'editorial'>('visao')
   type FileEntry = { name: string; metadata?: { size?: number } }
   type FilesGrouped = { contratos: FileEntry[]; 'identidade-visual': FileEntry[]; financeiro: FileEntry[] }
   type FolderKey = 'contratos' | 'identidade-visual' | 'financeiro'
@@ -66,6 +80,13 @@ export default function ClientProfilePage() {
   const [whatsAppCharge, setWhatsAppCharge] = useState<(Charge & { status: string }) | null>(null)
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const [editorial, setEditorial] = useState<EditorialLine | null>(null)
+  const [editorialLoading, setEditorialLoading] = useState(false)
+  const [editorialUploading, setEditorialUploading] = useState(false)
+  const [editorialError, setEditorialError] = useState('')
+  const [editorialPdfUrl, setEditorialPdfUrl] = useState<string | null>(null)
+  const editorialInputRef = useRef<HTMLInputElement>(null)
 
   type SocialEntry = { platform: string; handle: string }
   type LinkEntry = { label: string; url: string }
@@ -185,6 +206,54 @@ export default function ClientProfilePage() {
   useEffect(() => { load() }, [load])
   useEffect(() => { loadFiles() }, [loadFiles])
   useEffect(() => { loadExtras() }, [loadExtras])
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'editorial') setActiveTab('editorial')
+  }, [searchParams])
+
+  const loadEditorial = useCallback(async () => {
+    setEditorialLoading(true)
+    const res = await fetch(`/api/editorial-lines?client_id=${id}`).then(r => r.json()).catch(() => [])
+    const line = Array.isArray(res) && res.length > 0 ? res[0] as EditorialLine : null
+    setEditorial(line)
+    setEditorialPdfUrl(null)
+    setEditorialLoading(false)
+  }, [id])
+
+  useEffect(() => { loadEditorial() }, [loadEditorial])
+
+  async function loadEditorialPdf() {
+    if (!editorial) return
+    const res = await fetch(`/api/editorial-lines/${editorial.id}`).then(r => r.json()).catch(() => ({}))
+    if (res.url) setEditorialPdfUrl(res.url)
+  }
+
+  async function uploadEditorial(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.type !== 'application/pdf') { setEditorialError('Apenas arquivos PDF são aceitos'); return }
+    setEditorialUploading(true)
+    setEditorialError('')
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('client_id', id)
+    const res = await fetch('/api/editorial-lines', { method: 'POST', body: fd })
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setEditorialError(d.error ?? 'Erro ao enviar PDF')
+    } else {
+      await loadEditorial()
+    }
+    setEditorialUploading(false)
+  }
+
+  async function deleteEditorial() {
+    if (!editorial || !confirm('Remover a linha editorial atual?')) return
+    await fetch(`/api/editorial-lines/${editorial.id}`, { method: 'DELETE' })
+    setEditorial(null)
+    setEditorialPdfUrl(null)
+  }
 
   async function saveClient() {
     setSaving(true)
@@ -363,7 +432,7 @@ export default function ClientProfilePage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit overflow-x-auto max-w-full">
-        {([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados']] as const).map(([tab, lbl]) => (
+        {([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados'], ['editorial', 'Editorial']] as const).map(([tab, lbl]) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -1178,6 +1247,160 @@ export default function ClientProfilePage() {
             {extrasSaving && <p className="text-[10px] text-muted-foreground">Salvando...</p>}
           </div>
 
+        </div>
+      )}
+
+      {/* Tab: Editorial */}
+      {activeTab === 'editorial' && (
+        <div className="space-y-4">
+          <input ref={editorialInputRef} type="file" accept="application/pdf" className="hidden" onChange={uploadEditorial} />
+
+          {editorialLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : editorial ? (() => {
+            const today = new Date().toISOString().slice(0, 10)
+            const validUntil = new Date(editorial.valid_until + 'T12:00:00Z')
+            const daysLeft = Math.round((validUntil.getTime() - new Date(today + 'T12:00:00Z').getTime()) / 86400000)
+            const isExpired = daysLeft < 0
+            const isSoon5 = daysLeft >= 0 && daysLeft <= 5
+            const isSoon15 = daysLeft >= 0 && daysLeft <= 15
+            const isSoon30 = daysLeft >= 0 && daysLeft <= 30
+            const statusColor = isExpired ? 'text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20'
+              : isSoon5 ? 'text-[#ef4444] bg-[#ef4444]/10 border-[#ef4444]/20'
+              : isSoon15 ? 'text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20'
+              : isSoon30 ? 'text-[#f59e0b] bg-[#f59e0b]/10 border-[#f59e0b]/20'
+              : 'text-[#22c55e] bg-[#22c55e]/10 border-[#22c55e]/20'
+            const statusText = isExpired
+              ? `Expirado há ${Math.abs(daysLeft)} dia${Math.abs(daysLeft) !== 1 ? 's' : ''}`
+              : `${daysLeft} dia${daysLeft !== 1 ? 's' : ''} restante${daysLeft !== 1 ? 's' : ''}`
+
+            return (
+              <div className="space-y-4">
+                {/* Card da linha editorial vigente */}
+                <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center shrink-0">
+                        <File size={18} className="text-[#a78bfa]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{editorial.pdf_name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Vigência: {formatDate(editorial.valid_from)} → {formatDate(editorial.valid_until)}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${statusColor}`}>
+                      {statusText}
+                    </span>
+                  </div>
+
+                  {/* Barra de progresso */}
+                  {(() => {
+                    const total = 90
+                    const used = total - Math.max(daysLeft, 0)
+                    const pct = Math.min(Math.round((used / total) * 100), 100)
+                    const barColor = isExpired || isSoon5 ? '#ef4444' : isSoon15 ? '#f59e0b' : isSoon30 ? '#f59e0b' : '#22c55e'
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1.5">
+                          <span>Início: {formatDate(editorial.valid_from)}</span>
+                          <span>{pct}% utilizado</span>
+                          <span>Fim: {formatDate(editorial.valid_until)}</span>
+                        </div>
+                        <div className="w-full h-2 bg-[#2a2a2a] rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Ações */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={async () => { await loadEditorialPdf(); }}
+                      className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#7c3aed]/40 text-muted-foreground hover:text-[#a78bfa] px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <Eye size={12} /> Visualizar PDF
+                    </button>
+                    <button
+                      onClick={() => editorialInputRef.current?.click()}
+                      disabled={editorialUploading}
+                      className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#7c3aed]/40 text-muted-foreground hover:text-[#a78bfa] px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      <Upload size={12} /> {editorialUploading ? 'Enviando...' : 'Substituir PDF'}
+                    </button>
+                    <button
+                      onClick={deleteEditorial}
+                      className="flex items-center gap-1.5 text-xs border border-[#ef4444]/20 text-[#ef4444]/60 hover:text-[#ef4444] hover:border-[#ef4444]/40 px-3 py-1.5 rounded-lg transition-colors ml-auto"
+                    >
+                      <Trash2 size={12} /> Remover
+                    </button>
+                  </div>
+
+                  {editorialError && (
+                    <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={11} />{editorialError}</p>
+                  )}
+                </div>
+
+                {/* Alertas de notificação */}
+                {(isSoon30 || isExpired) && (
+                  <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border text-xs ${isExpired || isSoon5 ? 'bg-[#ef4444]/5 border-[#ef4444]/20 text-[#ef4444]' : 'bg-[#f59e0b]/5 border-[#f59e0b]/20 text-[#f59e0b]'}`}>
+                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-medium">
+                        {isExpired ? 'Linha editorial expirada' : isSoon5 ? 'Expira em menos de 5 dias!' : isSoon15 ? 'Expira em menos de 15 dias' : 'Expira em menos de 30 dias'}
+                      </p>
+                      <p className="text-muted-foreground mt-0.5">Faça o upload de um novo PDF para renovar por mais 90 dias.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Visualizador inline */}
+                {editorialPdfUrl && (
+                  <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2a2a2a]">
+                      <span className="text-xs text-muted-foreground">{editorial.pdf_name}</span>
+                      <div className="flex items-center gap-2">
+                        <a href={editorialPdfUrl} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-[#a78bfa] transition-colors">
+                          <Download size={12} /> Baixar
+                        </a>
+                        <button onClick={() => setEditorialPdfUrl(null)} className="text-muted-foreground hover:text-foreground transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <iframe src={editorialPdfUrl} className="w-full h-[600px]" title="Linha Editorial" />
+                  </div>
+                )}
+              </div>
+            )
+          })() : (
+            /* Estado vazio */
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-10 flex flex-col items-center gap-4 text-center">
+              <div className="w-12 h-12 rounded-xl bg-[#7c3aed]/10 flex items-center justify-center">
+                <File size={22} className="text-[#a78bfa]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Nenhuma linha editorial cadastrada</p>
+                <p className="text-xs text-muted-foreground mt-1">Faça upload de um PDF com a linha editorial dos próximos 3 meses.</p>
+              </div>
+              {editorialError && (
+                <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={11} />{editorialError}</p>
+              )}
+              <button
+                onClick={() => { setEditorialError(''); editorialInputRef.current?.click() }}
+                disabled={editorialUploading}
+                className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+              >
+                <Upload size={14} />
+                {editorialUploading ? 'Enviando...' : 'Upload PDF'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

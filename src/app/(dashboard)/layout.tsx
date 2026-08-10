@@ -14,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <Sidebar />
       <MobileNav />
       <main className="md:ml-[200px] min-h-screen pb-safe-nav md:pb-0">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 pb-6 md:py-8 pt-safe-top">
           {children}
         </div>
       </main>

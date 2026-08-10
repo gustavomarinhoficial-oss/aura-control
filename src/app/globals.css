@@ -82,10 +82,15 @@
   --sidebar-ring: #7c3aed;
 }
 
-/* Safe-area bottom padding for mobile nav clearance */
+/* Safe-area padding utilities */
 @layer utilities {
   .pb-safe-nav {
     padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+  @media (max-width: 767px) {
+    .pt-safe-top {
+      padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+    }
   }
 }
 

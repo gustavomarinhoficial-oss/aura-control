@@ -7,6 +7,10 @@
     {
       "path": "/api/alerts/send?mode=evening",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/editorial-alerts",
+      "schedule": "0 13 * * *"
     }
   ]
 }

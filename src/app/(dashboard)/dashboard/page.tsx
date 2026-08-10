@@ -141,6 +141,7 @@ function GustavoDashboard() {
   const [dismissed, setDismissed] = useState(false)
   const [loading, setLoading]   = useState(true)
   const [hideNums, setHideNums] = useState(false)
+  const [editorialAlerts, setEditorialAlerts] = useState<{ id: string; clientName: string; daysLeft: number; valid_until: string; client_id: string }[]>([])
 
   useEffect(() => {
     setHideNums(localStorage.getItem('aura_hideNums') === '1')
@@ -158,11 +159,25 @@ function GustavoDashboard() {
       fetch('/api/tasks').then(r => r.json()).catch(() => []),
       fetch('/api/alerts').then(r => r.json()).catch(() => ({ overdue: [], upcoming: [], renewals: [] })),
       fetch('/api/leads').then(r => r.json()).catch(() => []),
-    ]).then(([d, t, a, l]) => {
+      fetch('/api/editorial-lines').then(r => r.json()).catch(() => []),
+    ]).then(([d, t, a, l, el]) => {
       setData(d)
       setTasks(Array.isArray(t) ? t.filter((task: Task) => task.status !== 'concluido').slice(0, 5) : [])
       setAlerts(a)
       setLeads(Array.isArray(l) ? l : [])
+      if (Array.isArray(el)) {
+        const today = new Date().toISOString().slice(0, 10)
+        const expiring = el
+          .map((line: { id: string; valid_until: string; clients?: { name: string } | null; client_id: string }) => {
+            const daysLeft = Math.round(
+              (new Date(line.valid_until + 'T12:00:00Z').getTime() - new Date(today + 'T12:00:00Z').getTime()) / 86400000
+            )
+            return { id: line.id, clientName: line.clients?.name ?? 'Cliente', daysLeft, valid_until: line.valid_until, client_id: line.client_id }
+          })
+          .filter((l: { daysLeft: number }) => l.daysLeft <= 30)
+          .sort((a: { daysLeft: number }, b: { daysLeft: number }) => a.daysLeft - b.daysLeft)
+        setEditorialAlerts(expiring)
+      }
       setLoading(false)
     })
   }, [])
@@ -172,7 +187,7 @@ function GustavoDashboard() {
 
   const hasChartData  = data.chartData.some(d => d.value > 0)
   const pctReceived   = data.estimatedMonth > 0 ? Math.round((data.receivedMonth / data.estimatedMonth) * 100) : 0
-  const totalAlerts   = alerts.overdue.length + alerts.upcoming.length + alerts.renewals.length
+  const totalAlerts   = alerts.overdue.length + alerts.upcoming.length + alerts.renewals.length + editorialAlerts.length
   const activeLeads   = leads.filter(l => l.stage !== 'perdido' && l.stage !== 'fechado')
   const hotLeads      = leads.filter(l => l.stage === 'negociacao' || l.stage === 'proposta')
   const pipelineTotal = activeLeads.reduce((s, l) => s + (l.estimated_value ?? 0), 0)
@@ -217,6 +232,20 @@ function GustavoDashboard() {
                 <span className="text-muted-foreground truncate">{s.clients?.name} · {s.name} · até {formatDate(s.contract_end)}</span>
               </div>
             ))}
+            {editorialAlerts.map(ea => {
+              const isUrgent = ea.daysLeft <= 5
+              const isMedium = ea.daysLeft <= 15
+              const color = isUrgent ? 'text-[#ef4444]' : isMedium ? 'text-[#f59e0b]' : 'text-[#a78bfa]'
+              const dot = isUrgent ? 'bg-[#ef4444]' : isMedium ? 'bg-[#f59e0b]' : 'bg-[#a78bfa]'
+              const label = ea.daysLeft < 0 ? 'Editorial expirado' : `Editorial ${ea.daysLeft}d`
+              return (
+                <Link key={ea.id} href={`/clientes/${ea.client_id}?tab=editorial`} className="flex items-center gap-2 text-xs hover:opacity-80 transition-opacity">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+                  <span className={`font-medium shrink-0 ${color}`}>{label}</span>
+                  <span className="text-muted-foreground truncate">{ea.clientName} · vence {formatDate(ea.valid_until)}</span>
+                </Link>
+              )
+            })}
           </div>
         </div>
       )}

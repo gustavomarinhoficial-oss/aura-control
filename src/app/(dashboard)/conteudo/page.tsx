@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
@@ -46,8 +46,8 @@ const PLATFORMS = [
 
 const STATUSES = [
   { key: 'rascunho',              label: 'Rascunho',              color: '#6b7280' },
-  { key: 'em_criacao',            label: 'Em criaÃ§Ã£o',            color: '#f59e0b' },
-  { key: 'aguardando_aprovacao',  label: 'Aguardando aprovaÃ§Ã£o',  color: '#3b82f6' },
+  { key: 'em_criacao',            label: 'Em criação',            color: '#f59e0b' },
+  { key: 'aguardando_aprovacao',  label: 'Aguardando aprovação',  color: '#3b82f6' },
   { key: 'aprovado',              label: 'Aprovado',              color: '#8b5cf6' },
   { key: 'agendado',              label: 'Agendado',              color: '#06b6d4' },
   { key: 'publicado',             label: 'Publicado',             color: '#22c55e' },
@@ -59,42 +59,42 @@ const PARTNERS = ['Gustavo', 'Thomas', 'Gabriel', 'Julia']
 type ResultField = { key: string; label: string }
 const RESULT_FIELDS: Record<string, ResultField[]> = {
   instagram:  [
-    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'ComentÃ¡rios' },
+    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'Comentários' },
     { key: 'compartilhamentos', label: 'Compartilhamentos' }, { key: 'alcance', label: 'Alcance' },
-    { key: 'impressoes', label: 'ImpressÃµes' }, { key: 'salvamentos', label: 'Salvamentos' },
+    { key: 'impressoes', label: 'Impressões' }, { key: 'salvamentos', label: 'Salvamentos' },
   ],
   facebook:   [
-    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'ComentÃ¡rios' },
+    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'Comentários' },
     { key: 'compartilhamentos', label: 'Compartilhamentos' }, { key: 'alcance', label: 'Alcance' },
-    { key: 'impressoes', label: 'ImpressÃµes' }, { key: 'cliques', label: 'Cliques' },
+    { key: 'impressoes', label: 'Impressões' }, { key: 'cliques', label: 'Cliques' },
   ],
   linkedin:   [
-    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'ComentÃ¡rios' },
-    { key: 'compartilhamentos', label: 'Compartilhamentos' }, { key: 'visualizacoes', label: 'VisualizaÃ§Ãµes' },
+    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'Comentários' },
+    { key: 'compartilhamentos', label: 'Compartilhamentos' }, { key: 'visualizacoes', label: 'Visualizações' },
     { key: 'cliques', label: 'Cliques' },
   ],
   tiktok:     [
-    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'ComentÃ¡rios' },
-    { key: 'compartilhamentos', label: 'Compartilhamentos' }, { key: 'visualizacoes', label: 'VisualizaÃ§Ãµes' },
+    { key: 'curtidas', label: 'Curtidas' }, { key: 'comentarios', label: 'Comentários' },
+    { key: 'compartilhamentos', label: 'Compartilhamentos' }, { key: 'visualizacoes', label: 'Visualizações' },
     { key: 'salvamentos', label: 'Salvamentos' },
   ],
   youtube:    [
-    { key: 'visualizacoes', label: 'VisualizaÃ§Ãµes' }, { key: 'curtidas', label: 'Curtidas' },
-    { key: 'comentarios', label: 'ComentÃ¡rios' }, { key: 'inscritos_ganhos', label: 'Inscritos ganhos' },
+    { key: 'visualizacoes', label: 'Visualizações' }, { key: 'curtidas', label: 'Curtidas' },
+    { key: 'comentarios', label: 'Comentários' }, { key: 'inscritos_ganhos', label: 'Inscritos ganhos' },
     { key: 'tempo_assistido', label: 'Tempo assistido (min)' },
   ],
   twitter:    [
     { key: 'curtidas', label: 'Curtidas' }, { key: 'retweets', label: 'Retweets' },
-    { key: 'respostas', label: 'Respostas' }, { key: 'impressoes', label: 'ImpressÃµes' },
+    { key: 'respostas', label: 'Respostas' }, { key: 'impressoes', label: 'Impressões' },
     { key: 'cliques', label: 'Cliques' },
   ],
   pinterest:  [
     { key: 'salvamentos', label: 'Salvamentos' }, { key: 'cliques', label: 'Cliques' },
-    { key: 'impressoes', label: 'ImpressÃµes' },
+    { key: 'impressoes', label: 'Impressões' },
   ],
   google_ads: [
-    { key: 'cliques', label: 'Cliques' }, { key: 'impressoes', label: 'ImpressÃµes' },
-    { key: 'conversoes', label: 'ConversÃµes' }, { key: 'ctr', label: 'CTR (%)' },
+    { key: 'cliques', label: 'Cliques' }, { key: 'impressoes', label: 'Impressões' },
+    { key: 'conversoes', label: 'Conversões' }, { key: 'ctr', label: 'CTR (%)' },
   ],
   email:      [
     { key: 'enviados', label: 'Enviados' }, { key: 'aberturas', label: 'Aberturas' },
@@ -102,11 +102,11 @@ const RESULT_FIELDS: Record<string, ResultField[]> = {
   ],
 }
 const DEFAULT_RESULT_FIELDS: ResultField[] = [
-  { key: 'alcance', label: 'Alcance' }, { key: 'impressoes', label: 'ImpressÃµes' }, { key: 'cliques', label: 'Cliques' },
+  { key: 'alcance', label: 'Alcance' }, { key: 'impressoes', label: 'Impressões' }, { key: 'cliques', label: 'Cliques' },
 ]
 
-const MONTH_NAMES = ['Janeiro','Fevereiro','MarÃ§o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b']
+const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 
 // â"€â"€ helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function pColor(key: string)  { return PLATFORMS.find(p => p.key === key)?.color ?? '#6b7280' }
@@ -252,7 +252,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
 
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
-          {/* tÃ­tulo */}
+          {/* título */}
           <input
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -309,9 +309,9 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               />
             </div>
-            {/* data publicaÃ§Ã£o */}
+            {/* data publicação */}
             <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data publicaÃ§Ã£o</label>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data publicação</label>
               <input
                 type="date"
                 value={form.published_at ? form.published_at.split('T')[0] : ''}
@@ -475,7 +475,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">TÃ­tulo</label>
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Título</label>
             <input
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
@@ -743,7 +743,7 @@ function ContentList({ posts, showClient, onPostClick }: {
                     {topResults.map(([k, v]) => {
                       const label = rf.find(f => f.key === k)?.label ?? k
                       return `${v.toLocaleString('pt-BR')} ${label.toLowerCase()}`
-                    }).join(' Â· ')}
+                    }).join(' · ')}
                   </p>
                 )}
               </div>
@@ -821,7 +821,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
           { label: 'Curtidas totais',    value: cur.curtidas.toLocaleString('pt-BR'),        color: '#e1306c' },
           { label: 'Alcance total',      value: cur.alcance.toLocaleString('pt-BR'),         color: '#a78bfa' },
           { label: 'Taxa de engajamento',value: cur.rate.toFixed(2) + '%',                  color: '#f59e0b',
-            sub: prev.rate > 0 ? (rateDiff >= 0 ? '+' : '') + rateDiff.toFixed(2) + '% vs mÃªs ant.' : undefined },
+            sub: prev.rate > 0 ? (rateDiff >= 0 ? '+' : '') + rateDiff.toFixed(2) + '% vs mês ant.' : undefined },
         ].map(k => (
           <div key={k.label} className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-4">
             <p className="text-[11px] text-muted-foreground mb-1">{k.label}</p>
@@ -843,7 +843,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
           </div>
           {noData ? (
             <div className="h-[180px] flex items-center justify-center">
-              <p className="text-xs text-muted-foreground">Publique posts com resultados para ver o grÃ¡fico</p>
+              <p className="text-xs text-muted-foreground">Publique posts com resultados para ver o gráfico</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={180}>
@@ -898,12 +898,12 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
       {/* Posts table */}
       <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-[#1a1a1a] flex items-center justify-between">
-          <h3 className="text-sm font-medium">Posts publicados neste mÃªs</h3>
+          <h3 className="text-sm font-medium">Posts publicados neste mês</h3>
           <span className="text-xs text-muted-foreground">{cur.total} post{cur.total !== 1 ? 's' : ''}</span>
         </div>
         {cur.posts.length === 0 ? (
           <div className="flex items-center justify-center h-24">
-            <p className="text-sm text-muted-foreground">Nenhum post publicado neste mÃªs</p>
+            <p className="text-sm text-muted-foreground">Nenhum post publicado neste mês</p>
           </div>
         ) : (
           <div className="divide-y divide-[#1a1a1a]">
@@ -951,8 +951,6 @@ export default function ConteudoPage() {
   })
   const [selectedPost, setSelectedPost]     = useState<ContentPost | null>(null)
   const [showNew, setShowNew]               = useState(false)
-  const [activeResponsible, setActiveResponsible] = useState<string>('todos')
-
   const loadClients = useCallback(async () => {
     const res = await fetch('/api/clients').catch(() => null)
     if (!res?.ok) return
@@ -1004,10 +1002,6 @@ export default function ConteudoPage() {
   const isAllClients    = activeClient === 'todos'
   const activeClientObj = clients.find(c => c.id === activeClient)
 
-  const filteredPosts = activeResponsible === 'todos'
-    ? posts
-    : posts.filter(p => p.responsible === activeResponsible)
-
   // KPI (all loaded posts)
   const kpis = {
     total:     posts.length,
@@ -1023,7 +1017,7 @@ export default function ConteudoPage() {
           {/* header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Central de ConteÃºdo</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Central de Conteúdo</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {isAllClients ? 'Todos os clientes' : activeClientObj?.name ?? ''}
               </p>
@@ -1091,7 +1085,7 @@ export default function ConteudoPage() {
               { label: 'Publicados',           value: kpis.publicado,  color: '#22c55e' },
               { label: 'Agendados',            value: kpis.agendado,   color: '#06b6d4' },
               { label: 'Aprovados',            value: kpis.aprovado,   color: '#8b5cf6' },
-              { label: 'Aguard. aprovaÃ§Ã£o',    value: kpis.aguardando, color: '#3b82f6' },
+              { label: 'Aguard. aprovação',    value: kpis.aguardando, color: '#3b82f6' },
             ].map(card => (
               <div key={card.label} className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-4">
                 <p className="text-[11px] text-muted-foreground mb-1">{card.label}</p>
@@ -1112,7 +1106,7 @@ export default function ConteudoPage() {
                 }`}
               >
                 <CalendarDays size={14} />
-                <span className="hidden sm:inline">CalendÃ¡rio</span>
+                <span className="hidden sm:inline">Calendário</span>
               </button>
               <button
                 onClick={() => setViewMode('lista')}
@@ -1134,7 +1128,7 @@ export default function ConteudoPage() {
                 }`}
               >
                 <TrendingUp size={14} />
-                <span className="hidden sm:inline">MÃ©tricas</span>
+                <span className="hidden sm:inline">Métricas</span>
               </button>
             </div>
 
@@ -1159,28 +1153,6 @@ export default function ConteudoPage() {
             )}
           </div>
 
-          {/* responsible person filter */}
-          <div className="flex items-center gap-1 mb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            {(['todos', ...PARTNERS] as string[]).map(person => (
-              <button
-                key={person}
-                onClick={() => setActiveResponsible(person)}
-                className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
-                  activeResponsible === person
-                    ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
-                }`}
-              >
-                {person === 'todos' ? 'Todos' : person}
-                {activeResponsible === person && person !== 'todos' && (
-                  <span className="ml-1.5 text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
-                    {filteredPosts.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
           {/* content area */}
           {loading ? (
             <div className="flex items-center justify-center h-40">
@@ -1188,20 +1160,20 @@ export default function ConteudoPage() {
             </div>
           ) : viewMode === 'calendario' ? (
             <ContentCalendar
-              posts={filteredPosts}
+              posts={posts}
               month={currentMonth.month}
               year={currentMonth.year}
               onPostClick={setSelectedPost}
             />
           ) : viewMode === 'metricas' ? (
             <MetricasView
-              posts={filteredPosts}
+              posts={posts}
               month={currentMonth.month}
               year={currentMonth.year}
             />
           ) : (
             <ContentList
-              posts={filteredPosts}
+              posts={posts}
               showClient={isAllClients}
               onPostClick={setSelectedPost}
             />

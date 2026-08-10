@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Circle, Loader2, CheckCircle2, Trash2, AlertCircle, Calendar, ChevronDown, ChevronRight, Check, Edit2 } from 'lucide-react'
+import { Plus, Circle, Loader2, CheckCircle2, Trash2, AlertCircle, Calendar, ChevronDown, ChevronRight, Check, Edit2, Upload, Download, X, FileSpreadsheet } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import type { Task, TaskStatus, TaskPriority, Member, TaskItem } from '@/lib/supabase/types'
 
@@ -125,7 +125,9 @@ export default function TarefasPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [activeTab, setActiveTab] = useState<'todas' | 'concluidas'>('todas')
+  const [activeOwner, setActiveOwner] = useState<string>('todos')
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
@@ -180,7 +182,11 @@ export default function TarefasPage() {
   const today = new Date().toISOString().split('T')[0]
   const overdueCount = tasks.filter(t => t.due_date && t.due_date < today && t.status !== 'concluido').length
 
-  const openTasks = tasks
+  const ownerFiltered = activeOwner === 'todos'
+    ? tasks
+    : tasks.filter(t => t.members?.name === activeOwner)
+
+  const openTasks = ownerFiltered
     .filter(t => t.status !== 'concluido')
     .sort((a, b) => {
       if (!a.due_date && !b.due_date) return 0
@@ -188,12 +194,12 @@ export default function TarefasPage() {
       if (!b.due_date) return -1
       return a.due_date.localeCompare(b.due_date)
     })
-  const doneTasks = tasks.filter(t => t.status === 'concluido')
+  const doneTasks = ownerFiltered.filter(t => t.status === 'concluido')
   const filtered = activeTab === 'todas' ? openTasks : doneTasks
 
   const counts = {
-    open: openTasks.length,
-    concluido: doneTasks.length,
+    open: tasks.filter(t => t.status !== 'concluido').length,
+    concluido: tasks.filter(t => t.status === 'concluido').length,
   }
 
   return (
@@ -206,28 +212,63 @@ export default function TarefasPage() {
             {overdueCount > 0 && <span className="text-[#ef4444] ml-2">· {overdueCount} atrasadas</span>}
           </p>
         </div>
-        <button
-          onClick={() => setShowNew(true)}
-          className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          Nova tarefa
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm font-medium px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+          >
+            <Upload size={14} />
+            <span className="hidden sm:inline">Importar</span>
+          </button>
+          <button
+            onClick={() => setShowNew(true)}
+            className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            Nova tarefa
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit">
-        {([['todas', 'Todas'], ['concluidas', 'Concluídas']] as const).map(([val, lbl]) => (
-          <button
-            key={val}
-            onClick={() => setActiveTab(val)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === val ? 'bg-[#2a2a2a] text-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {lbl}
-          </button>
-        ))}
+      <div className="space-y-3">
+        <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit">
+          {([['todas', 'Todas'], ['concluidas', 'Concluídas']] as const).map(([val, lbl]) => (
+            <button
+              key={val}
+              onClick={() => setActiveTab(val)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeTab === val ? 'bg-[#2a2a2a] text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {lbl}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtro por pessoa */}
+        {members.length > 0 && (
+          <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            {(['todos', ...members.map(m => m.name)]).map(person => (
+              <button
+                key={person}
+                onClick={() => setActiveOwner(person)}
+                className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
+                  activeOwner === person
+                    ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+                }`}
+              >
+                {person === 'todos' ? 'Todos' : person}
+                {activeOwner === person && person !== 'todos' && (
+                  <span className="ml-1.5 text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
+                    {filtered.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -360,6 +401,13 @@ export default function TarefasPage() {
           onCreated={() => { setShowNew(false); load() }}
         />
       )}
+
+      {showImport && (
+        <ImportModal
+          onClose={() => setShowImport(false)}
+          onImported={() => { setShowImport(false); load() }}
+        />
+      )}
     </div>
   )
 }
@@ -477,6 +525,145 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+function downloadTemplate() {
+  const csv = [
+    'Tarefa,Responsavel,Prazo,Prioridade,Cliente,Descricao',
+    'Criar relatório mensal,Gustavo,2026-09-05,alta,iMoowie,Relatório de resultados agosto',
+    'Post feed semana 3,Julia,2026-09-08,media,,',
+    'Reunião com cliente,Thomas,2026-09-10,alta,Valure Contabilidade,Apresentar proposta',
+  ].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = 'modelo-importacao-tarefas.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
+
+function ImportModal({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+  const [result, setResult] = useState<{ created: number; skipped: number } | null>(null)
+  const [errorMsg, setErrorMsg] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleFile(file: File) {
+    if (!file) return
+    setStatus('loading')
+    const form = new FormData()
+    form.append('file', file)
+    try {
+      const res = await fetch('/api/tasks/import', { method: 'POST', body: form })
+      const data = await res.json()
+      if (!res.ok) { setErrorMsg(data.error ?? 'Erro ao importar'); setStatus('error'); return }
+      setResult({ created: data.created, skipped: data.skipped })
+      setStatus('done')
+    } catch {
+      setErrorMsg('Erro de conexão'); setStatus('error')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold">Importar tarefas</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {status === 'idle' && (
+          <div className="space-y-4">
+            <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-4 text-xs text-muted-foreground space-y-1.5">
+              <p className="text-foreground font-medium text-sm mb-2">Como funciona</p>
+              <p>1. Baixe o modelo e preencha com suas tarefas</p>
+              <p>2. Colunas: <span className="text-[#a78bfa]">Tarefa, Responsavel, Prazo, Prioridade, Cliente</span></p>
+              <p>3. Prazo no formato <span className="text-[#a78bfa]">DD/MM/AAAA</span> ou <span className="text-[#a78bfa]">AAAA-MM-DD</span></p>
+              <p>4. Prioridade: <span className="text-[#a78bfa]">alta, media ou baixa</span></p>
+            </div>
+
+            <button
+              onClick={downloadTemplate}
+              className="w-full flex items-center justify-center gap-2 border border-[#7c3aed]/40 text-[#a78bfa] hover:bg-[#7c3aed]/10 rounded-lg py-2.5 text-sm transition-colors"
+            >
+              <Download size={14} />
+              Baixar modelo CSV
+            </button>
+
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="w-full flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#2a2a2a] hover:border-[#7c3aed]/50 rounded-xl py-8 text-muted-foreground hover:text-foreground transition-colors group"
+            >
+              <FileSpreadsheet size={28} strokeWidth={1.5} className="group-hover:text-[#a78bfa] transition-colors" />
+              <div className="text-center">
+                <p className="text-sm font-medium">Clique para selecionar o arquivo</p>
+                <p className="text-xs mt-0.5">CSV ou Excel (.xlsx, .xls)</p>
+              </div>
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+            />
+          </div>
+        )}
+
+        {status === 'loading' && (
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <div className="w-8 h-8 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground">Importando tarefas...</p>
+          </div>
+        )}
+
+        {status === 'done' && result && (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center py-6 gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#22c55e]/15 flex items-center justify-center">
+                <Check size={24} className="text-[#22c55e]" />
+              </div>
+              <div className="text-center">
+                <p className="text-base font-semibold">{result.created} {result.created === 1 ? 'tarefa criada' : 'tarefas criadas'}</p>
+                {result.skipped > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">{result.skipped} linha{result.skipped > 1 ? 's' : ''} ignorada{result.skipped > 1 ? 's' : ''} (sem título)</p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={onImported}
+              className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors"
+            >
+              Ver tarefas
+            </button>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div className="space-y-4">
+            <div className="flex flex-col items-center py-6 gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#ef4444]/15 flex items-center justify-center">
+                <AlertCircle size={24} className="text-[#ef4444]" />
+              </div>
+              <div className="text-center">
+                <p className="text-base font-semibold">Erro ao importar</p>
+                <p className="text-xs text-muted-foreground mt-1">{errorMsg}</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">
+                Fechar
+              </button>
+              <button onClick={() => setStatus('idle')} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors">
+                Tentar de novo
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

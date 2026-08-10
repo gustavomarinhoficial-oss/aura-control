@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Mic, MicOff, CheckSquare, DollarSign, X, Check } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
 import { parseVoiceInput } from '@/lib/utils/parse-voice'
-import type { Task, Charge } from '@/lib/supabase/types'
+import type { Task, Charge, Member } from '@/lib/supabase/types'
 
 interface Client { id: string; name: string }
 
@@ -71,6 +71,8 @@ export default function CalendarioPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [charges, setCharges] = useState<Charge[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [activeOwner, setActiveOwner] = useState<string>('todos')
   const [loading, setLoading] = useState(true)
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
 
@@ -90,14 +92,16 @@ export default function CalendarioPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [tasksRes, chargesRes, clientsRes] = await Promise.all([
+    const [tasksRes, chargesRes, clientsRes, membersRes] = await Promise.all([
       fetch('/api/tasks').then(r => r.json()).catch(() => []),
       fetch(`/api/charges?month=${monthStr}`).then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
+      fetch('/api/members').then(r => r.json()).catch(() => []),
     ])
     setTasks(Array.isArray(tasksRes) ? tasksRes : [])
     setCharges(Array.isArray(chargesRes) ? chargesRes : [])
     setClients(Array.isArray(clientsRes) ? clientsRes : [])
+    setMembers(Array.isArray(membersRes) ? membersRes : [])
     setLoading(false)
   }, [monthStr])
 
@@ -106,7 +110,11 @@ export default function CalendarioPage() {
   // Monta mapa dia → eventos
   const eventsByDay: Record<number, DayEvent[]> = {}
 
-  for (const task of tasks) {
+  const visibleTasks = activeOwner === 'todos'
+    ? tasks
+    : tasks.filter(t => t.members?.name === activeOwner)
+
+  for (const task of visibleTasks) {
     if (!task.due_date) continue
     const d = new Date(task.due_date + 'T12:00:00')
     if (d.getFullYear() === year && d.getMonth() === month) {
@@ -269,6 +277,25 @@ export default function CalendarioPage() {
         </div>
       </div>
 
+      {/* Filtro por pessoa */}
+      {members.length > 0 && (
+        <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {(['todos', ...members.map(m => m.name)]).map(person => (
+            <button
+              key={person}
+              onClick={() => setActiveOwner(person)}
+              className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
+                activeOwner === person
+                  ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+              }`}
+            >
+              {person === 'todos' ? 'Todos' : person}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Painel de voz */}
       {(recording || transcript || voiceError || savedMsg) && (
         <div className={`border rounded-xl p-4 space-y-3 ${
@@ -381,7 +408,7 @@ export default function CalendarioPage() {
           ) : (
             <div className="grid grid-cols-7">
               {cells.map((day, i) => {
-                if (day === null) return <div key={i} className="min-h-[80px] border-b border-r border-[#1f1f1f]" />
+                if (day === null) return <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-[#1f1f1f]" />
                 const dayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                 const isToday = dayStr === todayStr
                 const isSelected = selectedDay === day
