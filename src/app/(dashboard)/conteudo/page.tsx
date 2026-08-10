@@ -115,6 +115,12 @@ function sInfo(key: string)   { return STATUSES.find(s => s.key === key) ?? { ke
 function postDate(post: ContentPost) {
   return post.scheduled_date ?? (post.published_at ? post.published_at.split('T')[0] : null)
 }
+// Converte link de compartilhamento do Google Drive para URL direta de imagem
+function toDirectImageUrl(url: string): string {
+  const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
+  if (driveMatch) return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`
+  return url
+}
 
 // ── PostPanel ──────────────────────────────────────────────────────────────────
 function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
@@ -262,7 +268,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             {form.media_url && (
               <div className="mt-2 relative rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#1a1a1a]">
                 <img
-                  src={form.media_url}
+                  src={toDirectImageUrl(form.media_url)}
                   alt="Prévia"
                   className="w-full max-h-64 object-contain"
                   onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none' }}
@@ -556,7 +562,7 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
                       >
                         {post.media_url && (
                           <img
-                            src={post.media_url}
+                            src={toDirectImageUrl(post.media_url)}
                             alt=""
                             className="w-full h-14 object-cover"
                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
