@@ -169,24 +169,26 @@ function ImageUpload({ value, onChange }: { value: string; onChange: (url: strin
           </button>
         </div>
       ) : (
-        <button
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors"
-        >
-          {uploading ? (
-            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <>
-              <ImageIcon size={20} />
-              <span className="text-xs">Clique para fazer upload da imagem</span>
-              <span className="text-[10px] opacity-50">PNG, JPG — salvo no Cloudflare R2</span>
-            </>
+        <>
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors"
+          >
+            {uploading ? (
+              <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <ImageIcon size={20} />
+                <span className="text-xs">Clique para fazer upload da imagem</span>
+                <span className="text-[10px] opacity-50">PNG, JPG — salvo no Cloudflare R2</span>
+              </>
+            )}
+          </button>
+          {error && (
+            <p className="mt-1.5 text-[11px] text-[#ef4444]">{error}</p>
           )}
-        </button>
-        {error && (
-          <p className="mt-1.5 text-[11px] text-[#ef4444]">⚠️ {error}</p>
-        )}
+        </>
       )}
     </div>
   )
