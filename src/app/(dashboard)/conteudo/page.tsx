@@ -125,14 +125,22 @@ function toDirectImageUrl(url: string): string {
 // ── ImageUpload ────────────────────────────────────────────────────────────────
 function ImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
   const [uploading, setUploading] = useState(false)
+  const [error, setError]         = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleFile(file: File) {
     setUploading(true)
-    const fd = new FormData()
-    fd.append('file', file)
-    const res = await fetch('/api/upload', { method: 'POST', body: fd })
-    if (res.ok) { const { url } = await res.json(); onChange(url) }
+    setError(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: fd })
+      const json = await res.json()
+      if (res.ok) { onChange(json.url) }
+      else { setError(json.error ?? `Erro ${res.status}`) }
+    } catch (e) {
+      setError('Falha na conexão')
+    }
     setUploading(false)
   }
 
@@ -176,6 +184,9 @@ function ImageUpload({ value, onChange }: { value: string; onChange: (url: strin
             </>
           )}
         </button>
+        {error && (
+          <p className="mt-1.5 text-[11px] text-[#ef4444]">⚠️ {error}</p>
+        )}
       )}
     </div>
   )
