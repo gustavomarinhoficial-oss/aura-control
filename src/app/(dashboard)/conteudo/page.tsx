@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
@@ -11,7 +11,7 @@ import {
   BarChart, Bar, CartesianGrid,
 } from 'recharts'
 
-// â”€â”€ tipos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ tipos â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 interface Client { id: string; name: string; status: string }
 
 interface ContentPost {
@@ -31,7 +31,7 @@ interface ContentPost {
   clients?: { id: string; name: string } | null
 }
 
-// â”€â”€ constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ constantes â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 const PLATFORMS = [
   { key: 'instagram',  label: 'Instagram',   color: '#e1306c' },
   { key: 'facebook',   label: 'Facebook',    color: '#1877f2' },
@@ -54,7 +54,7 @@ const STATUSES = [
   { key: 'reprovado',             label: 'Reprovado',             color: '#ef4444' },
 ]
 
-const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas']
+const PARTNERS = ['Gustavo', 'Thomas', 'Gabriel', 'Julia']
 
 type ResultField = { key: string; label: string }
 const RESULT_FIELDS: Record<string, ResultField[]> = {
@@ -108,7 +108,7 @@ const DEFAULT_RESULT_FIELDS: ResultField[] = [
 const MONTH_NAMES = ['Janeiro','Fevereiro','MarÃ§o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','SÃ¡b']
 
-// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function pColor(key: string)  { return PLATFORMS.find(p => p.key === key)?.color ?? '#6b7280' }
 function pLabel(key: string)  { return PLATFORMS.find(p => p.key === key)?.label ?? key }
 function sInfo(key: string)   { return STATUSES.find(s => s.key === key) ?? { key, label: key, color: '#6b7280' } }
@@ -122,7 +122,7 @@ function toDirectImageUrl(url: string): string {
   return url
 }
 
-// â”€â”€ ImageUpload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ ImageUpload â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function ImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
   const [uploading, setUploading] = useState(false)
   const [uploadErr, setUploadErr] = useState<string | null>(null)
@@ -190,7 +190,7 @@ function ImageUpload({ value, onChange }: { value: string; onChange: (url: strin
   )
 }
 
-// â”€â”€ PostPanel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ PostPanel â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   post: ContentPost
   clients: Client[]
@@ -257,7 +257,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             onBlur={() => save()}
-            placeholder="TÃ­tulo do post"
+            placeholder="Titulo do post"
             className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/30"
           />
 
@@ -320,6 +320,18 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               />
             </div>
+            {/* responsável */}
+            <div className="col-span-2">
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Responsável</label>
+              <select
+                value={form.responsible ?? ''}
+                onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, responsible: v })); save({ responsible: v }) }}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              >
+                <option value="">Sem responsável</option>
+                {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
           </div>
 
           {/* imagem / upload */}
@@ -352,7 +364,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               onBlur={() => save()}
               rows={2}
-              placeholder="Briefing, links de referÃªncia, observaÃ§Ãµes..."
+              placeholder="Briefing, links de referencia, observacoes..."
               className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none placeholder:text-muted-foreground/40"
             />
           </div>
@@ -403,7 +415,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   )
 }
 
-// â”€â”€ NewPostModal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ NewPostModal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
   clients: Client[]
   activeClientId: string | null
@@ -418,6 +430,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     scheduled_date: '',
     caption:        '',
     media_url:      '',
+    responsible:    '',
   })
   const [saving, setSaving]   = useState(false)
   const [createErr, setCreateErr] = useState<string | null>(null)
@@ -437,6 +450,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
         scheduled_date: form.scheduled_date || null,
         caption:        form.caption        || null,
         media_url:      form.media_url      || null,
+        responsible:    form.responsible    || null,
         result: {},
       }),
     })
@@ -467,7 +481,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && create()}
               autoFocus
-              placeholder="Ex: Feed semana 3 â€” Campanha verÃ£o"
+              placeholder="Ex: Feed semana 3 - Campanha verao"
               className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
             />
           </div>
@@ -503,6 +517,17 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
                 {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Responsável</label>
+              <select
+                value={form.responsible}
+                onChange={e => setForm(f => ({ ...f, responsible: e.target.value }))}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              >
+                <option value="">Sem responsável</option>
+                {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
           </div>
           <div>
             <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data agendada</label>
@@ -526,7 +551,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               value={form.caption}
               onChange={e => setForm(f => ({ ...f, caption: e.target.value }))}
               rows={2}
-              placeholder="PrÃ©via da legenda..."
+              placeholder="Previa da legenda..."
               className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none placeholder:text-muted-foreground/40"
             />
           </div>
@@ -552,7 +577,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
   )
 }
 
-// â”€â”€ ContentCalendar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ ContentCalendar â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function ContentCalendar({ posts, month, year, onPostClick }: {
   posts: ContentPost[]
   month: number
@@ -615,7 +640,7 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
                         onClick={() => onPostClick(post)}
                         className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity"
                         style={{ background: pColor(post.platform) + '22' }}
-                        title={`${post.title} Â· ${sInfo(post.status).label}`}
+                        title={`${post.title} - ${sInfo(post.status).label}`}
                       >
                         {post.media_url && (
                           <img
@@ -625,12 +650,19 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                           />
                         )}
-                        <p
-                          className="text-[10px] px-1.5 py-0.5 truncate leading-tight font-medium"
-                          style={{ color: pColor(post.platform) }}
-                        >
-                          {post.title}
-                        </p>
+                        <div className="flex items-center justify-between px-1.5 py-0.5 gap-1">
+                          <p
+                            className="text-[10px] truncate leading-tight font-medium flex-1"
+                            style={{ color: pColor(post.platform) }}
+                          >
+                            {post.title}
+                          </p>
+                          {post.responsible && (
+                            <span className="text-[8px] text-muted-foreground shrink-0 leading-tight">
+                              {post.responsible.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
                       </button>
                     ))}
                     {(byDay[day]?.length ?? 0) > 3 && (
@@ -649,7 +681,7 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
   )
 }
 
-// â”€â”€ ContentList â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ ContentList â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function ContentList({ posts, showClient, onPostClick }: {
   posts: ContentPost[]
   showClient: boolean
@@ -716,6 +748,13 @@ function ContentList({ posts, showClient, onPostClick }: {
                 )}
               </div>
 
+              {/* responsável */}
+              {post.responsible && (
+                <span className="hidden sm:inline shrink-0 text-[10px] text-muted-foreground bg-[#1a1a1a] px-2 py-0.5 rounded-full whitespace-nowrap">
+                  {post.responsible}
+                </span>
+              )}
+
               {/* status */}
               <span
                 className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
@@ -726,7 +765,7 @@ function ContentList({ posts, showClient, onPostClick }: {
 
               {/* data */}
               <span className="shrink-0 text-xs text-muted-foreground w-[80px] text-right">
-                {date ? formatDate(date) : 'â€”'}
+                {date ? formatDate(date) : '—'}
               </span>
 
             </button>
@@ -737,7 +776,7 @@ function ContentList({ posts, showClient, onPostClick }: {
   )
 }
 
-// â”€â”€ MetricasView â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ MetricasView â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 function aggMonth(posts: ContentPost[], y: number, m: number) {
   const filtered = posts.filter(p => {
     if (p.status !== 'publicado') return false
@@ -800,7 +839,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
         <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={13} className="text-[#a78bfa]" />
-            <h3 className="text-sm font-medium">Taxa de engajamento â€” 6 meses</h3>
+            <h3 className="text-sm font-medium">Taxa de engajamento â€" 6 meses</h3>
           </div>
           {noData ? (
             <div className="h-[180px] flex items-center justify-center">
@@ -832,7 +871,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
         <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart2 size={13} className="text-[#e1306c]" />
-            <h3 className="text-sm font-medium">Curtidas â€” 6 meses</h3>
+            <h3 className="text-sm font-medium">Curtidas â€" 6 meses</h3>
           </div>
           {noData ? (
             <div className="h-[180px] flex items-center justify-center">
@@ -883,8 +922,8 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
                   <p className="text-sm flex-1 truncate">{post.title}</p>
                   <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
                     {c  > 0 && <span>â™¥ {c.toLocaleString('pt-BR')}</span>}
-                    {al > 0 && <span>ðŸ‘ {al.toLocaleString('pt-BR')}</span>}
-                    {co > 0 && <span>ðŸ’¬ {co.toLocaleString('pt-BR')}</span>}
+                    {al > 0 && <span>ðŸ' {al.toLocaleString('pt-BR')}</span>}
+                    {co > 0 && <span>ðŸ'¬ {co.toLocaleString('pt-BR')}</span>}
                   </div>
                   {rate && (
                     <span className="text-[11px] font-semibold text-[#f59e0b] shrink-0">{rate}%</span>
@@ -899,7 +938,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
   )
 }
 
-// â”€â”€ ConteudoPage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â"€â"€ ConteudoPage â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 export default function ConteudoPage() {
   const [clients, setClients]         = useState<Client[]>([])
   const [posts, setPosts]             = useState<ContentPost[]>([])
@@ -910,8 +949,9 @@ export default function ConteudoPage() {
     const now = new Date()
     return { year: now.getFullYear(), month: now.getMonth() }
   })
-  const [selectedPost, setSelectedPost] = useState<ContentPost | null>(null)
-  const [showNew, setShowNew]           = useState(false)
+  const [selectedPost, setSelectedPost]     = useState<ContentPost | null>(null)
+  const [showNew, setShowNew]               = useState(false)
+  const [activeResponsible, setActiveResponsible] = useState<string>('todos')
 
   const loadClients = useCallback(async () => {
     const res = await fetch('/api/clients').catch(() => null)
@@ -963,6 +1003,10 @@ export default function ConteudoPage() {
 
   const isAllClients    = activeClient === 'todos'
   const activeClientObj = clients.find(c => c.id === activeClient)
+
+  const filteredPosts = activeResponsible === 'todos'
+    ? posts
+    : posts.filter(p => p.responsible === activeResponsible)
 
   // KPI (all loaded posts)
   const kpis = {
@@ -1115,6 +1159,28 @@ export default function ConteudoPage() {
             )}
           </div>
 
+          {/* responsible person filter */}
+          <div className="flex items-center gap-1 mb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+            {(['todos', ...PARTNERS] as string[]).map(person => (
+              <button
+                key={person}
+                onClick={() => setActiveResponsible(person)}
+                className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
+                  activeResponsible === person
+                    ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+                }`}
+              >
+                {person === 'todos' ? 'Todos' : person}
+                {activeResponsible === person && person !== 'todos' && (
+                  <span className="ml-1.5 text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
+                    {filteredPosts.length}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
           {/* content area */}
           {loading ? (
             <div className="flex items-center justify-center h-40">
@@ -1122,20 +1188,20 @@ export default function ConteudoPage() {
             </div>
           ) : viewMode === 'calendario' ? (
             <ContentCalendar
-              posts={posts}
+              posts={filteredPosts}
               month={currentMonth.month}
               year={currentMonth.year}
               onPostClick={setSelectedPost}
             />
           ) : viewMode === 'metricas' ? (
             <MetricasView
-              posts={posts}
+              posts={filteredPosts}
               month={currentMonth.month}
               year={currentMonth.year}
             />
           ) : (
             <ContentList
-              posts={posts}
+              posts={filteredPosts}
               showClient={isAllClients}
               onPostClick={setSelectedPost}
             />
