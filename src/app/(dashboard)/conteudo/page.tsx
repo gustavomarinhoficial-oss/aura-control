@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
-  Trash2, BarChart2, TrendingUp,
+  Trash2, BarChart2, TrendingUp, Upload, ImageIcon,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import {
@@ -120,6 +120,65 @@ function toDirectImageUrl(url: string): string {
   const driveMatch = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
   if (driveMatch) return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`
   return url
+}
+
+// ── ImageUpload ────────────────────────────────────────────────────────────────
+function ImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [uploading, setUploading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  async function handleFile(file: File) {
+    setUploading(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: fd })
+    if (res.ok) { const { url } = await res.json(); onChange(url) }
+    setUploading(false)
+  }
+
+  return (
+    <div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+      />
+      {value ? (
+        <div className="relative rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#1a1a1a] group">
+          <img
+            src={toDirectImageUrl(value)}
+            alt="Prévia"
+            className="w-full max-h-64 object-contain"
+            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+          />
+          <button
+            onClick={() => inputRef.current?.click()}
+            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-sm text-white"
+          >
+            <Upload size={14} /> Trocar imagem
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors"
+        >
+          {uploading ? (
+            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <ImageIcon size={20} />
+              <span className="text-xs">Clique para fazer upload da imagem</span>
+              <span className="text-[10px] opacity-50">PNG, JPG — salvo no Cloudflare R2</span>
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  )
 }
 
 // ── PostPanel ──────────────────────────────────────────────────────────────────
@@ -254,27 +313,13 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             </div>
           </div>
 
-          {/* imagem / Canva */}
+          {/* imagem / upload */}
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Link do Canva / Google Drive</label>
-            <input
-              type="url"
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagem do post</label>
+            <ImageUpload
               value={form.media_url ?? ''}
-              onChange={e => setForm(f => ({ ...f, media_url: e.target.value || null }))}
-              onBlur={() => save()}
-              placeholder="https://... (Canva, Drive, Dropbox, Imgur...)"
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+              onChange={url => { setForm(f => ({ ...f, media_url: url })); save({ media_url: url }) }}
             />
-            {form.media_url && (
-              <div className="mt-2 relative rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#1a1a1a]">
-                <img
-                  src={toDirectImageUrl(form.media_url)}
-                  alt="Prévia"
-                  className="w-full max-h-64 object-contain"
-                  onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none' }}
-                />
-              </div>
-            )}
           </div>
 
           {/* legenda */}
@@ -457,13 +502,10 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
             />
           </div>
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Link do Canva / Google Drive</label>
-            <input
-              type="url"
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagem do post</label>
+            <ImageUpload
               value={form.media_url}
-              onChange={e => setForm(f => ({ ...f, media_url: e.target.value }))}
-              placeholder="https://www.canva.com/..."
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+              onChange={url => setForm(f => ({ ...f, media_url: url }))}
             />
           </div>
           <div>
