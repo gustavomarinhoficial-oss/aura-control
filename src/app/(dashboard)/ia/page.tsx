@@ -175,25 +175,13 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
   const Icon = cat.icon
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [downloading, setDownloading] = useState(false)
   const [editing, setEditing] = useState(false)
 
-  async function downloadFile() {
-    setDownloading(true)
-    try {
-      const res = await fetch(`/api/ia/${item.id}`).then(r => r.json())
-      if (res.url) {
-        const blob = await fetch(res.url).then(r => r.blob())
-        const objUrl = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = objUrl
-        a.download = item.file_name ?? 'arquivo'
-        a.click()
-        URL.revokeObjectURL(objUrl)
-      }
-    } finally {
-      setDownloading(false)
-    }
+  function downloadFile() {
+    const a = document.createElement('a')
+    a.href = `/api/ia/${item.id}`
+    a.download = item.file_name ?? 'arquivo'
+    a.click()
   }
 
   async function handleUse() {
@@ -339,29 +327,31 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#1a1a1a] flex items-center gap-2">
+        <div className="p-4 border-t border-[#1a1a1a] space-y-2">
+          <div className="flex items-center gap-2">
+            {(item.content || item.link) && (
+              <button onClick={handleUse}
+                className="flex-1 flex items-center justify-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
+                {copied ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar e usar</>}
+              </button>
+            )}
+            {item.link && (
+              <a href={item.link} target="_blank" rel="noreferrer"
+                className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:border-[#3a3a3a] text-sm font-medium py-2.5 px-4 rounded-xl transition-colors">
+                <ExternalLink size={14} />
+              </a>
+            )}
+            <button onClick={handleDelete} disabled={deleting}
+              className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:border-[#ef4444]/40 hover:text-[#ef4444] text-muted-foreground text-sm py-2.5 px-4 rounded-xl transition-colors">
+              <Trash2 size={14} />
+            </button>
+          </div>
           {item.file_name && (
-            <button onClick={downloadFile} disabled={downloading}
-              className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:border-[#34d399]/40 hover:text-[#34d399] text-muted-foreground text-sm py-2.5 px-4 rounded-xl transition-colors">
-              {downloading ? <div className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Download size={14} />}
+            <button onClick={downloadFile}
+              className="w-full flex items-center justify-center gap-2 border border-[#34d399]/30 hover:bg-[#34d399]/10 text-[#34d399] text-sm font-medium py-2.5 rounded-xl transition-colors">
+              <Download size={14} /> Baixar arquivo — {item.file_name}
             </button>
           )}
-          {(item.content || item.link) && (
-            <button onClick={handleUse}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
-              {copied ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar e usar</>}
-            </button>
-          )}
-          {item.link && (
-            <a href={item.link} target="_blank" rel="noreferrer"
-              className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:border-[#3a3a3a] text-sm font-medium py-2.5 px-4 rounded-xl transition-colors">
-              <ExternalLink size={14} />
-            </a>
-          )}
-          <button onClick={handleDelete} disabled={deleting}
-            className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:border-[#ef4444]/40 hover:text-[#ef4444] text-muted-foreground text-sm py-2.5 px-4 rounded-xl transition-colors">
-            <Trash2 size={14} />
-          </button>
         </div>
       </div>
 

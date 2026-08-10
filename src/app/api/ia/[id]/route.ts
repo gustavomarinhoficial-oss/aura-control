@@ -44,6 +44,18 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const { data: resource } = await supabase.from('ai_resources').select('file_path, file_name').eq('id', id).single()
   if (!resource?.file_path) return NextResponse.json({ error: 'Sem arquivo' }, { status: 404 })
 
-  const { data } = await supabase.storage.from('ia-files').createSignedUrl(resource.file_path, 3600)
-  return NextResponse.json({ url: data?.signedUrl ?? null, name: resource.file_name })
+  const { data: signed } = await supabase.storage.from('ia-files').createSignedUrl(resource.file_path, 60)
+  if (!signed?.signedUrl) return NextResponse.json({ error: 'Erro ao gerar URL' }, { status: 500 })
+
+  // Proxy server-side — evita problema de CORS no browser
+  const fileRes = await fetch(signed.signedUrl)
+  const buffer = await fileRes.arrayBuffer()
+  const safeName = encodeURIComponent(resource.file_name ?? 'arquivo')
+
+  return new Response(buffer, {
+    headers: {
+      'Content-Type': fileRes.headers.get('content-type') ?? 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${safeName}"`,
+    },
+  })
 }
