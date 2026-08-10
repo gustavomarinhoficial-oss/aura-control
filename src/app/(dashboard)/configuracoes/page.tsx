@@ -111,7 +111,7 @@ export default function ConfiguracoesPage() {
   async function testAlert() {
     setTesting(true)
     setTestMsg('')
-    const res = await fetch('/api/alerts/send', { method: 'POST' })
+    const res = await fetch('/api/alerts/send?mode=morning', { method: 'POST' })
     const data = await res.json()
     setTesting(false)
     if (data.skipped) setTestMsg(`Aviso: ${data.skipped}`)
@@ -128,8 +128,8 @@ export default function ConfiguracoesPage() {
   }
 
   function addWhatsapp() {
-    if (!newWaName || !newWaPhone || !newWaKey) return
-    const entry: WhatsappNumber = { name: newWaName.trim(), phone: newWaPhone.replace(/\D/g, ''), apikey: newWaKey.trim() }
+    if (!newWaName || !newWaPhone) return
+    const entry: WhatsappNumber = { name: newWaName.trim(), phone: newWaPhone.replace(/\D/g, ''), apikey: '' }
     updateAlert('whatsapp_numbers', [...(alertSettings?.whatsapp_numbers ?? []), entry])
     setNewWaName(''); setNewWaPhone(''); setNewWaKey(''); setShowWaForm(false)
   }
@@ -337,49 +337,18 @@ export default function ConfiguracoesPage() {
             </div>
           )}
 
-          {/* Frequência */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Frequência de envio</label>
-              <div className="relative">
-                <select value={alertSettings.frequency_hours} onChange={e => updateAlert('frequency_hours', Number(e.target.value))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm appearance-none pr-7 focus:outline-none focus:border-[#7c3aed]">
-                  {FREQUENCY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground block mb-1.5">Alertar sobre tarefas</label>
-              <div className="relative">
-                <select value={alertSettings.days_ahead} onChange={e => updateAlert('days_ahead', Number(e.target.value))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm appearance-none pr-7 focus:outline-none focus:border-[#7c3aed]">
-                  {DAYS_AHEAD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
-          {/* Janela horária */}
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">Horário de funcionamento (Brasília)</label>
+          {/* Horários fixos */}
+          <div className="bg-[#111] border border-[#2a2a2a] rounded-lg px-4 py-3 space-y-1.5">
+            <p className="text-xs text-muted-foreground mb-2">Alertas automáticos diários (horário de Brasília)</p>
             <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <select value={alertSettings.time_start} onChange={e => updateAlert('time_start', Number(e.target.value))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm appearance-none pr-7 focus:outline-none focus:border-[#7c3aed]">
-                  {HOUR_OPTIONS.filter(o => o.value < alertSettings.time_end).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              </div>
-              <span className="text-xs text-muted-foreground">até</span>
-              <div className="relative flex-1">
-                <select value={alertSettings.time_end} onChange={e => updateAlert('time_end', Number(e.target.value))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm appearance-none pr-7 focus:outline-none focus:border-[#7c3aed]">
-                  {HOUR_OPTIONS.filter(o => o.value > alertSettings.time_start).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-                <ChevronDown size={11} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-              </div>
+              <span className="text-base">☀️</span>
+              <span className="text-sm font-medium">9h da manhã</span>
+              <span className="text-xs text-muted-foreground">— tarefas atrasadas + vencendo hoje</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base">🌙</span>
+              <span className="text-sm font-medium">21h da noite</span>
+              <span className="text-xs text-muted-foreground">— o que vence amanhã</span>
             </div>
           </div>
 
@@ -420,7 +389,7 @@ export default function ConfiguracoesPage() {
               <div className="flex items-center gap-2">
                 <MessageCircle size={13} className="text-[#a78bfa]" />
                 <span className="text-sm font-medium">WhatsApp</span>
-                <span className="text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">via Callmebot · grátis</span>
+                <span className="text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">via Whapi.cloud · grátis</span>
               </div>
               <button onClick={() => updateAlert('whatsapp_enabled', !alertSettings.whatsapp_enabled)}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${alertSettings.whatsapp_enabled ? 'bg-[#7c3aed]' : 'bg-[#2a2a2a]'}`}>
@@ -429,15 +398,10 @@ export default function ConfiguracoesPage() {
             </div>
             {alertSettings.whatsapp_enabled && (
               <div className="space-y-3 pl-5">
-                {/* Instrução */}
+                {/* Instrução Whapi */}
                 <div className="bg-[#111] border border-[#7c3aed]/20 rounded-lg px-3 py-3 space-y-1">
-                  <p className="text-xs font-medium text-[#a78bfa]">Ativação (1x por pessoa):</p>
-                  <ol className="text-xs text-muted-foreground space-y-0.5 list-decimal list-inside">
-                    <li>Salve o número <strong className="text-foreground">+34 644 44 47 46</strong> no WhatsApp</li>
-                    <li>Mande: <strong className="text-foreground">I allow callmebot to send me messages</strong></li>
-                    <li>Receba sua chave API por mensagem</li>
-                    <li>Cadastre abaixo com número + chave</li>
-                  </ol>
+                  <p className="text-xs font-medium text-[#a78bfa]">Como funciona:</p>
+                  <p className="text-xs text-muted-foreground">Mensagens enviadas pelo WhatsApp conectado à sua conta Whapi.cloud. Requer <code className="bg-[#1a1a1a] px-1 rounded">WHAPI_TOKEN</code> configurado no Vercel.</p>
                 </div>
                 {alertSettings.whatsapp_numbers.map((n, i) => (
                   <div key={i} className="flex items-center justify-between bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2">
@@ -456,14 +420,12 @@ export default function ConfiguracoesPage() {
                   <div className="space-y-2 bg-[#111] border border-[#2a2a2a] rounded-lg p-3">
                     <input placeholder="Nome (ex: Gustavo)" value={newWaName} onChange={e => setNewWaName(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
-                    <input placeholder="Número com DDI (ex: 5511999999999)" value={newWaPhone} onChange={e => setNewWaPhone(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
-                    <input placeholder="Chave API do Callmebot (ex: 1234567)" value={newWaKey} onChange={e => setNewWaKey(e.target.value)}
+                    <input placeholder="Número com DDD (ex: 11999999999)" value={newWaPhone} onChange={e => setNewWaPhone(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
                     <div className="flex gap-2">
                       <button onClick={() => { setShowWaForm(false); setNewWaName(''); setNewWaPhone(''); setNewWaKey('') }}
                         className="flex-1 text-xs border border-[#2a2a2a] px-3 py-1.5 rounded-lg hover:bg-[#1a1a1a] transition-colors">Cancelar</button>
-                      <button onClick={addWhatsapp} disabled={!newWaName || !newWaPhone || !newWaKey}
+                      <button onClick={addWhatsapp} disabled={!newWaName || !newWaPhone}
                         className="flex-1 text-xs bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">Adicionar</button>
                     </div>
                   </div>
