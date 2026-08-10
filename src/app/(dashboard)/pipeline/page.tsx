@@ -188,8 +188,8 @@ export default function PipelinePage() {
           <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="-mx-4 md:mx-0 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
-        <div className="flex gap-3 md:grid md:grid-cols-4 px-4 md:px-0" style={{ minWidth: 'max-content' }}>
+        <div className="pb-4">
+        <div className="flex flex-col gap-3 md:grid md:grid-cols-4">
           {STAGES.map(s => {
             const cards = stageLeads(s.key)
             const val = totalValue(s.key)
@@ -198,7 +198,7 @@ export default function PipelinePage() {
             return (
               <div
                 key={s.key}
-                className="flex flex-col rounded-xl min-h-[200px] w-[260px] md:w-auto shrink-0"
+                className="flex flex-col rounded-xl min-h-[60px] w-full"
                 style={{ background: s.bg, border: `1px solid ${s.color}22` }}
                 onDragOver={e => e.preventDefault()}
                 onDrop={() => onDrop(s.key)}

@@ -16,7 +16,7 @@ interface Client { id: string; name: string; status: string }
 
 interface ContentPost {
   id: string
-  client_id: string
+  client_id: string | null
   title: string
   caption: string | null
   platform: string
@@ -216,23 +216,12 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             <div>
               <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Cliente</label>
               <select
-                value={form.client_id}
-                onChange={e => { setForm(f => ({ ...f, client_id: e.target.value })); save({ client_id: e.target.value }) }}
+                value={form.client_id ?? ''}
+                onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, client_id: v })); save({ client_id: v }) }}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
+                <option value="">Aura MKT.CLUB</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            {/* responsável */}
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Responsável</label>
-              <select
-                value={form.responsible ?? ''}
-                onChange={e => { setForm(f => ({ ...f, responsible: e.target.value || null })); save({ responsible: e.target.value || null }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
-              >
-                <option value="">Sem responsável</option>
-                {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             {/* data agendada */}
@@ -259,9 +248,9 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             </div>
           </div>
 
-          {/* imagem */}
+          {/* imagem / Canva */}
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagem (URL)</label>
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Link do Canva / Google Drive</label>
             <input
               type="url"
               value={form.media_url ?? ''}
@@ -362,13 +351,13 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
   onCreated: (p: ContentPost) => void
 }) {
   const [form, setForm] = useState({
-    client_id:      activeClientId ?? clients[0]?.id ?? '',
+    client_id:      activeClientId ?? '',
     title:          '',
     platform:       'instagram',
     status:         'rascunho',
     scheduled_date: '',
-    responsible:    '',
     caption:        '',
+    media_url:      '',
   })
   const [saving, setSaving] = useState(false)
 
@@ -379,10 +368,13 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...form,
+        client_id:      form.client_id      || null,
+        title:          form.title,
+        platform:       form.platform,
+        status:         form.status,
         scheduled_date: form.scheduled_date || null,
-        responsible:    form.responsible    || null,
         caption:        form.caption        || null,
+        media_url:      form.media_url      || null,
         result: {},
       }),
     })
@@ -424,6 +416,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
                 onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
+                <option value="">Aura MKT.CLUB</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -447,17 +440,6 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
                 {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Responsável</label>
-              <select
-                value={form.responsible}
-                onChange={e => setForm(f => ({ ...f, responsible: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
-              >
-                <option value="">Sem responsável</option>
-                {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
           </div>
           <div>
             <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data agendada</label>
@@ -466,6 +448,16 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               value={form.scheduled_date}
               onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
               className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Link do Canva / Google Drive</label>
+            <input
+              type="url"
+              value={form.media_url}
+              onChange={e => setForm(f => ({ ...f, media_url: e.target.value }))}
+              placeholder="https://www.canva.com/..."
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
             />
           </div>
           <div>
@@ -486,7 +478,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
           </button>
           <button
             onClick={create}
-            disabled={saving || !form.title.trim() || !form.client_id}
+            disabled={saving || !form.title.trim()}
             className="flex-1 py-2.5 text-sm bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg transition-colors disabled:opacity-40 font-medium"
           >
             {saving ? 'Criando...' : 'Criar Post'}
@@ -674,10 +666,6 @@ function ContentList({ posts, showClient, onPostClick }: {
                 {date ? formatDate(date) : '—'}
               </span>
 
-              {/* responsável */}
-              <span className="shrink-0 text-xs text-muted-foreground w-[80px] text-right">
-                {post.responsible ?? '—'}
-              </span>
             </button>
           )
         })}
