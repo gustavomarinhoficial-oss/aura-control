@@ -6,7 +6,7 @@ import { getRole, ROLE_NAME } from '@/lib/roles'
 import {
   Sparkles, Bot, Zap, Brain, GitBranch, FileText, Workflow,
   Search, Plus, X, Copy, Check, ExternalLink, Star, StarOff,
-  Trash2, ChevronRight, Tag, Clock, TrendingUp, Paperclip, Download
+  Trash2, ChevronRight, Tag, Clock, TrendingUp, Paperclip, Download, Pencil
 } from 'lucide-react'
 
 // ── tipos ──────────────────────────────────────────────────────────────────────
@@ -176,18 +176,24 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [downloading, setDownloading] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   async function downloadFile() {
     setDownloading(true)
-    const res = await fetch(`/api/ia/${item.id}`).then(r => r.json()).catch(() => ({}))
-    if (res.url) {
-      const a = document.createElement('a')
-      a.href = res.url
-      a.download = item.file_name ?? 'arquivo'
-      a.target = '_blank'
-      a.click()
+    try {
+      const res = await fetch(`/api/ia/${item.id}`).then(r => r.json())
+      if (res.url) {
+        const blob = await fetch(res.url).then(r => r.blob())
+        const objUrl = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = objUrl
+        a.download = item.file_name ?? 'arquivo'
+        a.click()
+        URL.revokeObjectURL(objUrl)
+      }
+    } finally {
+      setDownloading(false)
     }
-    setDownloading(false)
   }
 
   async function handleUse() {
@@ -240,6 +246,9 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
           <div className="flex items-center gap-1 shrink-0">
             <button onClick={toggleFeatured} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#1a1a1a] transition-colors" title={item.featured ? 'Remover destaque' : 'Destacar'}>
               {item.featured ? <Star size={15} className="text-[#fbbf24] fill-[#fbbf24]" /> : <StarOff size={15} className="text-muted-foreground" />}
+            </button>
+            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#1a1a1a] transition-colors" title="Editar recurso">
+              <Pencil size={14} className="text-muted-foreground" />
             </button>
             <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[#1a1a1a] transition-colors">
               <X size={16} className="text-muted-foreground" />
@@ -331,6 +340,12 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
 
         {/* Footer */}
         <div className="p-4 border-t border-[#1a1a1a] flex items-center gap-2">
+          {item.file_name && (
+            <button onClick={downloadFile} disabled={downloading}
+              className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:border-[#34d399]/40 hover:text-[#34d399] text-muted-foreground text-sm py-2.5 px-4 rounded-xl transition-colors">
+              {downloading ? <div className="w-3.5 h-3.5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Download size={14} />}
+            </button>
+          )}
           {(item.content || item.link) && (
             <button onClick={handleUse}
               className="flex-1 flex items-center justify-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
@@ -349,6 +364,205 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
           </button>
         </div>
       </div>
+
+      {editing && (
+        <EditItemModal
+          item={item}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => { onUpdate(updated); setEditing(false) }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Modal editar item ──────────────────────────────────────────────────────────
+function EditItemModal({ item, onClose, onSaved }: {
+  item: AIResource
+  onClose: () => void
+  onSaved: (updated: AIResource) => void
+}) {
+  const [form, setForm] = useState({
+    title: item.title,
+    description: item.description ?? '',
+    category: item.category,
+    content: item.content ?? '',
+    link: item.link ?? '',
+    tags: item.tags.join(', '),
+    author: item.author ?? '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [removingFile, setRemovingFile] = useState(false)
+  const [currentFileName, setCurrentFileName] = useState(item.file_name)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  function set(field: string, value: string) {
+    setForm(f => ({ ...f, [field]: value }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title.trim()) return
+    setSaving(true)
+
+    let file_path = item.file_path
+    let file_name = currentFileName
+
+    if (selectedFile) {
+      const fd = new FormData()
+      fd.append('file', selectedFile)
+      const up = await fetch('/api/ia/upload', { method: 'POST', body: fd })
+      if (up.ok) {
+        const { path, name } = await up.json()
+        file_path = path
+        file_name = name
+      }
+    } else if (removingFile) {
+      file_path = null
+      file_name = null
+    }
+
+    const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
+    const res = await fetch(`/api/ia/${item.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, tags, file_path, file_name }),
+    })
+    if (res.ok) onSaved(await res.json())
+    setSaving(false)
+  }
+
+  const selectedCat = getCat(form.category)
+  const SelIcon = selectedCat.icon
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <form onSubmit={handleSubmit}
+        className="relative bg-[#0d0d0d] border border-[#2a2a2a] rounded-2xl w-full max-w-lg mx-4 overflow-hidden shadow-2xl"
+        onClick={e => e.stopPropagation()}>
+
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#1a1a1a]">
+          <h3 className="text-base font-semibold">Editar recurso</h3>
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          {/* Categoria */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Categoria</p>
+            <div className="grid grid-cols-4 gap-1.5">
+              {CATEGORIES.map(cat => {
+                const CIcon = cat.icon
+                const active = form.category === cat.key
+                return (
+                  <button key={cat.key} type="button" onClick={() => set('category', cat.key)}
+                    className="flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl border text-center transition-all"
+                    style={{ borderColor: active ? cat.color + '60' : '#1f1f1f', background: active ? cat.bg : 'transparent' }}>
+                    <CIcon size={14} style={{ color: active ? cat.color : '#555' }} strokeWidth={1.8} />
+                    <span className="text-[10px]" style={{ color: active ? cat.color : '#555' }}>{cat.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Título */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Título *</p>
+            <div className="flex items-center gap-2 bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 focus-within:border-[#7c3aed]/50">
+              <SelIcon size={14} style={{ color: selectedCat.color }} strokeWidth={1.8} />
+              <input autoFocus value={form.title} onChange={e => set('title', e.target.value)}
+                placeholder="Nome do recurso" required
+                className="flex-1 bg-transparent text-sm placeholder:text-muted-foreground focus:outline-none" />
+            </div>
+          </div>
+
+          {/* Descrição */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Descrição</p>
+            <textarea value={form.description} onChange={e => set('description', e.target.value)}
+              rows={2} placeholder="Para que serve, como usar..."
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground resize-none" />
+          </div>
+
+          {/* Conteúdo */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">
+              {form.category === 'prompt' || form.category === 'template' ? 'Prompt / Template' : 'Conteúdo / Instruções'}
+            </p>
+            <textarea value={form.content} onChange={e => set('content', e.target.value)}
+              rows={4} placeholder="Cole o prompt, instruções ou descrição detalhada..."
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground resize-none" />
+          </div>
+
+          {/* Link */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Link externo</p>
+            <input type="url" value={form.link} onChange={e => set('link', e.target.value)}
+              placeholder="https://..."
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+          </div>
+
+          {/* Tags + Autor */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Tags</p>
+              <input value={form.tags} onChange={e => set('tags', e.target.value)}
+                placeholder="copywriting, social"
+                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Adicionado por</p>
+              <input value={form.author} onChange={e => set('author', e.target.value)}
+                placeholder="Seu nome"
+                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+            </div>
+          </div>
+
+          {/* Arquivo */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Arquivo anexo <span className="normal-case">(opcional)</span></p>
+            <input ref={fileRef} type="file" className="hidden"
+              onChange={e => { setSelectedFile(e.target.files?.[0] ?? null); setRemovingFile(false) }} />
+            {selectedFile ? (
+              <div className="flex items-center gap-3 bg-[#111111] border border-[#34d399]/30 rounded-xl px-3 py-2.5">
+                <Paperclip size={13} className="text-[#34d399] shrink-0" />
+                <span className="flex-1 text-sm truncate">{selectedFile.name}</span>
+                <button type="button" onClick={() => { setSelectedFile(null); if (fileRef.current) fileRef.current.value = '' }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"><X size={13} /></button>
+              </div>
+            ) : currentFileName && !removingFile ? (
+              <div className="flex items-center gap-3 bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5">
+                <Paperclip size={13} className="text-[#34d399] shrink-0" />
+                <span className="flex-1 text-sm truncate">{currentFileName}</span>
+                <button type="button" onClick={() => setRemovingFile(true)}
+                  className="text-muted-foreground hover:text-[#ef4444] transition-colors" title="Remover arquivo"><X size={13} /></button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => { fileRef.current?.click(); setRemovingFile(false) }}
+                className="w-full flex items-center gap-2 bg-[#111111] border border-dashed border-[#2a2a2a] hover:border-[#34d399]/30 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Paperclip size={13} />
+                {removingFile ? 'Selecionar novo arquivo' : 'Selecionar arquivo (CSV, PDF, imagem...)'}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-[#1a1a1a] flex gap-2">
+          <button type="button" onClick={onClose}
+            className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-xl hover:bg-[#111] transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" disabled={saving || !form.title.trim()}
+            className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+            {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Check size={14} /> Salvar</>}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
