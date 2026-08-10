@@ -6,7 +6,7 @@ import { getRole, ROLE_NAME } from '@/lib/roles'
 import {
   Sparkles, Bot, Zap, Brain, GitBranch, FileText, Workflow,
   Search, Plus, X, Copy, Check, ExternalLink, Star, StarOff,
-  Trash2, ChevronRight, Tag, Clock, TrendingUp
+  Trash2, ChevronRight, Tag, Clock, TrendingUp, Paperclip, Download
 } from 'lucide-react'
 
 // ── tipos ──────────────────────────────────────────────────────────────────────
@@ -21,6 +21,8 @@ interface AIResource {
   author: string | null
   uses_count: number
   featured: boolean
+  file_path: string | null
+  file_name: string | null
   created_at: string
   updated_at: string
 }
@@ -143,6 +145,11 @@ function ResourceCard({ item, onClick, onToggleFeatured }: {
               <span className="text-[10px] text-muted-foreground">{item.author}</span>
             </div>
           )}
+          {item.file_name && (
+            <span className="flex items-center gap-0.5 text-[10px] text-[#34d399]">
+              <Paperclip size={9} /> {item.file_name}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
           {item.uses_count > 0 && (
@@ -168,6 +175,20 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
   const Icon = cat.icon
   const [copied, setCopied] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+
+  async function downloadFile() {
+    setDownloading(true)
+    const res = await fetch(`/api/ia/${item.id}`).then(r => r.json()).catch(() => ({}))
+    if (res.url) {
+      const a = document.createElement('a')
+      a.href = res.url
+      a.download = item.file_name ?? 'arquivo'
+      a.target = '_blank'
+      a.click()
+    }
+    setDownloading(false)
+  }
 
   async function handleUse() {
     const text = item.content || item.link || ''
@@ -255,6 +276,26 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
             </div>
           )}
 
+          {/* Arquivo anexo */}
+          {item.file_name && (
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1"><Paperclip size={9} /> Arquivo anexo</p>
+              <button
+                onClick={downloadFile}
+                disabled={downloading}
+                className="w-full flex items-center gap-3 bg-[#111111] border border-[#1f1f1f] hover:border-[#34d399]/30 rounded-xl px-4 py-3 transition-colors group"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#34d399]/10 flex items-center justify-center shrink-0">
+                  <Download size={14} className="text-[#34d399]" />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-medium truncate text-foreground">{item.file_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{downloading ? 'Baixando...' : 'Clique para baixar'}</p>
+                </div>
+              </button>
+            </div>
+          )}
+
           {/* Tags */}
           {item.tags.length > 0 && (
             <div>
@@ -323,6 +364,8 @@ function NewItemModal({ authorName, onClose, onCreated }: {
     content: '', link: '', tags: '', author: authorName,
   })
   const [saving, setSaving] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   function set(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }))
@@ -332,11 +375,25 @@ function NewItemModal({ authorName, onClose, onCreated }: {
     e.preventDefault()
     if (!form.title.trim()) return
     setSaving(true)
+
+    let file_path: string | null = null
+    let file_name: string | null = null
+    if (selectedFile) {
+      const fd = new FormData()
+      fd.append('file', selectedFile)
+      const up = await fetch('/api/ia/upload', { method: 'POST', body: fd })
+      if (up.ok) {
+        const { path, name } = await up.json()
+        file_path = path
+        file_name = name
+      }
+    }
+
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
     const res = await fetch('/api/ia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags }),
+      body: JSON.stringify({ ...form, tags, file_path, file_name }),
     })
     if (res.ok) {
       onCreated(await res.json())
@@ -438,6 +495,29 @@ function NewItemModal({ authorName, onClose, onCreated }: {
                 placeholder="Seu nome"
                 className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
             </div>
+          </div>
+
+          {/* Arquivo anexo */}
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Arquivo anexo <span className="normal-case">(opcional)</span></p>
+            <input ref={fileRef} type="file" className="hidden"
+              onChange={e => setSelectedFile(e.target.files?.[0] ?? null)} />
+            {selectedFile ? (
+              <div className="flex items-center gap-3 bg-[#111111] border border-[#34d399]/30 rounded-xl px-3 py-2.5">
+                <Paperclip size={13} className="text-[#34d399] shrink-0" />
+                <span className="flex-1 text-sm truncate">{selectedFile.name}</span>
+                <button type="button" onClick={() => { setSelectedFile(null); if (fileRef.current) fileRef.current.value = '' }}
+                  className="text-muted-foreground hover:text-foreground transition-colors">
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="w-full flex items-center gap-2 bg-[#111111] border border-dashed border-[#2a2a2a] hover:border-[#34d399]/30 rounded-xl px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <Paperclip size={13} />
+                Selecionar arquivo (CSV, PDF, imagem...)
+              </button>
+            )}
           </div>
         </div>
 

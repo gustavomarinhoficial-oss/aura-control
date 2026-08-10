@@ -25,6 +25,8 @@ export async function POST(request: Request) {
       tags:        body.tags ?? [],
       author:      body.author || null,
       featured:    body.featured ?? false,
+      file_path:   body.file_path || null,
+      file_name:   body.file_name || null,
     })
     .select()
     .single()
