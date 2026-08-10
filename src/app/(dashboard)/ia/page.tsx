@@ -279,7 +279,6 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1"><Paperclip size={9} /> Arquivo anexo</p>
               <button
                 onClick={downloadFile}
-                disabled={downloading}
                 className="w-full flex items-center gap-3 bg-[#111111] border border-[#1f1f1f] hover:border-[#34d399]/30 rounded-xl px-4 py-3 transition-colors group"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#34d399]/10 flex items-center justify-center shrink-0">
@@ -287,7 +286,7 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <p className="text-sm font-medium truncate text-foreground">{item.file_name}</p>
-                  <p className="text-[10px] text-muted-foreground">{downloading ? 'Baixando...' : 'Clique para baixar'}</p>
+                  <p className="text-[10px] text-muted-foreground">Clique para baixar</p>
                 </div>
               </button>
             </div>
