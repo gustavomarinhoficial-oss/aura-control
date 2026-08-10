@@ -129,8 +129,7 @@ export default function TarefasPage() {
   const [activeTab, setActiveTab] = useState<'todas' | 'concluidas'>('todas')
   const [activeOwner, setActiveOwner] = useState<string>('todos')
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -160,23 +159,6 @@ export default function TarefasPage() {
   async function deleteTask(id: string) {
     setTasks(prev => prev.filter(t => t.id !== id))
     await fetch(`/api/tasks/${id}`, { method: 'DELETE' })
-  }
-
-  function startEditTitle(task: Task) {
-    setEditingTaskId(task.id)
-    setEditTitle(task.title)
-  }
-
-  async function saveTitle(id: string) {
-    const title = editTitle.trim()
-    if (!title) { setEditingTaskId(null); return }
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t))
-    setEditingTaskId(null)
-    await fetch(`/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    })
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -317,35 +299,16 @@ export default function TarefasPage() {
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      {editingTaskId === task.id ? (
-                        <input
-                          autoFocus
-                          type="text"
-                          value={editTitle}
-                          onChange={e => setEditTitle(e.target.value)}
-                          onBlur={() => saveTitle(task.id)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') saveTitle(task.id)
-                            if (e.key === 'Escape') setEditingTaskId(null)
-                          }}
-                          className="flex-1 text-sm font-medium bg-[#111111] border border-[#7c3aed]/50 rounded px-2 py-0.5 focus:outline-none focus:border-[#7c3aed] text-foreground"
-                        />
-                      ) : (
-                        <p
-                          className={`text-sm font-medium ${task.status === 'concluido' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
-                        >
-                          {task.title}
-                        </p>
-                      )}
-                      {editingTaskId !== task.id && (
-                        <button
-                          onClick={() => startEditTitle(task)}
-                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#a78bfa] transition-all shrink-0"
-                          title="Editar título"
-                        >
-                          <Edit2 size={11} />
-                        </button>
-                      )}
+                      <p className={`text-sm font-medium ${task.status === 'concluido' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                        {task.title}
+                      </p>
+                      <button
+                        onClick={() => setEditingTask(task)}
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#a78bfa] transition-all shrink-0"
+                        title="Editar tarefa"
+                      >
+                        <Edit2 size={11} />
+                      </button>
                     </div>
                     {task.description && (
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
@@ -399,6 +362,16 @@ export default function TarefasPage() {
           members={members}
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); load() }}
+        />
+      )}
+
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          clients={clients}
+          members={members}
+          onClose={() => setEditingTask(null)}
+          onSaved={() => { setEditingTask(null); load() }}
         />
       )}
 
@@ -522,6 +495,123 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
             </button>
             <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
               {saving ? 'Criando...' : 'Criar tarefa'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function EditTaskModal({ task, clients, members, onClose, onSaved }: {
+  task: Task
+  clients: Client[]
+  members: Member[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({
+    title: task.title,
+    description: task.description ?? '',
+    client_id: task.client_id ?? '',
+    assignee_id: task.assignee_id ?? '',
+    priority: task.priority,
+    due_date: task.due_date ?? '',
+    status: task.status,
+  })
+
+  function set(field: string, value: string) {
+    setForm(f => ({ ...f, [field]: value }))
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const title = form.title.trim()
+    if (!title) { setError('Informe o título'); return }
+    setSaving(true)
+    const res = await fetch(`/api/tasks/${task.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        description: form.description.trim() || null,
+        client_id: form.client_id || null,
+        assignee_id: form.assignee_id || null,
+        priority: form.priority,
+        due_date: form.due_date || null,
+        status: form.status,
+      }),
+    })
+    if (!res.ok) { setError('Erro ao salvar'); setSaving(false); return }
+    onSaved()
+  }
+
+  const inputCls = 'w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors'
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold">Editar tarefa</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={16} /></button>
+        </div>
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Título *</label>
+            <input type="text" value={form.title} onChange={e => set('title', e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Descrição</label>
+            <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2}
+              placeholder="Detalhes opcionais..." className={`${inputCls} resize-none`} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
+              <select value={form.client_id} onChange={e => set('client_id', e.target.value)} className={inputCls}>
+                <option value="">Nenhum</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Responsável</label>
+              <select value={form.assignee_id} onChange={e => set('assignee_id', e.target.value)} className={inputCls}>
+                <option value="">Nenhum</option>
+                {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Prioridade</label>
+              <select value={form.priority} onChange={e => set('priority', e.target.value)} className={inputCls}>
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Prazo</label>
+              <input type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Status</label>
+            <select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}>
+              <option value="pendente">Pendente</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="concluido">Concluído</option>
+            </select>
+          </div>
+          {error && <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
+              {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>
