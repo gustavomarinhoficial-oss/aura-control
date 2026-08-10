@@ -30,7 +30,7 @@ interface AlertSettings { whatsapp_enabled: boolean; whatsapp_numbers: WhatsappN
 interface EditorialLine {
   id: string; client_id: string; pdf_name: string; valid_until: string
   notified_30: boolean; notified_15: boolean; notified_5: boolean
-  clients: { name: string } | null
+  clients: { name: string }[] | { name: string } | null
 }
 
 export async function POST(request: Request) {
@@ -68,7 +68,8 @@ export async function POST(request: Request) {
   const results: Record<string, unknown>[] = []
 
   for (const line of lines as EditorialLine[]) {
-    const clientName = line.clients?.name ?? 'Cliente'
+    const clientsData = line.clients
+    const clientName = (Array.isArray(clientsData) ? clientsData[0]?.name : (clientsData as { name: string } | null)?.name) ?? 'Cliente'
     const validUntil = new Date(line.valid_until + 'T12:00:00Z')
     const today = new Date(todayStr + 'T12:00:00Z')
     const daysLeft = Math.round((validUntil.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
