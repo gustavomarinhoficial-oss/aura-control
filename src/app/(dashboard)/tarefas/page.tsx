@@ -314,7 +314,11 @@ export default function TarefasPage() {
                       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{task.description}</p>
                     )}
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
-                      {task.clients && (
+                      {task.is_global ? (
+                        <span className="text-[11px] text-[#60a5fa] bg-[#60a5fa]/10 px-2 py-0.5 rounded-full">
+                          🌐 Todos os clientes
+                        </span>
+                      ) : task.clients && (
                         <span className="text-[11px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">
                           {task.clients.name}
                         </span>
@@ -399,7 +403,9 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
     const data = new FormData(e.currentTarget)
     const title = (data.get('title') as string ?? '').trim()
     const description = (data.get('description') as string ?? '').trim()
-    const client_id = (data.get('client_id') as string ?? '') || null
+    const clientRaw = (data.get('client_id') as string ?? '')
+    const is_global = clientRaw === 'todos'
+    const client_id = is_global ? null : clientRaw || null
     const assignee_id = (data.get('assignee_id') as string ?? '') || null
     const priority = (data.get('priority') as string ?? 'media')
     const due_date = (data.get('due_date') as string ?? '') || null
@@ -409,7 +415,7 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: description || null, client_id, assignee_id, priority, due_date }),
+      body: JSON.stringify({ title, description: description || null, client_id, is_global, assignee_id, priority, due_date }),
     })
     if (!res.ok) { setError('Erro ao criar tarefa'); setSaving(false); return }
     onCreated()
@@ -446,7 +452,8 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
                 defaultValue=""
                 className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
-                <option value="">Nenhum</option>
+                <option value="">— Nenhum cliente —</option>
+                <option value="todos">🌐 Todos os clientes</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -515,7 +522,7 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
   const [form, setForm] = useState({
     title: task.title,
     description: task.description ?? '',
-    client_id: task.client_id ?? '',
+    client_id: task.is_global ? 'todos' : (task.client_id ?? ''),
     assignee_id: task.assignee_id ?? '',
     priority: task.priority,
     due_date: task.due_date ?? '',
@@ -537,7 +544,8 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
       body: JSON.stringify({
         title,
         description: form.description.trim() || null,
-        client_id: form.client_id || null,
+        client_id: form.client_id === 'todos' ? null : form.client_id || null,
+        is_global: form.client_id === 'todos',
         assignee_id: form.assignee_id || null,
         priority: form.priority,
         due_date: form.due_date || null,
@@ -571,7 +579,8 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
               <select value={form.client_id} onChange={e => set('client_id', e.target.value)} className={inputCls}>
-                <option value="">Nenhum</option>
+                <option value="">— Nenhum cliente —</option>
+                <option value="todos">🌐 Todos os clientes</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>

@@ -13,6 +13,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.priority !== undefined) update.priority = body.priority
   if (body.due_date !== undefined) update.due_date = body.due_date || null
   if (body.client_id !== undefined) update.client_id = body.client_id || null
+  if (body.is_global !== undefined) update.is_global = body.is_global
   if (body.assignee_id !== undefined) update.assignee_id = body.assignee_id || null
 
   const { data, error } = await supabase

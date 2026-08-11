@@ -41,11 +41,11 @@ export async function POST(request: Request) {
     title: body.title,
     description: body.description || null,
     client_id: body.client_id || null,
+    is_global: body.is_global ?? false,
     status: body.status || 'pendente',
     priority: body.priority || 'media',
     due_date: body.due_date || null,
   }
-  // assignee_id only if column exists (after migration 003)
   if (body.assignee_id !== undefined) insert.assignee_id = body.assignee_id || null
 
   const { data, error } = await supabase
