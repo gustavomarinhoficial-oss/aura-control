@@ -15,7 +15,7 @@ function normalizeHeader(h: string): string {
 }
 
 function normalizePriority(v: string): string {
-  const s = (v ?? '').toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
+  const s = (v ?? '').toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim()
   if (['alta', 'high', 'a', 'urgente', 'urgent'].includes(s)) return 'alta'
   if (['baixa', 'low', 'b'].includes(s)) return 'baixa'
   return 'media'
@@ -42,10 +42,10 @@ function parseDate(v: unknown): string | null {
 
 function matchMember(name: string, members: { id: string; name: string }[]): string | null {
   if (!name) return null
-  const n = name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
-  const exact = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '') === n)
+  const n = name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim()
+  const exact = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '') === n)
   if (exact) return exact.id
-  const partial = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').startsWith(n) || n.startsWith(m.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '')))
+  const partial = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').startsWith(n) || n.startsWith(m.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')))
   return partial?.id ?? null
 }
 
