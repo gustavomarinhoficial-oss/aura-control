@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 
 // Normalize column names to known keys
 function normalizeHeader(h: string): string {
-  const s = h.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
+  const s = h.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim()
   if (['tarefa', 'task', 'titulo', 'title', 'nome', 'name'].includes(s)) return 'title'
   if (['responsavel', 'responsavel', 'assignee', 'pessoa', 'membro', 'member'].includes(s)) return 'assignee'
   if (['prazo', 'due_date', 'data', 'vencimento', 'deadline', 'entrega'].includes(s)) return 'due_date'
