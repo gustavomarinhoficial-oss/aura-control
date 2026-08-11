@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 function addMonths(dateStr: string, n: number): string {
@@ -14,7 +14,7 @@ function addDays(dateStr: string, n: number): string {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const body = await request.json()
 
   const { data: service, error } = await supabase
@@ -34,10 +34,10 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Gerar cobranças automáticas para serviços recorrentes
+  // Gerar cobranÃ§as automÃ¡ticas para serviÃ§os recorrentes
   if (body.type === 'recorrente' && body.started_at) {
     const monthStep = body.recurrence === 'trimestral' ? 3 : body.recurrence === 'anual' ? 12 : 1
-    const horizon = 6 // gerar 6 períodos à frente
+    const horizon = 6 // gerar 6 perÃ­odos Ã  frente
     const contractEnd = body.contract_end ? new Date(body.contract_end + 'T12:00:00Z') : null
     const today = new Date().toISOString().split('T')[0]
 
@@ -52,18 +52,18 @@ export async function POST(request: Request) {
 
     let dueDate: string
     if (billingDay && billingDay >= 1 && billingDay <= 28) {
-      // Usa o dia de vencimento específico: próxima ocorrência desse dia a partir de hoje
+      // Usa o dia de vencimento especÃ­fico: prÃ³xima ocorrÃªncia desse dia a partir de hoje
       const todayDate = new Date(today + 'T12:00:00Z')
       const candidate = new Date(todayDate)
       candidate.setUTCDate(billingDay)
       if (candidate.toISOString().split('T')[0] <= today) {
-        // Já passou este mês, vai para o próximo
+        // JÃ¡ passou este mÃªs, vai para o prÃ³ximo
         candidate.setUTCMonth(candidate.getUTCMonth() + 1)
         candidate.setUTCDate(billingDay)
       }
       dueDate = candidate.toISOString().split('T')[0]
     } else {
-      // Sem dia fixo: começa 1 dia após o início e avança até o futuro
+      // Sem dia fixo: comeÃ§a 1 dia apÃ³s o inÃ­cio e avanÃ§a atÃ© o futuro
       dueDate = addDays(body.started_at, 1)
       while (dueDate < today) {
         dueDate = addMonths(dueDate, monthStep)

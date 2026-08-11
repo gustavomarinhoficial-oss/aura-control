@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('client_id')
 
@@ -19,18 +19,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   const formData = await request.formData()
   const file = formData.get('file') as File | null
   const clientId = formData.get('client_id') as string | null
 
   if (!file || !clientId) {
-    return NextResponse.json({ error: 'Arquivo e client_id obrigatórios' }, { status: 400 })
+    return NextResponse.json({ error: 'Arquivo e client_id obrigatÃ³rios' }, { status: 400 })
   }
 
   if (file.type !== 'application/pdf') {
-    return NextResponse.json({ error: 'Apenas PDFs são aceitos' }, { status: 400 })
+    return NextResponse.json({ error: 'Apenas PDFs sÃ£o aceitos' }, { status: 400 })
   }
 
   // Remove a linha editorial anterior, se existir

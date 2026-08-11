@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { id } = await params
   const body = await request.json()
 
@@ -23,7 +23,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { id } = await params
 
   // Remove arquivo do storage se existir
@@ -38,7 +38,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { id } = await params
 
   const { data: resource } = await supabase.from('ai_resources').select('file_path, file_name').eq('id', id).single()

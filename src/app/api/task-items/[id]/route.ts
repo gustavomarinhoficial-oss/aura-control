@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { id } = await params
   const body = await request.json()
   const { data, error } = await supabase
@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { id } = await params
   const { error } = await supabase.from('task_items').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

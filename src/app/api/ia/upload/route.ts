@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   const formData = await request.formData()
   const file = formData.get('file') as File | null
-  if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+  if (!file) return NextResponse.json({ error: 'Arquivo nÃ£o enviado' }, { status: 400 })
 
   const ts = Date.now()
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')

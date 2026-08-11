@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 // Returns last 6 months of revenue (paid charges) vs expenses (paid)
 export async function GET() {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const months: { year: number; month: number; label: string; key: string }[] = []
   const now = new Date()
   for (let i = 5; i >= 0; i--) {

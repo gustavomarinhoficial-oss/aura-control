@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('client_id')
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await query
   if (error) {
-    // Se members ainda não existe (migration pendente), tenta sem o join
+    // Se members ainda nÃ£o existe (migration pendente), tenta sem o join
     if (error.message?.includes('members')) {
       let q2 = supabase
         .from('tasks')
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const body = await request.json()
 
   const insert: Record<string, unknown> = {

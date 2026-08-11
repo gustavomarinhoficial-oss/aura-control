@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const month = searchParams.get('month') // YYYY-MM
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   let query = supabase.from('expenses').select('*').order('due_date', { ascending: true })
   if (month) {
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const body = await request.json()
 
   const { data, error } = await supabase.from('expenses').insert({

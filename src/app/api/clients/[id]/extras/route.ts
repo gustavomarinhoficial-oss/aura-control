@@ -1,16 +1,16 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { data } = await supabase.from('client_extras').select('*').eq('client_id', id).single()
   return NextResponse.json(data ?? { client_id: id, responsavel: '', objectives: '', social_media: [], links: [], passwords: [] })
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const body = await request.json()
 
   const payload = {

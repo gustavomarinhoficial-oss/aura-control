@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import * as XLSX from 'xlsx'
 
 // Normalize column names to known keys
 function normalizeHeader(h: string): string {
-  const s = h.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+  const s = h.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
   if (['tarefa', 'task', 'titulo', 'title', 'nome', 'name'].includes(s)) return 'title'
   if (['responsavel', 'responsavel', 'assignee', 'pessoa', 'membro', 'member'].includes(s)) return 'assignee'
   if (['prazo', 'due_date', 'data', 'vencimento', 'deadline', 'entrega'].includes(s)) return 'due_date'
@@ -15,7 +15,7 @@ function normalizeHeader(h: string): string {
 }
 
 function normalizePriority(v: string): string {
-  const s = (v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+  const s = (v ?? '').toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
   if (['alta', 'high', 'a', 'urgente', 'urgent'].includes(s)) return 'alta'
   if (['baixa', 'low', 'b'].includes(s)) return 'baixa'
   return 'media'
@@ -42,26 +42,26 @@ function parseDate(v: unknown): string | null {
 
 function matchMember(name: string, members: { id: string; name: string }[]): string | null {
   if (!name) return null
-  const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-  const exact = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === n)
+  const n = name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
+  const exact = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '') === n)
   if (exact) return exact.id
-  const partial = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').startsWith(n) || n.startsWith(m.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')))
+  const partial = members.find(m => m.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').startsWith(n) || n.startsWith(m.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '')))
   return partial?.id ?? null
 }
 
 function matchClient(name: string, clients: { id: string; name: string }[]): string | null {
   if (!name) return null
-  const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-  const found = clients.find(c => c.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(n) || n.includes(c.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')))
+  const n = name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
+  const found = clients.find(c => c.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').includes(n) || n.includes(c.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '')))
   return found?.id ?? null
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   const formData = await request.formData()
   const file = formData.get('file') as File | null
-  if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+  if (!file) return NextResponse.json({ error: 'Arquivo nÃ£o enviado' }, { status: 400 })
 
   const buffer = Buffer.from(await file.arrayBuffer())
   const workbook = XLSX.read(buffer, { type: 'buffer', cellDates: false })
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
 
   for (const row of normalized) {
     const title = String(row.title ?? '').trim()
-    if (!title) { skipped.push('(linha sem título)'); continue }
+    if (!title) { skipped.push('(linha sem tÃ­tulo)'); continue }
 
     const assignee_id = matchMember(String(row.assignee ?? ''), members ?? [])
     const client_id = matchClient(String(row.client ?? ''), clients ?? [])

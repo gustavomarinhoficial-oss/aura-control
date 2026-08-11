@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const { searchParams } = new URL(request.url)
   const taskId = searchParams.get('task_id')
   if (!taskId) return NextResponse.json({ error: 'task_id required' }, { status: 400 })
@@ -11,12 +11,12 @@ export async function GET(request: Request) {
     .select('*')
     .eq('task_id', taskId)
     .order('position')
-  if (error) return NextResponse.json([]) // tabela pode não existir ainda
+  if (error) return NextResponse.json([]) // tabela pode nÃ£o existir ainda
   return NextResponse.json(data)
 }
 
 export async function POST(request: Request) {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const body = await request.json()
   const { data: existing } = await supabase
     .from('task_items')

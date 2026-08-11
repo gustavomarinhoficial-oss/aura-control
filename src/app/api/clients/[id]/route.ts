@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   const [clientRes, servicesRes, historyRes] = await Promise.all([
     supabase.from('clients').select('*').eq('id', id).single(),
@@ -22,7 +22,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const body = await request.json()
 
   if (body.status) {
@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   // Apaga registros relacionados antes do cliente
   await supabase.from('charges').delete().eq('client_id', id)

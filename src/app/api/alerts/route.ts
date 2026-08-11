@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 export async function GET() {
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
   const today = new Date().toISOString().split('T')[0]
   const in7 = new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0]
   const in30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
 
   const [overdueRes, upcomingRes, renewalRes] = await Promise.all([
-    // Cobranças atrasadas — exclui cobranças de serviços inativos (encerrados)
+    // CobranÃ§as atrasadas â€” exclui cobranÃ§as de serviÃ§os inativos (encerrados)
     supabase
       .from('charges')
       .select('id, description, amount, due_date, service_id, clients(name), services(active)')
@@ -16,7 +16,7 @@ export async function GET() {
       .lt('due_date', today)
       .order('due_date'),
 
-    // Cobranças vencendo em 7 dias — exclui serviços inativos
+    // CobranÃ§as vencendo em 7 dias â€” exclui serviÃ§os inativos
     supabase
       .from('charges')
       .select('id, description, amount, due_date, service_id, clients(name), services(active)')
@@ -25,7 +25,7 @@ export async function GET() {
       .lte('due_date', in7)
       .order('due_date'),
 
-    // Contratos encerrando em 30 dias (só se migration 003 rodou)
+    // Contratos encerrando em 30 dias (sÃ³ se migration 003 rodou)
     supabase
       .from('services')
       .select('id, name, contract_end, clients(name)')
@@ -35,9 +35,9 @@ export async function GET() {
       .order('contract_end'),
   ])
 
-  // Se contract_end não existir ainda, ignora renovals
+  // Se contract_end nÃ£o existir ainda, ignora renovals
 
-  // Filtra: só mostra como alerta se não tem serviço vinculado OU se o serviço ainda está ativo
+  // Filtra: sÃ³ mostra como alerta se nÃ£o tem serviÃ§o vinculado OU se o serviÃ§o ainda estÃ¡ ativo
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const filterActive = (list: any[] | null) =>
     (list ?? []).filter((c: { service_id: string | null; services?: { active: boolean } | null }) =>
