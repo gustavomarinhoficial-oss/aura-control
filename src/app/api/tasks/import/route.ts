@@ -51,8 +51,8 @@ function matchMember(name: string, members: { id: string; name: string }[]): str
 
 function matchClient(name: string, clients: { id: string; name: string }[]): string | null {
   if (!name) return null
-  const n = name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').trim()
-  const found = clients.find(c => c.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '').includes(n) || n.includes(c.name.toLowerCase().normalize('NFD').replace(/[Ì€-Í¯]/g, '')))
+  const n = name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim()
+  const found = clients.find(c => c.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').includes(n) || n.includes(c.name.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')))
   return found?.id ?? null
 }
 
