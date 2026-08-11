@@ -95,6 +95,7 @@ export interface Task {
   status: TaskStatus
   priority: TaskPriority
   due_date: string | null
+  is_global: boolean
   created_at: string
   clients?: { id: string; name: string } | null
   members?: { id: string; name: string; initials: string; color: string } | null
