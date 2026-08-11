@@ -514,46 +514,45 @@ export default function FinanceiroPage() {
           ) : withStatus.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">Nenhuma receita neste mês</div>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#2a2a2a]">
-                  {['Cliente', 'Descrição', 'Vencimento', 'Valor', 'Status', ''].map(h => (
-                    <th key={h} className="text-left text-xs text-muted-foreground font-medium px-5 py-3">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {withStatus.map(c => (
-                  <tr key={c.id} className="border-b border-[#2a2a2a] last:border-0">
-                    <td className="px-5 py-4 text-sm font-medium">{c.clients?.name ?? '—'}</td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">{c.description}</td>
-                    <td className="px-5 py-4 text-sm text-muted-foreground">{formatDate(c.due_date)}</td>
-                    <td className="px-5 py-4 text-sm font-medium">{formatBRL(Number(c.amount))}</td>
-                    <td className="px-5 py-4">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${chargeStatusStyle[c.status]}`}>{chargeStatusLabel[c.status]}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => markChargePaid(c.id, !!c.paid_at)} disabled={paying === c.id}
-                          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${c.paid_at ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
-                          <Check size={12} />{c.paid_at ? 'Desfazer' : 'Marcar pago'}
+            <div className="divide-y divide-[#2a2a2a]">
+              {withStatus.map(c => (
+                <div key={c.id} className="p-4 space-y-3">
+                  {/* Linha 1: cliente + valor */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{c.clients?.name ?? '—'}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{c.description}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold">{formatBRL(Number(c.amount))}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.due_date)}</p>
+                    </div>
+                  </div>
+                  {/* Linha 2: status + ações */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${chargeStatusStyle[c.status]}`}>
+                      {chargeStatusLabel[c.status]}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => markChargePaid(c.id, !!c.paid_at)} disabled={paying === c.id}
+                        className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${c.paid_at ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
+                        <Check size={12} />{c.paid_at ? 'Desfazer' : 'Marcar pago'}
+                      </button>
+                      {!c.paid_at && c.status !== 'encerrado' && (
+                        <button onClick={() => setWhatsAppCharge(c as ChargeWithStatus)}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-[#25d366]/30 text-[#25d366] hover:bg-[#25d366]/10 transition-colors">
+                          <MessageCircle size={12} /> Cobrar
                         </button>
-                        {!c.paid_at && c.status !== 'encerrado' && (
-                          <button onClick={() => setWhatsAppCharge(c as ChargeWithStatus)}
-                            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg border border-[#25d366]/30 text-[#25d366] hover:bg-[#25d366]/10 transition-colors">
-                            <MessageCircle size={12} />
-                          </button>
-                        )}
-                        <button onClick={() => { if (confirm('Apagar esta cobrança?')) deleteCharge(c.id) }} disabled={deletingCharge === c.id}
-                          className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors">
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      )}
+                      <button onClick={() => { if (confirm('Apagar esta cobrança?')) deleteCharge(c.id) }} disabled={deletingCharge === c.id}
+                        className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors">
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -572,53 +571,48 @@ export default function FinanceiroPage() {
           )}
           {expenses.length > 0 && (
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[#2a2a2a]">
-                    {['Descrição', 'Categoria', 'Vencimento', 'Valor', 'Status', ''].map(h => (
-                      <th key={h} className="text-left text-xs text-muted-foreground font-medium px-5 py-3">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {expenses.map(e => {
-                    const catInfo = EXPENSE_CATEGORIES[e.category] ?? EXPENSE_CATEGORIES.outro
-                    const isPaid = !!e.paid_at
-                    const isOverdue = !isPaid && e.due_date < hoje
-                    return (
-                      <tr key={e.id} className="border-b border-[#2a2a2a] last:border-0">
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-medium">{e.description}</p>
-                          {e.notes && <p className="text-xs text-muted-foreground mt-0.5">{e.notes}</p>}
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: catInfo.color + '20', color: catInfo.color }}>
-                            {catInfo.label}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4 text-sm text-muted-foreground">{formatDate(e.due_date)}</td>
-                        <td className="px-5 py-4 text-sm font-medium">{formatBRL(Number(e.amount))}</td>
-                        <td className="px-5 py-4">
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${isPaid ? 'text-[#22c55e] bg-[#22c55e]/10' : isOverdue ? 'text-[#ef4444] bg-[#ef4444]/10' : 'text-muted-foreground bg-[#2a2a2a]'}`}>
-                            {isPaid ? 'Pago' : isOverdue ? 'Atrasado' : 'Pendente'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <button onClick={() => markExpensePaid(e.id, isPaid)} disabled={payingExp === e.id}
-                              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${isPaid ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
-                              <Check size={12} />{isPaid ? 'Desfazer' : 'Marcar pago'}
-                            </button>
-                            <button onClick={() => setEditingExpense(e)} className="text-muted-foreground/50 hover:text-foreground p-1.5 rounded-lg hover:bg-[#2a2a2a] transition-colors"><Edit2 size={12} /></button>
-                            <button onClick={() => { if (confirm('Apagar esta despesa?')) deleteExpense(e.id) }} disabled={deletingExp === e.id}
-                              className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors"><Trash2 size={12} /></button>
+              <div className="divide-y divide-[#2a2a2a]">
+                {expenses.map(e => {
+                  const catInfo = EXPENSE_CATEGORIES[e.category] ?? EXPENSE_CATEGORIES.outro
+                  const isPaid = !!e.paid_at
+                  const isOverdue = !isPaid && e.due_date < hoje
+                  return (
+                    <div key={e.id} className="p-4 space-y-3">
+                      {/* Linha 1: descrição + valor */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{e.description}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: catInfo.color + '20', color: catInfo.color }}>
+                              {catInfo.label}
+                            </span>
+                            {e.notes && <p className="text-xs text-muted-foreground truncate">{e.notes}</p>}
                           </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold">{formatBRL(Number(e.amount))}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{formatDate(e.due_date)}</p>
+                        </div>
+                      </div>
+                      {/* Linha 2: status + ações */}
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${isPaid ? 'text-[#22c55e] bg-[#22c55e]/10' : isOverdue ? 'text-[#ef4444] bg-[#ef4444]/10' : 'text-muted-foreground bg-[#2a2a2a]'}`}>
+                          {isPaid ? 'Pago' : isOverdue ? 'Atrasado' : 'Pendente'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => markExpensePaid(e.id, isPaid)} disabled={payingExp === e.id}
+                            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${isPaid ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
+                            <Check size={12} />{isPaid ? 'Desfazer' : 'Marcar pago'}
+                          </button>
+                          <button onClick={() => setEditingExpense(e)} className="text-muted-foreground/50 hover:text-foreground p-1.5 rounded-lg hover:bg-[#2a2a2a] transition-colors"><Edit2 size={12} /></button>
+                          <button onClick={() => { if (confirm('Apagar esta despesa?')) deleteExpense(e.id) }} disabled={deletingExp === e.id}
+                            className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors"><Trash2 size={12} /></button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
           {/* Totais */}
