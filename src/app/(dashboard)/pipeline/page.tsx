@@ -183,48 +183,49 @@ export default function PipelinePage() {
     })
 
     if (newStage === 'fechado' && lead) {
-      // Cria cliente automaticamente
-      const clientRes = await fetch('/api/clients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: lead.company_name,
-          email: lead.contact_email ?? '',
-          phone: lead.contact_phone ?? '',
-          status: 'ativo',
-          notes: [
-            lead.notes,
-            lead.instagram ? `Instagram: ${lead.instagram}` : '',
-            lead.responsavel ? `Responsável: ${lead.responsavel}` : '',
-          ].filter(Boolean).join('\n'),
-        }),
-      })
-      // Cria serviço de marketing com o valor estimado do lead
-      if (clientRes.ok && lead.estimated_value) {
-        const client = await clientRes.json()
-        const today = new Date().toISOString().split('T')[0]
-        await fetch('/api/services', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            client_id: client.id,
-            name: 'Marketing',
-            type: 'recorrente',
-            amount: lead.estimated_value,
-            recurrence: 'mensal',
-            started_at: today,
-          }),
-        })
-      }
-      // Exclui o lead do banco (já virou cliente)
-      await fetch(`/api/leads/${id}`, { method: 'DELETE' })
-      // Dispara celebração e remove do pipeline após animação
+      // Celebração imediata — sem esperar o backend
       setCelebrating(lead)
       setTimeout(() => {
         setLeads(ls => ls.filter(l => l.id !== id))
         setCelebrating(null)
         setSelected(null)
       }, 3500)
+
+      // Operações de backend em background
+      ;(async () => {
+        const clientRes = await fetch('/api/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: lead.company_name,
+            email: lead.contact_email ?? '',
+            phone: lead.contact_phone ?? '',
+            status: 'ativo',
+            notes: [
+              lead.notes,
+              lead.instagram ? `Instagram: ${lead.instagram}` : '',
+              lead.responsavel ? `Responsável: ${lead.responsavel}` : '',
+            ].filter(Boolean).join('\n'),
+          }),
+        })
+        if (clientRes.ok && lead.estimated_value) {
+          const client = await clientRes.json()
+          const today = new Date().toISOString().split('T')[0]
+          await fetch('/api/services', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              client_id: client.id,
+              name: 'Marketing',
+              type: 'recorrente',
+              amount: lead.estimated_value,
+              recurrence: 'mensal',
+              started_at: today,
+            }),
+          })
+        }
+        await fetch(`/api/leads/${id}`, { method: 'DELETE' })
+      })()
     }
   }
 

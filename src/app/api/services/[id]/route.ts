@@ -23,6 +23,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Se o valor mudou com data de vigência, atualiza cobranças futuras pendentes
+  if (body.amount !== undefined && body.effective_date) {
+    await supabase
+      .from('charges')
+      .update({ amount: body.amount })
+      .eq('service_id', id)
+      .eq('status', 'pendente')
+      .gte('due_date', body.effective_date)
+  }
+
   return NextResponse.json(data)
 }
 

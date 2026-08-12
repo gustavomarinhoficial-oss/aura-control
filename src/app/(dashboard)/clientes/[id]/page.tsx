@@ -58,7 +58,7 @@ export default function ClientProfilePage() {
   const [serviceError, setServiceError] = useState('')
   const [newService, setNewService] = useState({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0] })
   const [editingService, setEditingService] = useState<string | null>(null)
-  const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '' })
+  const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0] })
   const [savingEditService, setSavingEditService] = useState(false)
   const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados' | 'editorial'>('visao')
   type FileEntry = { name: string; metadata?: { size?: number } }
@@ -286,15 +286,23 @@ export default function ClientProfilePage() {
 
   function startEditService(s: Service) {
     setEditingService(s.id)
-    setEditServiceForm({ name: s.name, amount: String(s.amount), recurrence: s.recurrence ?? 'mensal', contract_end: s.contract_end ?? '' })
+    setEditServiceForm({ name: s.name, amount: String(s.amount), recurrence: s.recurrence ?? 'mensal', contract_end: s.contract_end ?? '', effective_date: new Date().toISOString().split('T')[0] })
   }
 
-  async function saveEditService(serviceId: string) {
+  async function saveEditService(serviceId: string, originalAmount: number) {
     setSavingEditService(true)
+    const newAmount = parseFloat(editServiceForm.amount)
+    const amountChanged = newAmount !== originalAmount
     await fetch(`/api/services/${serviceId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: editServiceForm.name, amount: parseFloat(editServiceForm.amount), recurrence: editServiceForm.recurrence, contract_end: editServiceForm.contract_end || null }),
+      body: JSON.stringify({
+        name: editServiceForm.name,
+        amount: newAmount,
+        recurrence: editServiceForm.recurrence,
+        contract_end: editServiceForm.contract_end || null,
+        effective_date: amountChanged ? editServiceForm.effective_date : undefined,
+      }),
     })
     setSavingEditService(false)
     setEditingService(null)
@@ -603,9 +611,16 @@ export default function ClientProfilePage() {
                           <input type="date" value={editServiceForm.contract_end} onChange={e => setEditServiceForm(f => ({ ...f, contract_end: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
                         </div>
                       </div>
+                      {parseFloat(editServiceForm.amount) !== Number(s.amount) && (
+                        <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/30 rounded-lg px-4 py-3">
+                          <label className="block text-xs text-[#a78bfa] mb-1.5">Novo valor a partir de</label>
+                          <input type="date" value={editServiceForm.effective_date} onChange={e => setEditServiceForm(f => ({ ...f, effective_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                          <p className="text-[10px] text-muted-foreground mt-1.5">Cobranças pendentes a partir desta data serão atualizadas para o novo valor. As anteriores permanecem como estão.</p>
+                        </div>
+                      )}
                       <div className="flex gap-3 pt-1">
                         <button onClick={() => setEditingService(null)} className="flex-1 border border-[#2a2a2a] text-sm py-2 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-                        <button onClick={() => saveEditService(s.id)} disabled={savingEditService} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
+                        <button onClick={() => saveEditService(s.id, Number(s.amount))} disabled={savingEditService} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
                           {savingEditService ? 'Salvando...' : 'Salvar'}
                         </button>
                       </div>
