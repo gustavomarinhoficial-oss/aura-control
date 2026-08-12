@@ -31,7 +31,7 @@ function Confetti({ name, value }: { name: string; value: number | null }) {
     let frame = 0
     let raf: number
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, canvas!.width, canvas!.height)
       frame++
       for (const p of particles) {
         p.x  += p.vx
