@@ -114,10 +114,19 @@ export default function ConfiguracoesPage() {
     const res = await fetch('/api/alerts/send?mode=morning', { method: 'POST' })
     const data = await res.json()
     setTesting(false)
-    if (data.skipped) setTestMsg(`Aviso: ${data.skipped}`)
-    else if (data.sent) setTestMsg(`Enviado! ${data.tasks} tarefa(s)`)
-    else setTestMsg('Erro ao enviar')
-    setTimeout(() => setTestMsg(''), 6000)
+    if (data.skipped) {
+      setTestMsg(`⚠️ ${data.skipped}`)
+    } else if (data.sent) {
+      const emailResult = data.results?.email
+      if (emailResult?.error) setTestMsg(`❌ Email falhou: ${emailResult.error}`)
+      else if (emailResult?.sent) setTestMsg(`✅ Email enviado para ${Array.isArray(emailResult.to) ? emailResult.to.join(', ') : emailResult.to} (${data.tasks} tarefa(s))`)
+      else setTestMsg(`✅ Enviado! ${data.tasks} tarefa(s)`)
+    } else if (data.error) {
+      setTestMsg(`❌ Erro: ${data.error}`)
+    } else {
+      setTestMsg('❌ Erro desconhecido')
+    }
+    setTimeout(() => setTestMsg(''), 10000)
   }
 
   function addEmail() {

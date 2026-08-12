@@ -84,19 +84,18 @@ export async function POST(request: Request) {
   tomorrowBrasilia.setDate(tomorrowBrasilia.getDate() + 1)
   const tomorrowStr = tomorrowBrasilia.toISOString().slice(0, 10)
 
-  let query = supabase
+  let baseQuery = supabase
     .from('tasks')
     .select('id,title,due_date,status,priority,client_id')
     .in('status', ['pendente', 'em_andamento'])
-    .order('due_date', { ascending: true })
+    .order('due_date', { ascending: true, nullsFirst: false })
 
-  if (mode === 'morning') {
-    query = query.lte('due_date', todayStr)
-  } else {
-    query = query.eq('due_date', tomorrowStr)
-  }
+  // Manhã: atrasadas + vencendo hoje + todas sem data de vencimento
+  // Noite: só as de amanhã
+  const { data: tasks } = mode === 'morning'
+    ? await baseQuery.or(`due_date.is.null,due_date.lte.${todayStr}`)
+    : await baseQuery.eq('due_date', tomorrowStr)
 
-  const { data: tasks } = await query
   const { data: clients } = await supabase.from('clients').select('id,name')
 
   const clientMap: Record<string, string> = {}
@@ -105,7 +104,7 @@ export async function POST(request: Request) {
   const taskList = (tasks as Task[] ?? [])
 
   if (taskList.length === 0) {
-    return NextResponse.json({ skipped: mode === 'morning' ? 'Sem tarefas para hoje' : 'Sem tarefas para amanhã' })
+    return NextResponse.json({ skipped: mode === 'morning' ? 'Sem tarefas ativas' : 'Sem tarefas para amanhã' })
   }
 
   const priorityLabel: Record<string, string> = { alta: '🔴 Alta', media: '🟡 Média', baixa: '🟢 Baixa' }
