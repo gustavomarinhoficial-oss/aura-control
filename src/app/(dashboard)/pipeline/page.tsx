@@ -184,7 +184,7 @@ export default function PipelinePage() {
 
     if (newStage === 'fechado' && lead) {
       // Cria cliente automaticamente
-      await fetch('/api/clients', {
+      const clientRes = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -199,6 +199,23 @@ export default function PipelinePage() {
           ].filter(Boolean).join('\n'),
         }),
       })
+      // Cria serviço de marketing com o valor estimado do lead
+      if (clientRes.ok && lead.estimated_value) {
+        const client = await clientRes.json()
+        const today = new Date().toISOString().split('T')[0]
+        await fetch('/api/services', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            client_id: client.id,
+            name: 'Marketing',
+            type: 'recorrente',
+            amount: lead.estimated_value,
+            recurrence: 'mensal',
+            started_at: today,
+          }),
+        })
+      }
       // Dispara celebração e remove do pipeline após animação
       setCelebrating(lead)
       setTimeout(() => {
