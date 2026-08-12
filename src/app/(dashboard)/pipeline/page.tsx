@@ -1,8 +1,73 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, X, Check, Trash2, UserPlus, Phone, Mail, DollarSign, FileText, Calendar, ChevronRight, Pencil, AtSign, MapPin, User } from 'lucide-react' // lucide-react compat
+import { Plus, X, Check, Trash2, Phone, Mail, DollarSign, FileText, Calendar, Pencil, AtSign, MapPin, User } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
+
+// ── Confetti ────────────────────────────────────────────────────────────────
+function Confetti({ name, value }: { name: string; value: number | null }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')!
+    canvas.width  = window.innerWidth
+    canvas.height = window.innerHeight
+
+    const COLORS = ['#7c3aed','#22c55e','#f59e0b','#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa']
+    const particles = Array.from({ length: 180 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -20 - Math.random() * canvas.height * 0.4,
+      r: 4 + Math.random() * 6,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+      vx: (Math.random() - 0.5) * 6,
+      vy: 2 + Math.random() * 5,
+      spin: (Math.random() - 0.5) * 0.3,
+      angle: Math.random() * Math.PI * 2,
+      shape: Math.random() > 0.5 ? 'rect' : 'circle',
+    }))
+
+    let frame = 0
+    let raf: number
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      frame++
+      for (const p of particles) {
+        p.x  += p.vx
+        p.y  += p.vy
+        p.vy += 0.12
+        p.angle += p.spin
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate(p.angle)
+        ctx.globalAlpha = Math.max(0, 1 - frame / 160)
+        ctx.fillStyle = p.color
+        if (p.shape === 'rect') ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r)
+        else { ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill() }
+        ctx.restore()
+      }
+      if (frame < 180) raf = requestAnimationFrame(draw)
+    }
+    draw()
+    return () => cancelAnimationFrame(raf)
+  }, [])
+
+  return (
+    <div className="fixed inset-0 z-[9999] pointer-events-none flex items-center justify-center">
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+      <div className="relative text-center animate-bounce">
+        <div className="text-5xl mb-3">🎉</div>
+        <div className="bg-[#111] border border-[#22c55e]/40 rounded-2xl px-8 py-5 shadow-2xl">
+          <p className="text-[#22c55e] font-bold text-lg">{name}</p>
+          <p className="text-sm text-muted-foreground mt-1">Lead fechado!</p>
+          {value && <p className="text-xl font-bold text-[#22c55e] mt-2">{formatBRL(value)}</p>}
+          <p className="text-xs text-muted-foreground mt-2">Cliente criado automaticamente ✓</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 interface Lead {
   id: string
@@ -52,6 +117,7 @@ export default function PipelinePage() {
   const [activeDrag, setActiveDrag] = useState<Lead | null>(null)
   const [dragPos, setDragPos]       = useState({ x: 0, y: 0 })
   const [overStage, setOverStage]   = useState<string | null>(null)
+  const [celebrating, setCelebrating] = useState<Lead | null>(null)
   const pendingDrag = useRef<{ lead: Lead; x: number; y: number; pointerId: number; el: Element } | null>(null)
   const isDraggingRef = useRef(false)
   const overStageRef  = useRef<string | null>(null)
@@ -108,12 +174,39 @@ export default function PipelinePage() {
   }
 
   async function moveLead(id: string, newStage: string) {
+    const lead = leads.find(l => l.id === id)
     setLeads(ls => ls.map(l => l.id === id ? { ...l, stage: newStage } : l))
     await fetch(`/api/leads/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stage: newStage }),
     })
+
+    if (newStage === 'fechado' && lead) {
+      // Cria cliente automaticamente
+      await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: lead.company_name,
+          email: lead.contact_email ?? '',
+          phone: lead.contact_phone ?? '',
+          status: 'ativo',
+          notes: [
+            lead.notes,
+            lead.instagram ? `Instagram: ${lead.instagram}` : '',
+            lead.responsavel ? `Responsável: ${lead.responsavel}` : '',
+          ].filter(Boolean).join('\n'),
+        }),
+      })
+      // Dispara celebração e remove do pipeline após animação
+      setCelebrating(lead)
+      setTimeout(() => {
+        setLeads(ls => ls.filter(l => l.id !== id))
+        setCelebrating(null)
+        setSelected(null)
+      }, 3500)
+    }
   }
 
   async function convertToClient(lead: Lead) {
@@ -388,18 +481,9 @@ export default function PipelinePage() {
                 </div>
               </div>
 
-              {/* Converter em cliente */}
-              {selected.stage === 'fechado' && convertedId !== selected.id && (
-                <button onClick={() => convertToClient(selected)} disabled={converting}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] text-sm font-medium hover:bg-[#22c55e]/20 transition-colors disabled:opacity-50">
-                  <UserPlus size={14} />
-                  {converting ? 'Criando...' : 'Converter em cliente'}
-                  <ChevronRight size={13} />
-                </button>
-              )}
-              {convertedId === selected.id && (
+              {selected.stage === 'fechado' && (
                 <div className="flex items-center gap-2 py-2.5 px-3 rounded-lg bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] text-sm">
-                  <Check size={14} /> Cliente criado com sucesso
+                  <Check size={14} /> Lead fechado — cliente criado automaticamente
                 </div>
               )}
 
@@ -485,6 +569,11 @@ export default function PipelinePage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Celebração ao fechar lead */}
+      {celebrating && (
+        <Confetti name={celebrating.company_name} value={celebrating.estimated_value} />
       )}
     </div>
   )
