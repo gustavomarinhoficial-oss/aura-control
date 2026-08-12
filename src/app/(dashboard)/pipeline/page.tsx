@@ -216,6 +216,8 @@ export default function PipelinePage() {
           }),
         })
       }
+      // Exclui o lead do banco (já virou cliente)
+      await fetch(`/api/leads/${id}`, { method: 'DELETE' })
       // Dispara celebração e remove do pipeline após animação
       setCelebrating(lead)
       setTimeout(() => {
