@@ -111,22 +111,15 @@ export default function ConfiguracoesPage() {
   async function testAlert() {
     setTesting(true)
     setTestMsg('')
-    const res = await fetch('/api/alerts/send?mode=morning', { method: 'POST' })
+    const res = await fetch('/api/alerts/test-email')
     const data = await res.json()
     setTesting(false)
-    if (data.skipped) {
-      setTestMsg(`⚠️ ${data.skipped}`)
-    } else if (data.sent) {
-      const emailResult = data.results?.email
-      if (emailResult?.error) setTestMsg(`❌ Email falhou: ${emailResult.error}`)
-      else if (emailResult?.sent) setTestMsg(`✅ Email enviado para ${Array.isArray(emailResult.to) ? emailResult.to.join(', ') : emailResult.to} (${data.tasks} tarefa(s))`)
-      else setTestMsg(`✅ Enviado! ${data.tasks} tarefa(s)`)
-    } else if (data.error) {
-      setTestMsg(`❌ Erro: ${data.error}`)
+    if (data.ok) {
+      setTestMsg(`✅ Email enviado para ${Array.isArray(data.to) ? data.to.join(', ') : data.to}`)
     } else {
-      setTestMsg('❌ Erro desconhecido')
+      setTestMsg(`❌ ${data.error}`)
     }
-    setTimeout(() => setTestMsg(''), 10000)
+    setTimeout(() => setTestMsg(''), 15000)
   }
 
   function addEmail() {
@@ -326,7 +319,7 @@ export default function ConfiguracoesPage() {
             </div>
             <div className="flex items-center gap-2">
               {testMsg && (
-                <span className={`text-xs px-2 py-1 rounded-lg ${testMsg.startsWith('Envi') ? 'text-green-400 bg-green-400/10' : 'text-yellow-400 bg-yellow-400/10'}`}>
+                <span className={`text-xs px-2 py-1 rounded-lg max-w-xs truncate ${testMsg.startsWith('✅') ? 'text-green-400 bg-green-400/10' : 'text-red-400 bg-red-400/10'}`} title={testMsg}>
                   {testMsg}
                 </span>
               )}
