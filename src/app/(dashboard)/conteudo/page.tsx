@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
-  Trash2, BarChart2, TrendingUp, Upload, ImageIcon,
+  Trash2, BarChart2, TrendingUp, ImageIcon,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import {
@@ -27,6 +27,7 @@ interface ContentPost {
   result: Record<string, number>
   notes: string | null
   media_url: string | null
+  media_urls: string[] | null
   created_at: string
   clients?: { id: string; name: string } | null
 }
@@ -122,70 +123,74 @@ function toDirectImageUrl(url: string): string {
   return url
 }
 
-// â"€â"€ ImageUpload â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-function ImageUpload({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+// ── CarouselUpload ─────────────────────────────────────────────────────────────────────────────────
+const MAX_IMAGES = 10
+function CarouselUpload({ values, onChange }: { values: string[]; onChange: (urls: string[]) => void }) {
   const [uploading, setUploading] = useState(false)
   const [uploadErr, setUploadErr] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  async function handleFile(file: File) {
+  async function handleFiles(files: FileList) {
     setUploading(true)
     setUploadErr(null)
-    try {
-      const fd = new FormData()
-      fd.append('file', file)
-      const res = await fetch('/api/upload', { method: 'POST', body: fd })
-      const json = await res.json()
-      if (res.ok) {
-        onChange(json.url)
-      } else {
-        setUploadErr(json.error ?? `Erro ${res.status}`)
+    const newUrls: string[] = []
+    const toUpload = Array.from(files).slice(0, MAX_IMAGES - values.length)
+    for (const file of toUpload) {
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await fetch('/api/upload', { method: 'POST', body: fd })
+        const json = await res.json()
+        if (res.ok) newUrls.push(json.url)
+        else setUploadErr(json.error ?? `Erro ${res.status}`)
+      } catch {
+        setUploadErr('Falha na conexão')
       }
-    } catch {
-      setUploadErr('Falha na conexao')
     }
+    if (newUrls.length) onChange([...values, ...newUrls])
     setUploading(false)
   }
 
-  if (value) {
-    return (
-      <div className="relative rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#1a1a1a] group">
-        <img
-          src={toDirectImageUrl(value)}
-          alt="Previa"
-          className="w-full max-h-64 object-contain"
-          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-        />
-        <button
-          onClick={() => inputRef.current?.click()}
-          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-sm text-white"
-        >
-          <Upload size={14} /> Trocar imagem
-        </button>
-        <input ref={inputRef} type="file" accept="image/*" className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
-      </div>
-    )
-  }
+  function remove(i: number) { onChange(values.filter((_, idx) => idx !== i)) }
 
   return (
-    <div>
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
-      <button
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors"
-      >
-        {uploading ? (
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <ImageIcon size={20} />
-        )}
-        {!uploading && <span className="text-xs">Clique para fazer upload da imagem</span>}
-        {!uploading && <span className="text-[10px] opacity-50">PNG, JPG - Cloudflare R2</span>}
-      </button>
-      {uploadErr && <p className="mt-1.5 text-[11px] text-[#ef4444]">{uploadErr}</p>}
+    <div className="space-y-2">
+      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
+        onChange={e => { if (e.target.files?.length) { handleFiles(e.target.files); e.target.value = '' } }} />
+      {values.length > 0 ? (
+        <div className="flex gap-2 flex-wrap">
+          {values.map((url, i) => (
+            <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[#2a2a2a] shrink-0">
+              <img src={toDirectImageUrl(url)} alt="" className="w-full h-full object-cover"
+                onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }} />
+              {i === 0 && values.length > 1 && (
+                <div className="absolute bottom-0.5 left-0.5 bg-black/70 text-[8px] text-white px-1 rounded">capa</div>
+              )}
+              <button onClick={() => remove(i)}
+                className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-[#ef4444]/80 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <X size={8} />
+              </button>
+            </div>
+          ))}
+          {values.length < MAX_IMAGES && (
+            <button onClick={() => inputRef.current?.click()} disabled={uploading}
+              className="w-20 h-20 border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-[#a78bfa] transition-colors shrink-0">
+              {uploading
+                ? <div className="w-4 h-4 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+                : <><Plus size={16} /><span className="text-[9px]">Adicionar</span></>}
+            </button>
+          )}
+        </div>
+      ) : (
+        <button onClick={() => inputRef.current?.click()} disabled={uploading}
+          className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors">
+          {uploading
+            ? <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            : <><ImageIcon size={20} /><span className="text-xs">Clique para fazer upload</span><span className="text-[10px] opacity-50">PNG, JPG — até {MAX_IMAGES} imagens (carrossel)</span></>}
+        </button>
+      )}
+      {values.length > 1 && <p className="text-[10px] text-[#a78bfa]">⊞ Carrossel · {values.length} imagens · a primeira é a capa</p>}
+      {uploadErr && <p className="text-[11px] text-[#ef4444]">{uploadErr}</p>}
     </div>
   )
 }
@@ -198,7 +203,10 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   onSaved: (p: ContentPost) => void
   onDeleted: () => void
 }) {
-  const [form, setForm]       = useState({ ...post })
+  const [form, setForm] = useState({
+    ...post,
+    media_urls: post.media_urls?.length ? post.media_urls : (post.media_url ? [post.media_url] : []),
+  })
   const [saving, setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
   const isMounted = useRef(true)
@@ -334,12 +342,17 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             </div>
           </div>
 
-          {/* imagem / upload */}
+          {/* imagens / carrossel */}
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagem do post</label>
-            <ImageUpload
-              value={form.media_url ?? ''}
-              onChange={url => { setForm(f => ({ ...f, media_url: url })); save({ media_url: url }) }}
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">
+              {(form.media_urls?.length ?? 0) > 1 ? `Carrossel (${form.media_urls?.length} imagens)` : 'Imagem do post'}
+            </label>
+            <CarouselUpload
+              values={form.media_urls ?? []}
+              onChange={urls => {
+                setForm(f => ({ ...f, media_urls: urls, media_url: urls[0] ?? null }))
+                save({ media_urls: urls, media_url: urls[0] ?? null })
+              }}
             />
           </div>
 
@@ -429,7 +442,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     status:         'rascunho',
     scheduled_date: '',
     caption:        '',
-    media_url:      '',
+    media_urls:     [] as string[],
     responsible:    '',
   })
   const [saving, setSaving]   = useState(false)
@@ -449,7 +462,8 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
         status:         form.status,
         scheduled_date: form.scheduled_date || null,
         caption:        form.caption        || null,
-        media_url:      form.media_url      || null,
+        media_urls:     form.media_urls,
+        media_url:      form.media_urls[0]  || null,
         responsible:    form.responsible    || null,
         result: {},
       }),
@@ -539,10 +553,10 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
             />
           </div>
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagem do post</label>
-            <ImageUpload
-              value={form.media_url}
-              onChange={url => setForm(f => ({ ...f, media_url: url }))}
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagens do post</label>
+            <CarouselUpload
+              values={form.media_urls}
+              onChange={urls => setForm(f => ({ ...f, media_urls: urls }))}
             />
           </div>
           <div>
@@ -642,14 +656,19 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
                         style={{ background: pColor(post.platform) + '22' }}
                         title={`${post.title} - ${sInfo(post.status).label}`}
                       >
-                        {post.media_url && (
-                          <img
-                            src={toDirectImageUrl(post.media_url)}
-                            alt=""
-                            className="w-full h-14 object-cover"
-                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                          />
-                        )}
+                        {(() => {
+                          const thumb = post.media_urls?.[0] ?? post.media_url
+                          const count = post.media_urls?.length ?? (post.media_url ? 1 : 0)
+                          return thumb ? (
+                            <div className="relative">
+                              <img src={toDirectImageUrl(thumb)} alt="" className="w-full h-14 object-cover"
+                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                              {count > 1 && (
+                                <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-[8px] text-white px-1 rounded">⊞ {count}</span>
+                              )}
+                            </div>
+                          ) : null
+                        })()}
                         <div className="flex items-center justify-between px-1.5 py-0.5 gap-1">
                           <p
                             className="text-[10px] truncate leading-tight font-medium flex-1"

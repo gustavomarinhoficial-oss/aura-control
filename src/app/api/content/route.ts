@@ -36,6 +36,7 @@ export async function POST(request: Request) {
       result:         body.result ?? {},
       notes:          body.notes || null,
       media_url:      body.media_url || null,
+      media_urls:     body.media_urls ?? [],
     })
     .select('*, clients(id, name)')
     .single()
