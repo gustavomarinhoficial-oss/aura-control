@@ -18,15 +18,15 @@ export const ROLE_NAME: Record<Role, string> = {
   default: '',
 }
 
-// Rotas visíveis para a Julia
+// Rotas visíveis para a Julia, na ordem que aparece na sidebar
 export const JULIA_NAV = [
   '/dashboard',
-  '/projetos',
   '/conteudo',
-  '/ia',
-  '/metas',
   '/tarefas',
   '/calendario',
+  '/projetos',
+  '/metas',
+  '/ia',
 ]
 
 // Rotas bloqueadas para a Julia (middleware redireciona)

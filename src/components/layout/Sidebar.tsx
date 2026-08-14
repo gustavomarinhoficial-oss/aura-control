@@ -63,7 +63,7 @@ export function Sidebar() {
   }
 
   const nav = role === 'julia'
-    ? ALL_NAV.filter(n => JULIA_NAV.includes(n.href))
+    ? JULIA_NAV.map(href => ALL_NAV.find(n => n.href === href)).filter(Boolean) as typeof ALL_NAV
     : ALL_NAV
 
   async function handleSignOut() {
