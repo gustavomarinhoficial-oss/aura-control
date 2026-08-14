@@ -48,7 +48,7 @@ export function MobileNav() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setIsJulia(getRole(user.email) === 'julia')
+      if (user) setIsJulia(getRole(user.user_metadata) === 'julia')
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

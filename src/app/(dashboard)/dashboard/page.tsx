@@ -870,7 +870,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setRole(getRole(user?.email))
+      setRole(getRole(user?.user_metadata))
     })
   }, [])
 

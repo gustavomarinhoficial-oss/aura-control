@@ -41,10 +41,10 @@ export function Sidebar() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user?.email) return
-      const r = getRole(user.email)
+      if (!user) return
+      const r = getRole(user.user_metadata)
       setRole(r)
-      setUserName(ROLE_NAME[r] || user.email.split('@')[0])
+      setUserName(ROLE_NAME[r] || (user.email?.split('@')[0] ?? ''))
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

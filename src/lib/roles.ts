@@ -1,12 +1,12 @@
 export type Role = 'gustavo' | 'gabriel' | 'thomas' | 'admin' | 'julia' | 'default'
 
-const ROLE_MAP: Record<string, Role> = {
-  'gustavomarinhoficial@gmail.com': 'gustavo',
-  'camachojulia211@gmail.com':      'julia',
-}
+const VALID_ROLES = new Set<string>(['gustavo', 'gabriel', 'thomas', 'admin', 'julia'])
 
-export function getRole(email: string): Role {
-  return ROLE_MAP[email.toLowerCase()] ?? 'default'
+// Role vem do user_metadata do Supabase (campo "role"), configurado no painel admin
+export function getRole(userMetadata?: Record<string, unknown> | null): Role {
+  const r = userMetadata?.role
+  if (typeof r === 'string' && VALID_ROLES.has(r)) return r as Role
+  return 'default'
 }
 
 export const ROLE_NAME: Record<Role, string> = {

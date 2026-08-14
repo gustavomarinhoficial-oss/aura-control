@@ -10,7 +10,7 @@ export function useRole(): Role {
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setRole(getRole(user.email))
+      if (user) setRole(getRole(user.user_metadata))
     })
   }, [])
 

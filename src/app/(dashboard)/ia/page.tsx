@@ -757,7 +757,7 @@ export default function IAPage() {
     })
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      const role = getRole(user?.email)
+      const role = getRole(user?.user_metadata)
       setAuthorName(ROLE_NAME[role] || user?.email?.split('@')[0] || '')
     })
   }, [])
