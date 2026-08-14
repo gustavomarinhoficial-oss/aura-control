@@ -32,14 +32,5 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Auto-create a project for the new client
-  await supabase.from('projects').insert({
-    client_id: data.id,
-    title: `Projeto â€” ${data.name}`,
-    status: 'afazer',
-    responsaveis: [],
-    checklist: [],
-  })
-
   return NextResponse.json(data, { status: 201 })
 }
