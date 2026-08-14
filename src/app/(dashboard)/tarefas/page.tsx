@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Plus, Circle, Loader2, CheckCircle2, Trash2, AlertCircle, Calendar, ChevronDown, ChevronRight, Check, Edit2, Upload, Download, X, FileSpreadsheet } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import { useRole } from '@/lib/hooks/useRole'
+import { JULIA_TASK_MEMBERS } from '@/lib/roles'
 import type { Task, TaskStatus, TaskPriority, Member, TaskItem } from '@/lib/supabase/types'
 
 const statusConfig: Record<TaskStatus, { label: string; icon: React.ElementType; color: string }> = {
@@ -120,6 +122,9 @@ function TaskChecklist({ taskId }: { taskId: string }) {
 }
 
 export default function TarefasPage() {
+  const role = useRole()
+  const isJulia = role === 'julia'
+
   const [tasks, setTasks] = useState<Task[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [members, setMembers] = useState<Member[]>([])
@@ -162,11 +167,22 @@ export default function TarefasPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  const overdueCount = tasks.filter(t => t.due_date && t.due_date < today && t.status !== 'concluido').length
+
+  // Para Julia: mostrar apenas tarefas da Julia e do Gabriel
+  const baseTasks = isJulia
+    ? tasks.filter(t => t.members && JULIA_TASK_MEMBERS.includes(t.members.name))
+    : tasks
+
+  const overdueCount = baseTasks.filter(t => t.due_date && t.due_date < today && t.status !== 'concluido').length
 
   const ownerFiltered = activeOwner === 'todos'
-    ? tasks
-    : tasks.filter(t => t.members?.name === activeOwner)
+    ? baseTasks
+    : baseTasks.filter(t => t.members?.name === activeOwner)
+
+  // Para Julia: filtrar botões de membro para mostrar só Julia e Gabriel
+  const visibleMembers = isJulia
+    ? members.filter(m => JULIA_TASK_MEMBERS.includes(m.name))
+    : members
 
   const openTasks = ownerFiltered
     .filter(t => t.status !== 'concluido')
@@ -180,8 +196,8 @@ export default function TarefasPage() {
   const filtered = activeTab === 'todas' ? openTasks : doneTasks
 
   const counts = {
-    open: tasks.filter(t => t.status !== 'concluido').length,
-    concluido: tasks.filter(t => t.status === 'concluido').length,
+    open: baseTasks.filter(t => t.status !== 'concluido').length,
+    concluido: baseTasks.filter(t => t.status === 'concluido').length,
   }
 
   return (
@@ -229,9 +245,9 @@ export default function TarefasPage() {
         </div>
 
         {/* Filtro por pessoa */}
-        {members.length > 0 && (
+        {visibleMembers.length > 0 && (
           <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-            {(['todos', ...members.map(m => m.name)]).map(person => (
+            {(['todos', ...visibleMembers.map(m => m.name)]).map(person => (
               <button
                 key={person}
                 onClick={() => setActiveOwner(person)}

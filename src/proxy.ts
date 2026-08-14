@@ -51,13 +51,13 @@ export async function proxy(request: NextRequest) {
 
   // Controle de acesso: Julia não acessa rotas bloqueadas
   if (user) {
-    const role = getRole(user.email)
+    const role = getRole(user.email ?? '')
 
     if (role === 'julia') {
       const isBlocked = BLOCKED_FOR_JULIA.some(
-        route => pathname === route || pathname.startsWith(route + '/')
+        (route: string) => pathname === route || pathname.startsWith(route + '/')
       )
-      if (isBlocked || pathname === '/dashboard') {
+      if (isBlocked) {
         const url = request.nextUrl.clone()
         url.pathname = '/conteudo'
         return NextResponse.redirect(url)

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Target, Trash2, Check, X, TrendingUp, Zap } from 'lucide-react'
 import { formatBRL, currentPeriod, getPeriodLabel } from '@/lib/utils/format'
+import { useRole } from '@/lib/hooks/useRole'
 import type { Goal } from '@/lib/supabase/types'
 
 interface Client { id: string; name: string }
@@ -32,6 +33,9 @@ interface GoalWithProgress extends Goal {
 }
 
 export default function MetasPage() {
+  const role = useRole()
+  const isJulia = role === 'julia'
+
   const [goals, setGoals] = useState<GoalWithProgress[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
@@ -117,7 +121,11 @@ export default function MetasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Metas</h1>
-          <p className="text-sm text-muted-foreground mt-1">{goals.length} meta{goals.length !== 1 ? 's' : ''} cadastrada{goals.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {(isJulia ? goals.filter(g => g.type === 'custom' && g.title) : goals).length} meta
+            {(isJulia ? goals.filter(g => g.type === 'custom' && g.title) : goals).length !== 1 ? 's' : ''} cadastrada
+            {(isJulia ? goals.filter(g => g.type === 'custom' && g.title) : goals).length !== 1 ? 's' : ''}
+          </p>
         </div>
         <button
           onClick={() => setShowNew(true)}
@@ -132,7 +140,7 @@ export default function MetasPage() {
         <div className="flex items-center justify-center h-40">
           <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : goals.length === 0 ? (
+      ) : (isJulia ? goals.filter(g => g.type === 'custom' && g.title) : goals).length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
           <Target size={32} className="text-muted-foreground" strokeWidth={1} />
           <div>
@@ -145,7 +153,7 @@ export default function MetasPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {goals.map(g => {
+          {(isJulia ? goals.filter(g => g.type === 'custom' && g.title) : goals).map(g => {
             const p = g.pct
             const isAuto = !g.title
             const isEditing = editingId === g.id
@@ -244,6 +252,7 @@ export default function MetasPage() {
       {showNew && (
         <NewGoalModal
           clients={clients}
+          onlyCustom={isJulia}
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); load() }}
         />
@@ -252,10 +261,10 @@ export default function MetasPage() {
   )
 }
 
-function NewGoalModal({ clients, onClose, onCreated }: { clients: Client[]; onClose: () => void; onCreated: () => void }) {
+function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Client[]; onlyCustom?: boolean; onClose: () => void; onCreated: () => void }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [mode, setMode] = useState<'auto' | 'custom'>('auto')
+  const [mode, setMode] = useState<'auto' | 'custom'>(onlyCustom ? 'custom' : 'auto')
   const [autoType, setAutoType] = useState<'mrr' | 'clientes'>('mrr')
   const [form, setForm] = useState({
     title: '',
@@ -320,28 +329,30 @@ function NewGoalModal({ clients, onClose, onCreated }: { clients: Client[]; onCl
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
-          {/* Modo */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setMode('auto')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
-                mode === 'auto' ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Zap size={11} fill={mode === 'auto' ? 'currentColor' : 'none'} />
-              Automática
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('custom')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
-                mode === 'custom' ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Personalizada
-            </button>
-          </div>
+          {/* Modo — escondido para Julia (só vê metas personalizadas) */}
+          {!onlyCustom && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setMode('auto')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
+                  mode === 'auto' ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Zap size={11} fill={mode === 'auto' ? 'currentColor' : 'none'} />
+                Automática
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('custom')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
+                  mode === 'custom' ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Personalizada
+              </button>
+            </div>
+          )}
 
           {mode === 'auto' ? (
             <>

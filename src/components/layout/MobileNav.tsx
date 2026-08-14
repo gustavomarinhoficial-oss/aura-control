@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getRole } from '@/lib/roles'
 import {
   LayoutDashboard, Kanban, Newspaper, Users,
   Layers, DollarSign, Target, CheckSquare,
@@ -11,28 +12,46 @@ import {
   MoreHorizontal, X,
 } from 'lucide-react'
 
-const PINNED = [
-  { href: '/dashboard', label: 'Home',     icon: LayoutDashboard },
-  { href: '/pipeline',  label: 'Pipeline', icon: Kanban },
-  { href: '/conteudo',  label: 'Conteúdo', icon: Newspaper },
-  { href: '/clientes',  label: 'Clientes', icon: Users },
+const ALL_PINNED = [
+  { href: '/dashboard', label: 'Home',     icon: LayoutDashboard, roles: ['all'] },
+  { href: '/pipeline',  label: 'Pipeline', icon: Kanban,          roles: ['admin'] },
+  { href: '/conteudo',  label: 'Conteúdo', icon: Newspaper,       roles: ['all'] },
+  { href: '/clientes',  label: 'Clientes', icon: Users,           roles: ['admin'] },
+  { href: '/metas',     label: 'Metas',    icon: Target,          roles: ['julia'] },
+  { href: '/tarefas',   label: 'Tarefas',  icon: CheckSquare,     roles: ['julia'] },
 ]
 
-const MORE_NAV = [
-  { href: '/projetos',     label: 'Projetos',   icon: Layers },
-  { href: '/financeiro',   label: 'Financeiro', icon: DollarSign },
-  { href: '/metas',        label: 'Metas',      icon: Target },
-  { href: '/tarefas',      label: 'Tarefas',    icon: CheckSquare },
-  { href: '/ia',           label: 'Central IA', icon: Brain },
-  { href: '/calendario',   label: 'Calendário', icon: CalendarDays },
-  { href: '/configuracoes',label: 'Config.',    icon: Settings },
+const ALL_MORE_NAV = [
+  { href: '/projetos',     label: 'Projetos',   icon: Layers,      roles: ['all'] },
+  { href: '/financeiro',   label: 'Financeiro', icon: DollarSign,  roles: ['admin'] },
+  { href: '/metas',        label: 'Metas',      icon: Target,      roles: ['admin'] },
+  { href: '/tarefas',      label: 'Tarefas',    icon: CheckSquare, roles: ['admin'] },
+  { href: '/ia',           label: 'Central IA', icon: Brain,       roles: ['all'] },
+  { href: '/calendario',   label: 'Calendário', icon: CalendarDays,roles: ['all'] },
+  { href: '/configuracoes',label: 'Config.',    icon: Settings,    roles: ['admin'] },
 ]
+
+function navFor(items: typeof ALL_PINNED, isJulia: boolean) {
+  return items.filter(n => {
+    if (n.roles.includes('all')) return true
+    if (isJulia) return n.roles.includes('julia')
+    return n.roles.includes('admin')
+  })
+}
 
 export function MobileNav() {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
   const [open, setOpen] = useState(false)
+  const [isJulia, setIsJulia] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) setIsJulia(getRole(user.email) === 'julia')
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // fechar gaveta ao navegar
   useEffect(() => { setOpen(false) }, [pathname])
@@ -50,6 +69,9 @@ export function MobileNav() {
     router.push('/login')
     router.refresh()
   }
+
+  const PINNED   = navFor(ALL_PINNED, isJulia)
+  const MORE_NAV = navFor(ALL_MORE_NAV, isJulia)
 
   const isMoreActive = MORE_NAV.some(n =>
     pathname === n.href || (pathname.startsWith(n.href + '/'))

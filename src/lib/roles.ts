@@ -1,46 +1,41 @@
-// ── Central de roles ────────────────────────────────────────────────────────
-// Para adicionar um email, basta preencher o valor da chave correspondente.
-// Os emails em branco são ignorados automaticamente.
-
-const USER_EMAILS: Record<string, string> = {
-  gustavo: 'gustavomarinhoficial@gmail.com',
-  gabriel: 'gabriel.almeidamr@gmail.com',
-  thomas:  'ThomasMacedobr@gmail.com', // ← email do Thomas
-  admin:   '', // ← email geral da Aura (vê tudo)
-  julia:   '', // ← cole o email da Julia quando tiver
-}
-
 export type Role = 'gustavo' | 'gabriel' | 'thomas' | 'admin' | 'julia' | 'default'
 
-const EMAIL_TO_ROLE: Record<string, Role> = Object.fromEntries(
-  Object.entries(USER_EMAILS)
-    .filter(([, email]) => email.trim() !== '')
-    .map(([role, email]) => [email.toLowerCase(), role as Role])
-)
+const ROLE_MAP: Record<string, Role> = {
+  'gustavomarinhoficial@gmail.com': 'gustavo',
+  'camachojulia211@gmail.com':      'julia',
+}
 
-export function getRole(email: string | undefined | null): Role {
-  if (!email) return 'default'
-  return EMAIL_TO_ROLE[email.toLowerCase()] ?? 'default'
+export function getRole(email: string): Role {
+  return ROLE_MAP[email.toLowerCase()] ?? 'default'
 }
 
 export const ROLE_NAME: Record<Role, string> = {
   gustavo: 'Gustavo',
   gabriel: 'Gabriel',
   thomas:  'Thomas',
-  admin:   'Aura',
+  admin:   'Admin',
   julia:   'Julia',
   default: '',
 }
 
-// Rotas bloqueadas para a Julia
-export const BLOCKED_FOR_JULIA = [
+// Rotas visíveis para a Julia
+export const JULIA_NAV = [
   '/dashboard',
-  '/pipeline',
-  '/financeiro',
+  '/projetos',
+  '/conteudo',
+  '/ia',
   '/metas',
   '/tarefas',
+  '/calendario',
+]
+
+// Rotas bloqueadas para a Julia (middleware redireciona)
+export const BLOCKED_FOR_JULIA = [
+  '/pipeline',
+  '/clientes',
+  '/financeiro',
   '/configuracoes',
 ]
 
-// Nav visível para a Julia (resto fica oculto no sidebar)
-export const JULIA_NAV = ['/clientes', '/projetos', '/conteudo', '/ia', '/calendario']
+// Membros cujas tarefas a Julia pode ver
+export const JULIA_TASK_MEMBERS = ['Julia', 'Gabriel']
