@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Mic, MicOff, CheckSquare, DollarSign, X, Check } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
 import { parseVoiceInput } from '@/lib/utils/parse-voice'
+import { useRole } from '@/lib/hooks/useRole'
+import { JULIA_TASK_MEMBERS } from '@/lib/roles'
 import type { Task, Charge, Member } from '@/lib/supabase/types'
 
 interface Client { id: string; name: string }
@@ -65,6 +67,9 @@ interface SpeechRecognitionAlternative {
 }
 
 export default function CalendarioPage() {
+  const role = useRole()
+  const isJulia = role === 'julia'
+
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
@@ -110,9 +115,20 @@ export default function CalendarioPage() {
   // Monta mapa dia → eventos
   const eventsByDay: Record<number, DayEvent[]> = {}
 
+  // Para Julia: só tarefas de Julia e Gabriel, sem cobranças
+  const baseTasks = isJulia
+    ? tasks.filter(t => t.members && JULIA_TASK_MEMBERS.includes(t.members.name))
+    : tasks
+
   const visibleTasks = activeOwner === 'todos'
-    ? tasks
-    : tasks.filter(t => t.members?.name === activeOwner)
+    ? baseTasks
+    : baseTasks.filter(t => t.members?.name === activeOwner)
+
+  const visibleCharges = isJulia ? [] : charges
+
+  const visibleMembers = isJulia
+    ? members.filter(m => JULIA_TASK_MEMBERS.includes(m.name))
+    : members
 
   for (const task of visibleTasks) {
     if (!task.due_date) continue
@@ -131,7 +147,7 @@ export default function CalendarioPage() {
     }
   }
 
-  for (const charge of charges) {
+  for (const charge of visibleCharges) {
     if (!charge.due_date) continue
     const d = new Date(charge.due_date + 'T12:00:00')
     if (d.getFullYear() === year && d.getMonth() === month) {
@@ -278,9 +294,9 @@ export default function CalendarioPage() {
       </div>
 
       {/* Filtro por pessoa */}
-      {members.length > 0 && (
+      {visibleMembers.length > 0 && (
         <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-          {(['todos', ...members.map(m => m.name)]).map(person => (
+          {(['todos', ...visibleMembers.map(m => m.name)]).map(person => (
             <button
               key={person}
               onClick={() => setActiveOwner(person)}
