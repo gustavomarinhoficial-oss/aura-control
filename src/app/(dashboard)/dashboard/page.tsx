@@ -863,6 +863,172 @@ function ThomasDashboard() {
   )
 }
 
+// ── Dashboard da Julia ─────────────────────────────────────────────────────────
+function JuliaDashboard() {
+  const [posts, setPosts]   = useState<ContentPost[]>([])
+  const [tasks, setTasks]   = useState<Task[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/content').then(r => r.json()).catch(() => []),
+      fetch('/api/tasks').then(r => r.json()).catch(() => []),
+    ]).then(([p, t]) => {
+      setPosts(Array.isArray(p) ? p : [])
+      setTasks(Array.isArray(t) ? t.filter((task: Task) =>
+        task.status !== 'concluido' &&
+        task.members && ['Julia', 'Gabriel'].includes(task.members.name)
+      ) : [])
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-5 h-5 border-2 border-[#f472b6] border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  const today   = new Date().toISOString().split('T')[0]
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+
+  const agendados    = posts.filter(p => p.status === 'agendado' && p.scheduled_date && p.scheduled_date >= today)
+  const publicados   = posts.filter(p => p.status === 'publicado' && p.published_at && p.published_at >= weekAgo)
+  const rascunhos    = posts.filter(p => p.status === 'rascunho')
+  const proximosPosts = agendados
+    .sort((a, b) => (a.scheduled_date ?? '').localeCompare(b.scheduled_date ?? ''))
+    .slice(0, 6)
+  const overdueTask  = tasks.filter(t => t.due_date && t.due_date < today)
+
+  const kpis = [
+    { label: 'Posts agendados',   value: agendados.length,  color: '#a78bfa' },
+    { label: 'Publicados (7d)',   value: publicados.length, color: '#34d399' },
+    { label: 'Rascunhos',         value: rascunhos.length,  color: '#f59e0b' },
+    { label: 'Tarefas abertas',   value: tasks.length,      color: '#f472b6' },
+  ]
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">Olá, Julia ✍️</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Seu painel de conteúdo — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map(k => (
+          <div key={k.label} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3">{k.label}</p>
+            <p className="text-2xl font-semibold" style={{ color: k.color }}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Próximos posts agendados */}
+        <div className="bg-[#1a1a1a] border border-[#a78bfa]/20 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CalendarDays size={13} className="text-[#a78bfa]" />
+              <h2 className="text-sm font-medium">Próximos posts</h2>
+              {agendados.length > 0 && (
+                <span className="text-[10px] bg-[#7c3aed]/10 text-[#a78bfa] px-1.5 py-0.5 rounded-full">{agendados.length}</span>
+              )}
+            </div>
+            <Link href="/conteudo" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">
+              Ver calendário <ArrowUpRight size={10} />
+            </Link>
+          </div>
+          {proximosPosts.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhum post agendado</p>
+          ) : (
+            <div className="space-y-2">
+              {proximosPosts.map(post => {
+                const daysLeft = post.scheduled_date
+                  ? Math.ceil((new Date(post.scheduled_date).getTime() - Date.now()) / 86400000)
+                  : null
+                const platformColor = PLATFORM_COLOR[post.platform] ?? '#6b7280'
+                return (
+                  <div key={post.id} className="flex items-center gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3">
+                    <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: platformColor }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{post.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {post.clients && <span className="text-[10px] text-muted-foreground">{post.clients.name}</span>}
+                        <span className="text-[10px]" style={{ color: platformColor }}>
+                          {PLATFORM_LABEL[post.platform] ?? post.platform}
+                        </span>
+                      </div>
+                    </div>
+                    {daysLeft !== null && (
+                      <span className={`text-[10px] shrink-0 ${daysLeft === 0 ? 'text-[#f59e0b] font-medium' : daysLeft <= 2 ? 'text-[#f97316]' : 'text-muted-foreground'}`}>
+                        {daysLeft === 0 ? 'hoje' : `${daysLeft}d`}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Tarefas abertas de Julia + Gabriel */}
+        <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${overdueTask.length > 0 ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CheckSquare size={13} className={overdueTask.length > 0 ? 'text-[#ef4444]' : 'text-[#f472b6]'} />
+              <h2 className="text-sm font-medium">Suas tarefas</h2>
+              {tasks.length > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${overdueTask.length > 0 ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#f472b6]/10 text-[#f472b6]'}`}>
+                  {tasks.length}
+                </span>
+              )}
+            </div>
+            <Link href="/tarefas" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">
+              Ver todas <ArrowUpRight size={10} />
+            </Link>
+          </div>
+          {tasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma tarefa aberta 🎉</p>
+          ) : (
+            <div className="space-y-2">
+              {tasks.slice(0, 6).map(task => {
+                const isOverdue = task.due_date && task.due_date < today
+                const isUrgent  = !isOverdue && task.due_date && task.due_date <= weekEnd
+                const memberColor = task.members?.color ?? '#6b7280'
+                return (
+                  <div key={task.id} className="flex items-center gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3">
+                    <div
+                      className="w-1.5 h-1.5 rounded-full shrink-0"
+                      style={{ backgroundColor: isOverdue ? '#ef4444' : isUrgent ? '#f59e0b' : '#3a3a3a' }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {task.members && (
+                          <span className="text-[10px]" style={{ color: memberColor }}>{task.members.name}</span>
+                        )}
+                        {task.due_date && (
+                          <span className={`text-[10px] ${isOverdue ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>
+                            {isOverdue ? `${Math.abs(Math.ceil((new Date(task.due_date).getTime() - Date.now()) / 86400000))}d atrasada` : formatDate(task.due_date)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Página principal — detecta role e renderiza o dashboard certo ───────────────
 export default function DashboardPage() {
   const [role, setRole]     = useState<Role | null>(null)
@@ -884,5 +1050,6 @@ export default function DashboardPage() {
 
   if (role === 'gabriel') return <GabrielDashboard />
   if (role === 'thomas')  return <ThomasDashboard />
+  if (role === 'julia')   return <JuliaDashboard />
   return <GustavoDashboard />
 }
