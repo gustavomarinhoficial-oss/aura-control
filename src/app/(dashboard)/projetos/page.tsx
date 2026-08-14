@@ -27,7 +27,7 @@ interface Project {
 
 interface ClientOption { id: string; name: string }
 
-const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas']
+const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas', 'Julia']
 
 // ── constantes ────────────────────────────────────────────────────────────────
 const COLUMNS: { key: string; label: string; color: string; dot: string }[] = [
