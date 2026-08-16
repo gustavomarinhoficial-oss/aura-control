@@ -35,6 +35,7 @@ export const BLOCKED_FOR_JULIA = [
   '/clientes',
   '/financeiro',
   '/configuracoes',
+  '/relatorios',
 ]
 
 // Membros cujas tarefas a Julia pode ver

@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Kanban, Newspaper, Users,
   Layers, DollarSign, Target, CheckSquare,
   CalendarDays, Brain, Settings, LogOut,
-  MoreHorizontal, X,
+  MoreHorizontal, X, FileBarChart,
 } from 'lucide-react'
 
 const ALL_PINNED = [
@@ -24,6 +24,7 @@ const ALL_PINNED = [
 const ALL_MORE_NAV = [
   { href: '/projetos',     label: 'Projetos',   icon: Layers,      roles: ['all'] },
   { href: '/financeiro',   label: 'Financeiro', icon: DollarSign,  roles: ['admin'] },
+  { href: '/relatorios',   label: 'Relatórios', icon: FileBarChart,roles: ['admin'] },
   { href: '/metas',        label: 'Metas',      icon: Target,      roles: ['admin'] },
   { href: '/tarefas',      label: 'Tarefas',    icon: CheckSquare, roles: ['admin'] },
   { href: '/ia',           label: 'Central IA', icon: Brain,       roles: ['all'] },

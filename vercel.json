@@ -11,6 +11,14 @@
     {
       "path": "/api/cron/editorial-alerts",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/daily-briefing",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/weekly-report",
+      "schedule": "0 20 * * 5"
     }
   ]
 }

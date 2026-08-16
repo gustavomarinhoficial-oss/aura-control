@@ -24,6 +24,17 @@ interface EditorialLine {
   created_at: string
 }
 
+interface WeeklyReport {
+  id: string
+  week_start: string
+  week_end: string
+  summary: string
+  data: {
+    atual: { tarefas_concluidas: number; tarefas_atrasadas: number; conteudos_publicados: number; conteudos_atrasados: number }
+    anterior: { tarefas_concluidas: number; tarefas_atrasadas: number }
+  }
+}
+
 type FullClient = Client & { services: Service[]; status_history: ClientStatusHistory[] }
 
 const statusLabel: Record<string, string> = { ativo: 'Ativo', pausado: 'Pausado', encerrado: 'Encerrado' }
@@ -60,7 +71,9 @@ export default function ClientProfilePage() {
   const [editingService, setEditingService] = useState<string | null>(null)
   const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0] })
   const [savingEditService, setSavingEditService] = useState(false)
-  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados' | 'editorial'>('visao')
+  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados' | 'editorial' | 'relatorios'>('visao')
+  const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
+  const [loadingReports, setLoadingReports] = useState(false)
   type FileEntry = { name: string; metadata?: { size?: number } }
   type FilesGrouped = { contratos: FileEntry[]; 'identidade-visual': FileEntry[]; financeiro: FileEntry[] }
   type FolderKey = 'contratos' | 'identidade-visual' | 'financeiro'
@@ -221,6 +234,15 @@ export default function ClientProfilePage() {
   }, [id])
 
   useEffect(() => { loadEditorial() }, [loadEditorial])
+
+  const loadWeeklyReports = useCallback(async () => {
+    setLoadingReports(true)
+    const res = await fetch(`/api/weekly-reports?client_id=${id}`).then(r => r.json()).catch(() => [])
+    setWeeklyReports(Array.isArray(res) ? res : [])
+    setLoadingReports(false)
+  }, [id])
+
+  useEffect(() => { loadWeeklyReports() }, [loadWeeklyReports])
 
   async function loadEditorialPdf() {
     if (!editorial) return
@@ -440,7 +462,7 @@ export default function ClientProfilePage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit overflow-x-auto max-w-full">
-        {([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados'], ['editorial', 'Editorial']] as const).map(([tab, lbl]) => (
+        {([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados'], ['editorial', 'Editorial']] as const).map(([tab, lbl]) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -754,8 +776,8 @@ export default function ClientProfilePage() {
                             {isOverdue ? '⚠ ' : ''}{formatDate(task.due_date)}
                           </span>
                         )}
-                        {task.members && (
-                          <span className="text-[10px] text-muted-foreground">{task.members.name}</span>
+                        {task.assignees && task.assignees.length > 0 && (
+                          <span className="text-[10px] text-muted-foreground">{task.assignees.map(a => a.name).join(', ')}</span>
                         )}
                       </div>
                     </div>
@@ -763,6 +785,47 @@ export default function ClientProfilePage() {
                 )
               })}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab: Relatórios */}
+      {activeTab === 'relatorios' && (
+        <div className="space-y-4">
+          {loadingReports ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : weeklyReports.length === 0 ? (
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-10 text-center">
+              <p className="text-sm text-muted-foreground">Nenhum relatório ainda</p>
+              <p className="text-xs text-muted-foreground mt-1">O primeiro é gerado toda sexta-feira às 17h</p>
+            </div>
+          ) : (
+            weeklyReports.map(r => (
+              <div key={r.id} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+                <p className="text-xs text-muted-foreground mb-3">{formatDate(r.week_start)} – {formatDate(r.week_end)}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap mb-4">{r.summary}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3">
+                    <p className="text-[10px] text-muted-foreground mb-1">Tarefas concluídas</p>
+                    <p className="text-base font-semibold">{r.data.atual.tarefas_concluidas}</p>
+                  </div>
+                  <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3">
+                    <p className="text-[10px] text-muted-foreground mb-1">Tarefas atrasadas</p>
+                    <p className={`text-base font-semibold ${r.data.atual.tarefas_atrasadas > 0 ? 'text-[#ef4444]' : ''}`}>{r.data.atual.tarefas_atrasadas}</p>
+                  </div>
+                  <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3">
+                    <p className="text-[10px] text-muted-foreground mb-1">Conteúdo publicado</p>
+                    <p className="text-base font-semibold">{r.data.atual.conteudos_publicados}</p>
+                  </div>
+                  <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3">
+                    <p className="text-[10px] text-muted-foreground mb-1">Conteúdo atrasado</p>
+                    <p className={`text-base font-semibold ${r.data.atual.conteudos_atrasados > 0 ? 'text-[#ef4444]' : ''}`}>{r.data.atual.conteudos_atrasados}</p>
+                  </div>
+                </div>
+              </div>
+            ))
           )}
         </div>
       )}

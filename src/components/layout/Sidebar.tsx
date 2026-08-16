@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, ROLE_NAME, JULIA_NAV, type Role } from '@/lib/roles'
-import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, Kanban, Layers, Newspaper, Brain, Download } from 'lucide-react'
+import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, Kanban, Layers, Newspaper, Brain, Download, FileBarChart } from 'lucide-react'
 
 const ALL_NAV = [
   { href: '/dashboard',    label: 'Dashboard',   icon: LayoutDashboard },
@@ -15,6 +15,7 @@ const ALL_NAV = [
   { href: '/conteudo',     label: 'Conteúdo',    icon: Newspaper },
   { href: '/ia',           label: 'Central IA',  icon: Brain },
   { href: '/financeiro',   label: 'Financeiro',  icon: DollarSign },
+  { href: '/relatorios',   label: 'Relatórios',  icon: FileBarChart },
   { href: '/metas',        label: 'Metas',       icon: Target },
   { href: '/tarefas',      label: 'Tarefas',     icon: CheckSquare },
   { href: '/calendario',   label: 'Calendário',  icon: CalendarDays },

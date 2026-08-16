@@ -7,6 +7,7 @@ import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, 
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, type Role } from '@/lib/roles'
+import { CeoBriefingHeader } from '@/components/domain/CeoBriefingHeader'
 import type { Task } from '@/lib/supabase/types'
 
 // ── tipos ──────────────────────────────────────────────────────────────────────
@@ -250,15 +251,14 @@ function GustavoDashboard() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Olá, Gustavo 👋</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sua visão comercial — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <CeoBriefingHeader />
         </div>
         <button
           onClick={toggleHide}
           title={hideNums ? 'Mostrar valores' : 'Ocultar valores'}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors shrink-0"
         >
           {hideNums ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
           <span className="text-xs hidden sm:inline">{hideNums ? 'Mostrar' : 'Ocultar'}</span>
@@ -417,12 +417,9 @@ function GabrielDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Olá, Gabriel 🎨</h1>
-          <p className="text-sm text-muted-foreground mt-1">Central criativa — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        </div>
-        <Link href="/conteudo" className="text-xs text-[#34d399] hover:opacity-80 flex items-center gap-1 transition-opacity">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1"><CeoBriefingHeader /></div>
+        <Link href="/conteudo" className="text-xs text-[#34d399] hover:opacity-80 flex items-center gap-1 transition-opacity shrink-0 mt-1">
           Central de conteúdo <ArrowUpRight size={12} />
         </Link>
       </div>
@@ -723,12 +720,7 @@ function ThomasDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Olá, Thomas ⚙️</h1>
-          <p className="text-sm text-muted-foreground mt-1">Painel de operações — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        </div>
-      </div>
+      <CeoBriefingHeader />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -877,7 +869,7 @@ function JuliaDashboard() {
       setPosts(Array.isArray(p) ? p : [])
       setTasks(Array.isArray(t) ? t.filter((task: Task) =>
         task.status !== 'concluido' &&
-        task.members && ['Julia', 'Gabriel'].includes(task.members.name)
+        task.assignees?.some(a => ['Julia', 'Gabriel'].includes(a.name))
       ) : [])
       setLoading(false)
     })
@@ -910,12 +902,7 @@ function JuliaDashboard() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Olá, Julia ✍️</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Seu painel de conteúdo — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
-        </p>
-      </div>
+      <CeoBriefingHeader />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -998,7 +985,7 @@ function JuliaDashboard() {
               {tasks.slice(0, 6).map(task => {
                 const isOverdue = task.due_date && task.due_date < today
                 const isUrgent  = !isOverdue && task.due_date && task.due_date <= weekEnd
-                const memberColor = task.members?.color ?? '#6b7280'
+                const memberColor = task.assignees?.[0]?.color ?? '#6b7280'
                 return (
                   <div key={task.id} className="flex items-center gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3">
                     <div
@@ -1008,8 +995,8 @@ function JuliaDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium truncate">{task.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        {task.members && (
-                          <span className="text-[10px]" style={{ color: memberColor }}>{task.members.name}</span>
+                        {task.assignees && task.assignees.length > 0 && (
+                          <span className="text-[10px]" style={{ color: memberColor }}>{task.assignees.map(a => a.name).join(', ')}</span>
                         )}
                         {task.due_date && (
                           <span className={`text-[10px] ${isOverdue ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>

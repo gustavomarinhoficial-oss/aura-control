@@ -34,38 +34,6 @@ const PRIORITY_COLORS: Record<string, string> = {
   baixa: '#6b7280',
 }
 
-// Web Speech API types
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition
-    webkitSpeechRecognition: new () => SpeechRecognition
-  }
-}
-interface SpeechRecognition extends EventTarget {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  start(): void
-  stop(): void
-  onresult: ((e: SpeechRecognitionEvent) => void) | null
-  onerror: ((e: Event) => void) | null
-  onend: (() => void) | null
-}
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList
-}
-interface SpeechRecognitionResultList {
-  [index: number]: SpeechRecognitionResult
-  length: number
-}
-interface SpeechRecognitionResult {
-  [index: number]: SpeechRecognitionAlternative
-  isFinal: boolean
-}
-interface SpeechRecognitionAlternative {
-  transcript: string
-}
-
 export default function CalendarioPage() {
   const role = useRole()
   const isJulia = role === 'julia'
@@ -117,12 +85,12 @@ export default function CalendarioPage() {
 
   // Para Julia: só tarefas de Julia e Gabriel, sem cobranças
   const baseTasks = isJulia
-    ? tasks.filter(t => t.members && JULIA_TASK_MEMBERS.includes(t.members.name))
+    ? tasks.filter(t => t.assignees?.some(a => JULIA_TASK_MEMBERS.includes(a.name)))
     : tasks
 
   const visibleTasks = activeOwner === 'todos'
     ? baseTasks
-    : baseTasks.filter(t => t.members?.name === activeOwner)
+    : baseTasks.filter(t => t.assignees?.some(a => a.name === activeOwner))
 
   const visibleCharges = isJulia ? [] : charges
 
