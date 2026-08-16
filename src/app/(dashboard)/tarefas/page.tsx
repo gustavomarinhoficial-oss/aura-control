@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Plus, Circle, Loader2, CheckCircle2, Trash2, AlertCircle, Calendar, ChevronDown, ChevronRight, Check, Edit2, Upload, Download, X, FileSpreadsheet } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { useRole } from '@/lib/hooks/useRole'
 import { JULIA_TASK_MEMBERS } from '@/lib/roles'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import type { Task, TaskStatus, TaskPriority, Member, TaskItem } from '@/lib/supabase/types'
 
 const statusConfig: Record<TaskStatus, { label: string; icon: React.ElementType; color: string }> = {
@@ -29,6 +31,44 @@ function MemberAvatar({ member, size = 20 }: { member: { initials: string; color
       className="rounded-full border flex items-center justify-center font-semibold shrink-0 cursor-default"
     >
       <span style={{ color: member.color }}>{member.initials}</span>
+    </div>
+  )
+}
+
+function AssigneeAvatars({ assignees, size = 18 }: { assignees: Task['assignees']; size?: number }) {
+  if (!assignees || assignees.length === 0) return null
+  return (
+    <div className="flex items-center -space-x-1.5">
+      {assignees.map(a => <MemberAvatar key={a.id} member={a} size={size} />)}
+    </div>
+  )
+}
+
+function AssigneeMultiSelect({ members, value, onChange }: { members: Member[]; value: string[]; onChange: (ids: string[]) => void }) {
+  function toggle(id: string) {
+    onChange(value.includes(id) ? value.filter(v => v !== id) : [...value, id])
+  }
+  if (members.length === 0) return <p className="text-xs text-muted-foreground">Nenhum membro cadastrado</p>
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {members.map(m => {
+        const active = value.includes(m.id)
+        return (
+          <button
+            key={m.id}
+            type="button"
+            onClick={() => toggle(m.id)}
+            className={`flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${
+              active
+                ? 'border-[#7c3aed] bg-[#7c3aed]/15 text-[#a78bfa]'
+                : 'border-[#2a2a2a] text-muted-foreground hover:border-[#3a3a3a] hover:text-foreground'
+            }`}
+          >
+            <MemberAvatar member={m} size={16} />
+            {m.name}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -124,6 +164,8 @@ function TaskChecklist({ taskId }: { taskId: string }) {
 export default function TarefasPage() {
   const role = useRole()
   const isJulia = role === 'julia'
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('task')
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [clients, setClients] = useState<Client[]>([])
@@ -135,6 +177,7 @@ export default function TarefasPage() {
   const [activeOwner, setActiveOwner] = useState<string>('todos')
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [pulseTask, setPulseTask] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -150,6 +193,21 @@ export default function TarefasPage() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Veio de um link "Ver tarefa" (ex: do Omar) — acha a tarefa, foca a aba certa e destaca
+  useEffect(() => {
+    if (!highlightId || loading || tasks.length === 0) return
+    const target = tasks.find(t => t.id === highlightId)
+    if (!target) return
+    setActiveTab(target.status === 'concluido' ? 'concluidas' : 'todas')
+    setPulseTask(highlightId)
+    const timer = setTimeout(() => {
+      document.getElementById(`task-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+    const clear = setTimeout(() => setPulseTask(null), 2500)
+    return () => { clearTimeout(timer); clearTimeout(clear) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightId, loading, tasks.length])
 
   async function updateStatus(id: string, status: TaskStatus) {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t))
@@ -170,14 +228,14 @@ export default function TarefasPage() {
 
   // Para Julia: mostrar apenas tarefas da Julia e do Gabriel
   const baseTasks = isJulia
-    ? tasks.filter(t => t.members && JULIA_TASK_MEMBERS.includes(t.members.name))
+    ? tasks.filter(t => t.assignees?.some(a => JULIA_TASK_MEMBERS.includes(a.name)))
     : tasks
 
   const overdueCount = baseTasks.filter(t => t.due_date && t.due_date < today && t.status !== 'concluido').length
 
   const ownerFiltered = activeOwner === 'todos'
     ? baseTasks
-    : baseTasks.filter(t => t.members?.name === activeOwner)
+    : baseTasks.filter(t => t.assignees?.some(a => a.name === activeOwner))
 
   // Para Julia: filtrar botões de membro para mostrar só Julia e Gabriel
   const visibleMembers = isJulia
@@ -293,24 +351,34 @@ export default function TarefasPage() {
             return (
               <div
                 key={task.id}
-                className={`group bg-[#1a1a1a] border rounded-xl px-5 py-4 transition-colors ${
-                  task.status === 'concluido' ? 'border-[#2a2a2a] opacity-60' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
+                id={`task-${task.id}`}
+                className={`group bg-[#1a1a1a] border rounded-xl px-5 py-4 transition-all duration-500 ${
+                  pulseTask === task.id
+                    ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/40'
+                    : task.status === 'concluido' ? 'border-[#2a2a2a] opacity-60' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
                 }`}
               >
                 <div className="flex items-start gap-4">
                   {/* Status toggle */}
-                  <div className="relative mt-0.5">
-                    <select
-                      value={task.status}
-                      onChange={e => updateStatus(task.id, e.target.value as TaskStatus)}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  <Select value={task.status} onValueChange={v => updateStatus(task.id, v as TaskStatus)}>
+                    <SelectTrigger
+                      aria-label="Alterar status da tarefa"
+                      className="h-auto w-auto gap-0.5 p-0.5 border-0 bg-transparent rounded-md mt-0.5 hover:bg-[#2a2a2a] data-[size=default]:h-auto [&_svg:not([class*='size-'])]:size-3"
                     >
-                      <option value="pendente">Pendente</option>
-                      <option value="em_andamento">Em andamento</option>
-                      <option value="concluido">Concluído</option>
-                    </select>
-                    <sc.icon size={18} className={`${sc.color} ${task.status === 'em_andamento' ? 'animate-spin' : ''}`} strokeWidth={1.5} />
-                  </div>
+                      <sc.icon size={18} className={`${sc.color} ${task.status === 'em_andamento' ? 'animate-spin' : ''}`} strokeWidth={1.5} />
+                    </SelectTrigger>
+                    <SelectContent align="start" alignItemWithTrigger={false}>
+                      {(Object.keys(statusConfig) as TaskStatus[]).map(s => {
+                        const opt = statusConfig[s]
+                        return (
+                          <SelectItem key={s} value={s}>
+                            <opt.icon size={14} className={opt.color} strokeWidth={1.5} />
+                            {opt.label}
+                          </SelectItem>
+                        )
+                      })}
+                    </SelectContent>
+                  </Select>
 
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
@@ -347,7 +415,7 @@ export default function TarefasPage() {
                           {formatDate(task.due_date)}
                         </span>
                       )}
-                      {task.members && <MemberAvatar member={task.members} size={18} />}
+                      <AssigneeAvatars assignees={task.assignees} size={18} />
                     </div>
                   </div>
 
@@ -413,6 +481,7 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
 }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([])
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -422,7 +491,6 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
     const clientRaw = (data.get('client_id') as string ?? '')
     const is_global = clientRaw === 'todos'
     const client_id = is_global ? null : clientRaw || null
-    const assignee_id = (data.get('assignee_id') as string ?? '') || null
     const priority = (data.get('priority') as string ?? 'media')
     const due_date = (data.get('due_date') as string ?? '') || null
 
@@ -431,7 +499,7 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: description || null, client_id, is_global, assignee_id, priority, due_date }),
+      body: JSON.stringify({ title, description: description || null, client_id, is_global, assignee_ids: assigneeIds, priority, due_date }),
     })
     if (!res.ok) { setError('Erro ao criar tarefa'); setSaving(false); return }
     onCreated()
@@ -460,30 +528,21 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors resize-none"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
-              <select
-                name="client_id"
-                defaultValue=""
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
-              >
-                <option value="">— Nenhum cliente —</option>
-                <option value="todos">🌐 Todos os clientes</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Responsável</label>
-              <select
-                name="assignee_id"
-                defaultValue=""
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
-              >
-                <option value="">Nenhum</option>
-                {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
+            <select
+              name="client_id"
+              defaultValue=""
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+            >
+              <option value="">— Nenhum cliente —</option>
+              <option value="todos">🌐 Todos os clientes</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Responsáveis</label>
+            <AssigneeMultiSelect members={members} value={assigneeIds} onChange={setAssigneeIds} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -535,11 +594,11 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
 }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState<string[]>(task.assignees?.map(a => a.id) ?? [])
   const [form, setForm] = useState({
     title: task.title,
     description: task.description ?? '',
     client_id: task.is_global ? 'todos' : (task.client_id ?? ''),
-    assignee_id: task.assignee_id ?? '',
     priority: task.priority,
     due_date: task.due_date ?? '',
     status: task.status,
@@ -562,7 +621,7 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
         description: form.description.trim() || null,
         client_id: form.client_id === 'todos' ? null : form.client_id || null,
         is_global: form.client_id === 'todos',
-        assignee_id: form.assignee_id || null,
+        assignee_ids: assigneeIds,
         priority: form.priority,
         due_date: form.due_date || null,
         status: form.status,
@@ -591,22 +650,17 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
             <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2}
               placeholder="Detalhes opcionais..." className={`${inputCls} resize-none`} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
-              <select value={form.client_id} onChange={e => set('client_id', e.target.value)} className={inputCls}>
-                <option value="">— Nenhum cliente —</option>
-                <option value="todos">🌐 Todos os clientes</option>
-                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Responsável</label>
-              <select value={form.assignee_id} onChange={e => set('assignee_id', e.target.value)} className={inputCls}>
-                <option value="">Nenhum</option>
-                {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
+            <select value={form.client_id} onChange={e => set('client_id', e.target.value)} className={inputCls}>
+              <option value="">— Nenhum cliente —</option>
+              <option value="todos">🌐 Todos os clientes</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Responsáveis</label>
+            <AssigneeMultiSelect members={members} value={assigneeIds} onChange={setAssigneeIds} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

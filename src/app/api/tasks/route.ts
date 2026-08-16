@@ -1,5 +1,8 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { flattenAssignees } from '@/lib/utils/tasks'
+
+const SELECT_WITH_ASSIGNEES = '*, clients(id, name), task_assignees(members(id, name, initials, color))'
 
 export async function GET(request: Request) {
   const supabase = createServiceClient()
@@ -8,7 +11,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('tasks')
-    .select('*, clients(id, name), members(id, name, initials, color)')
+    .select(SELECT_WITH_ASSIGNEES)
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 
@@ -16,8 +19,8 @@ export async function GET(request: Request) {
 
   const { data, error } = await query
   if (error) {
-    // Se members ainda nÃ£o existe (migration pendente), tenta sem o join
-    if (error.message?.includes('members')) {
+    // Se task_assignees ainda não existe (migration pendente), tenta sem o join
+    if (error.message?.includes('task_assignees')) {
       let q2 = supabase
         .from('tasks')
         .select('*, clients(id, name)')
@@ -26,11 +29,11 @@ export async function GET(request: Request) {
       if (clientId) q2 = q2.eq('client_id', clientId)
       const { data: d2, error: e2 } = await q2
       if (e2) return NextResponse.json({ error: e2.message }, { status: 500 })
-      return NextResponse.json(d2)
+      return NextResponse.json((d2 ?? []).map(t => ({ ...t, assignees: [] })))
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-  return NextResponse.json(data)
+  return NextResponse.json((data ?? []).map(flattenAssignees))
 }
 
 export async function POST(request: Request) {
@@ -46,21 +49,18 @@ export async function POST(request: Request) {
     priority: body.priority || 'media',
     due_date: body.due_date || null,
   }
-  if (body.assignee_id !== undefined) insert.assignee_id = body.assignee_id || null
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert(insert)
-    .select('*, clients(id, name), members(id, name, initials, color)')
-    .single()
+  const { data: task, error } = await supabase.from('tasks').insert(insert).select('*, clients(id, name)').single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (error) {
-    if (error.message?.includes('members') || error.message?.includes('assignee')) {
-      const { data: d2, error: e2 } = await supabase.from('tasks').insert(insert).select('*, clients(id, name)').single()
-      if (e2) return NextResponse.json({ error: e2.message }, { status: 500 })
-      return NextResponse.json(d2, { status: 201 })
-    }
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  const assigneeIds: string[] = Array.isArray(body.assignee_ids) ? body.assignee_ids.filter(Boolean) : []
+  if (assigneeIds.length > 0) {
+    const { error: aErr } = await supabase
+      .from('task_assignees')
+      .insert(assigneeIds.map(member_id => ({ task_id: task.id, member_id })))
+    if (aErr) return NextResponse.json({ error: aErr.message }, { status: 500 })
   }
-  return NextResponse.json(data, { status: 201 })
+
+  const { data: full } = await supabase.from('tasks').select(SELECT_WITH_ASSIGNEES).eq('id', task.id).single()
+  return NextResponse.json(full ? flattenAssignees(full) : { ...task, assignees: [] }, { status: 201 })
 }

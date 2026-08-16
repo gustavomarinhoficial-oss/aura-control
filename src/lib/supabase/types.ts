@@ -91,12 +91,31 @@ export interface Task {
   title: string
   description: string | null
   client_id: string | null
-  assignee_id: string | null
   status: TaskStatus
   priority: TaskPriority
   due_date: string | null
   is_global: boolean
   created_at: string
   clients?: { id: string; name: string } | null
-  members?: { id: string; name: string; initials: string; color: string } | null
+  assignees?: Array<{ id: string; name: string; initials: string; color: string }>
+}
+
+export type OmarRole = 'user' | 'assistant'
+
+export interface OmarConversation {
+  id: string
+  user_id: string
+  title: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface OmarMessage {
+  id: string
+  conversation_id: string
+  role: OmarRole
+  content: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tool_calls: any[] | null
+  created_at: string
 }

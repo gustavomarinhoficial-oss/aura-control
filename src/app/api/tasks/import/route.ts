@@ -96,13 +96,14 @@ export async function POST(request: Request) {
     const priority = normalizePriority(String(row.priority ?? ''))
     const description = String(row.description ?? '').trim() || null
 
-    const { error } = await supabase.from('tasks').insert({
+    const { data: task, error } = await supabase.from('tasks').insert({
       title, description, priority, due_date,
-      assignee_id, client_id, status: 'pendente',
-    })
+      client_id, status: 'pendente',
+    }).select('id').single()
 
-    if (error) skipped.push(title)
-    else created.push(title)
+    if (error || !task) { skipped.push(title); continue }
+    if (assignee_id) await supabase.from('task_assignees').insert({ task_id: task.id, member_id: assignee_id })
+    created.push(title)
   }
 
   return NextResponse.json({ created: created.length, skipped: skipped.length, tasks: created })
