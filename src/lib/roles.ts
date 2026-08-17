@@ -22,6 +22,7 @@ export const ROLE_NAME: Record<Role, string> = {
 export const JULIA_NAV = [
   '/dashboard',
   '/conteudo',
+  '/clientes',
   '/tarefas',
   '/calendario',
   '/projetos',
@@ -32,7 +33,6 @@ export const JULIA_NAV = [
 // Rotas bloqueadas para a Julia (middleware redireciona)
 export const BLOCKED_FOR_JULIA = [
   '/pipeline',
-  '/clientes',
   '/financeiro',
   '/configuracoes',
   '/relatorios',

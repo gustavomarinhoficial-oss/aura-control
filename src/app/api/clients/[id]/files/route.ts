@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const BUCKET = 'client-files'
-const FOLDERS = ['contratos', 'identidade-visual', 'financeiro'] as const
+const FOLDERS = ['contratos', 'identidade-visual', 'financeiro', 'outros'] as const
 
 function adminClient() {
   return createClient(

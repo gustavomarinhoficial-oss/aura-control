@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { useRole } from '@/lib/hooks/useRole'
 import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
   Mail, Phone, Calendar, FileText, TrendingUp, DollarSign, AlertCircle,
@@ -56,6 +57,7 @@ export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const isJulia = useRole() === 'julia'
 
   const [client, setClient] = useState<FullClient | null>(null)
   const [charges, setCharges] = useState<Charge[]>([])
@@ -75,14 +77,15 @@ export default function ClientProfilePage() {
   const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   type FileEntry = { name: string; metadata?: { size?: number } }
-  type FilesGrouped = { contratos: FileEntry[]; 'identidade-visual': FileEntry[]; financeiro: FileEntry[] }
-  type FolderKey = 'contratos' | 'identidade-visual' | 'financeiro'
+  type FilesGrouped = { contratos: FileEntry[]; 'identidade-visual': FileEntry[]; financeiro: FileEntry[]; outros: FileEntry[] }
+  type FolderKey = 'contratos' | 'identidade-visual' | 'financeiro' | 'outros'
   const FOLDERS: { key: FolderKey; label: string; color: string; required: string[] }[] = [
     { key: 'contratos', label: 'Contratos', color: '#a78bfa', required: ['Contrato assinado'] },
     { key: 'identidade-visual', label: 'Identidade Visual', color: '#fbbf24', required: ['Manual de marca','Logo vetor (AI/EPS/SVG)','Logo PNG','Logo JPG','Logo colorida','Logo preto e branco','Logo negativa','Logo monocromática','Logo horizontal','Logo vertical','Símbolo isolado','Paleta de cores (hex/RGB/CMYK)','Tipografia'] },
     { key: 'financeiro', label: 'Financeiro', color: '#4ade80', required: ['Notas fiscais emitidas','Comprovantes de pagamento','Relatórios de performance enviados'] },
+    { key: 'outros', label: 'Outros', color: '#60a5fa', required: [] },
   ]
-  const [files, setFiles] = useState<FilesGrouped>({ contratos: [], 'identidade-visual': [], financeiro: [] })
+  const [files, setFiles] = useState<FilesGrouped>({ contratos: [], 'identidade-visual': [], financeiro: [], outros: [] })
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [pendingFolder, setPendingFolder] = useState<FolderKey>('contratos')
@@ -127,7 +130,7 @@ export default function ClientProfilePage() {
 
   const loadFiles = useCallback(async () => {
     const res = await fetch(`/api/clients/${id}/files`).then(r => r.json()).catch(() => ({}))
-    setFiles({ contratos: res.contratos ?? [], 'identidade-visual': res['identidade-visual'] ?? [], financeiro: res.financeiro ?? [] })
+    setFiles({ contratos: res.contratos ?? [], 'identidade-visual': res['identidade-visual'] ?? [], financeiro: res.financeiro ?? [], outros: res.outros ?? [] })
   }, [id])
 
   function slugify(s: string) {
@@ -411,58 +414,64 @@ export default function ClientProfilePage() {
               <p className="text-xs text-muted-foreground mt-0.5">Cliente desde {formatDate(client.started_at)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 border border-[#2a2a2a] text-sm px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <Edit2 size={13} /> Editar
-            </button>
-            <button
-              onClick={() => setShowDelete(true)}
-              className="flex items-center gap-2 border border-[#ef4444]/30 text-sm px-3 py-2 rounded-lg hover:bg-[#ef4444]/10 transition-colors text-[#ef4444]/70 hover:text-[#ef4444]"
-            >
-              <Trash2 size={13} /> Excluir
-            </button>
-          </div>
+          {!isJulia && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEditing(true)}
+                className="flex items-center gap-2 border border-[#2a2a2a] text-sm px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <Edit2 size={13} /> Editar
+              </button>
+              <button
+                onClick={() => setShowDelete(true)}
+                className="flex items-center gap-2 border border-[#ef4444]/30 text-sm px-3 py-2 rounded-lg hover:bg-[#ef4444]/10 transition-colors text-[#ef4444]/70 hover:text-[#ef4444]"
+              >
+                <Trash2 size={13} /> Excluir
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={13} className="text-[#7c3aed]" />
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">MRR</span>
+      {!isJulia && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp size={13} className="text-[#7c3aed]" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">MRR</span>
+            </div>
+            <p className="text-xl font-semibold">{formatBRL(mrr)}</p>
           </div>
-          <p className="text-xl font-semibold">{formatBRL(mrr)}</p>
-        </div>
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <DollarSign size={13} className="text-[#22c55e]" />
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Recebido total</span>
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign size={13} className="text-[#22c55e]" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Recebido total</span>
+            </div>
+            <p className="text-xl font-semibold text-[#22c55e]">{formatBRL(totalReceived)}</p>
           </div>
-          <p className="text-xl font-semibold text-[#22c55e]">{formatBRL(totalReceived)}</p>
-        </div>
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText size={13} className="text-muted-foreground" />
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Serviços ativos</span>
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <FileText size={13} className="text-muted-foreground" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Serviços ativos</span>
+            </div>
+            <p className="text-xl font-semibold">{activeServices}</p>
           </div>
-          <p className="text-xl font-semibold">{activeServices}</p>
-        </div>
-        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertCircle size={13} className={totalOverdue > 0 ? 'text-[#ef4444]' : 'text-muted-foreground'} />
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Em atraso</span>
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle size={13} className={totalOverdue > 0 ? 'text-[#ef4444]' : 'text-muted-foreground'} />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Em atraso</span>
+            </div>
+            <p className={`text-xl font-semibold ${totalOverdue > 0 ? 'text-[#ef4444]' : ''}`}>{formatBRL(totalOverdue)}</p>
           </div>
-          <p className={`text-xl font-semibold ${totalOverdue > 0 ? 'text-[#ef4444]' : ''}`}>{formatBRL(totalOverdue)}</p>
         </div>
-      </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit overflow-x-auto max-w-full">
-        {([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados'], ['editorial', 'Editorial']] as const).map(([tab, lbl]) => (
+        {(([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados'], ['editorial', 'Editorial']] as const)
+          .filter(([tab]) => !isJulia || (tab !== 'servicos' && tab !== 'financeiro'))
+        ).map(([tab, lbl]) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -477,7 +486,7 @@ export default function ClientProfilePage() {
 
       {/* Tab: Visão geral */}
       {activeTab === 'visao' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`grid grid-cols-1 gap-6 ${isJulia ? '' : 'md:grid-cols-2'}`}>
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Informações</h3>
             <div className="space-y-3">
@@ -497,7 +506,7 @@ export default function ClientProfilePage() {
                 <Calendar size={13} className="text-muted-foreground shrink-0" />
                 <span className="text-sm">Cliente desde {formatDate(client.started_at)}</span>
               </div>
-              {client.billing_day && (
+              {!isJulia && client.billing_day && (
                 <div className="flex items-center gap-3">
                   <Clock size={13} className="text-muted-foreground shrink-0" />
                   <span className="text-sm">Vence todo dia <span className="font-semibold text-[#a78bfa]">{client.billing_day}</span></span>
@@ -514,27 +523,29 @@ export default function ClientProfilePage() {
             )}
           </div>
 
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Resumo financeiro</h3>
-            <div className="space-y-3">
-              {[
-                { label: 'MRR atual', value: formatBRL(mrr), color: 'text-[#a78bfa]' },
-                { label: 'Total recebido', value: formatBRL(totalReceived), color: 'text-[#22c55e]' },
-                { label: 'Pendente', value: formatBRL(totalPending), color: 'text-muted-foreground' },
-                { label: 'Atrasado', value: formatBRL(totalOverdue), color: totalOverdue > 0 ? 'text-[#ef4444]' : 'text-muted-foreground' },
-              ].map(row => (
-                <div key={row.label} className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">{row.label}</span>
-                  <span className={`text-sm font-semibold ${row.color}`}>{row.value}</span>
-                </div>
-              ))}
+          {!isJulia && (
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Resumo financeiro</h3>
+              <div className="space-y-3">
+                {[
+                  { label: 'MRR atual', value: formatBRL(mrr), color: 'text-[#a78bfa]' },
+                  { label: 'Total recebido', value: formatBRL(totalReceived), color: 'text-[#22c55e]' },
+                  { label: 'Pendente', value: formatBRL(totalPending), color: 'text-muted-foreground' },
+                  { label: 'Atrasado', value: formatBRL(totalOverdue), color: totalOverdue > 0 ? 'text-[#ef4444]' : 'text-muted-foreground' },
+                ].map(row => (
+                  <div key={row.label} className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">{row.label}</span>
+                    <span className={`text-sm font-semibold ${row.color}`}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Tab: Serviços */}
-      {activeTab === 'servicos' && (
+      {!isJulia && activeTab === 'servicos' && (
         <div className="space-y-4">
           <div className="flex justify-end">
             <button
@@ -687,7 +698,7 @@ export default function ClientProfilePage() {
       )}
 
       {/* Tab: Financeiro */}
-      {activeTab === 'financeiro' && (
+      {!isJulia && activeTab === 'financeiro' && (
         <div className="space-y-4">
           {chargesWithStatus.length === 0 ? (
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-10 text-center text-muted-foreground text-sm">
@@ -844,8 +855,8 @@ export default function ClientProfilePage() {
 
           {openFolder === null ? (
             /* ── Vista: grade de pastas ── */
-            <div className="grid grid-cols-3 gap-4">
-              {FOLDERS.map(folder => {
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {FOLDERS.filter(f => !isJulia || f.key === 'identidade-visual' || f.key === 'outros').map(folder => {
                 const folderFiles = files[folder.key] ?? []
                 const filled = folder.required.filter(r => filesForSlot(folderFiles, r).length > 0).length
                 const total = folder.required.length
@@ -1237,6 +1248,7 @@ export default function ClientProfilePage() {
           </div>
 
           {/* Senhas / Acessos */}
+          {!isJulia && (
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1324,6 +1336,7 @@ export default function ClientProfilePage() {
             </div>
             {extrasSaving && <p className="text-[10px] text-muted-foreground">Salvando...</p>}
           </div>
+          )}
 
         </div>
       )}
