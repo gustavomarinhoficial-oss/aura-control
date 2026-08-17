@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { useRole } from '@/lib/hooks/useRole'
+import { createClient } from '@/lib/supabase/client'
 import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
   Mail, Phone, Calendar, FileText, TrendingUp, DollarSign, AlertCircle,
@@ -170,16 +171,31 @@ export default function ClientProfilePage() {
     if (!pendingFile) return
     setUploading(true)
     setUploadError('')
-    const fd = new FormData()
     const uploadName = pendingSlot
       ? `${slugify(pendingSlot)}_${pendingFile.name}`
       : pendingFile.name
-    fd.append('file', pendingFile, uploadName)
-    fd.append('folder', pendingFolder)
-    const res = await fetch(`/api/clients/${id}/files`, { method: 'POST', body: fd })
+
+    // 1. Pede pro servidor uma URL de upload assinada (só metadados, sem o arquivo)
+    const res = await fetch(`/api/clients/${id}/files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder: pendingFolder, filename: uploadName }),
+    })
+    const d = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const d = await res.json().catch(() => ({}))
-      setUploadError(d.error ?? 'Erro ao enviar arquivo')
+      setUploadError(d.error ?? 'Erro ao preparar envio')
+      setUploading(false)
+      return
+    }
+
+    // 2. Envia o arquivo direto do navegador pro Storage (sem passar pelo servidor)
+    const supabase = createClient()
+    const { error: uploadErr } = await supabase.storage
+      .from('client-files')
+      .uploadToSignedUrl(d.path, d.token, pendingFile)
+
+    if (uploadErr) {
+      setUploadError(uploadErr.message || 'Erro ao enviar arquivo')
     } else {
       setPendingFile(null)
       setPendingSlot(null)

@@ -35,30 +35,34 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   return NextResponse.json(grouped)
 }
 
-// POST: upload com pasta
+// POST: gera uma signed upload URL — o arquivo em si vai direto do navegador
+// pro Supabase Storage, sem passar pelo nosso servidor. Isso evita o limite
+// de ~4.5MB por requisição das funções serverless da Vercel.
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = adminClient()
 
-  const formData = await request.formData()
-  const file = formData.get('file') as File | null
-  const folder = (formData.get('folder') as string) || 'contratos'
+  const body = await request.json()
+  const folder = (body.folder as string) || 'contratos'
+  const originalName = body.filename as string
 
-  if (!file) return NextResponse.json({ error: 'Arquivo não enviado' }, { status: 400 })
+  if (!originalName) return NextResponse.json({ error: 'Nome do arquivo obrigatório' }, { status: 400 })
   if (!FOLDERS.includes(folder as typeof FOLDERS[number])) {
     return NextResponse.json({ error: 'Pasta inválida' }, { status: 400 })
   }
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._\-À-ÿ]/g, '_')
+  const safeName = originalName.replace(/[^a-zA-Z0-9._\-À-ÿ]/g, '_')
   const filename = `${Date.now()}_${safeName}`
   const path = `${id}/${folder}/${filename}`
 
-  const bytes = await file.arrayBuffer()
-  const { error } = await supabase.storage.from(BUCKET).upload(path, Buffer.from(bytes), {
-    contentType: file.type || 'application/octet-stream',
-    upsert: false,
-  })
-
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUploadUrl(path)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ folder, name: filename, original: file.name }, { status: 201 })
+
+  return NextResponse.json({
+    folder,
+    name: filename,
+    original: originalName,
+    token: data.token,
+    path: data.path,
+  }, { status: 201 })
 }
