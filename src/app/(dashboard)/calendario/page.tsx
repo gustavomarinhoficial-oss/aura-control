@@ -1,23 +1,24 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Mic, MicOff, CheckSquare, DollarSign, X, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Mic, MicOff, CheckSquare, DollarSign, CalendarClock, X, Check } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
 import { parseVoiceInput } from '@/lib/utils/parse-voice'
 import { useRole } from '@/lib/hooks/useRole'
 import { JULIA_TASK_MEMBERS } from '@/lib/roles'
-import type { Task, Charge, Member } from '@/lib/supabase/types'
+import type { Task, Charge, Member, Meeting } from '@/lib/supabase/types'
 
 interface Client { id: string; name: string }
 
 interface DayEvent {
   id: string
-  type: 'task' | 'charge'
+  type: 'task' | 'charge' | 'meeting'
   title: string
   color: string
   amount?: number
   status?: string
   priority?: string
+  time?: string | null
 }
 
 const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
@@ -43,6 +44,7 @@ export default function CalendarioPage() {
   const [month, setMonth] = useState(today.getMonth())
   const [tasks, setTasks] = useState<Task[]>([])
   const [charges, setCharges] = useState<Charge[]>([])
+  const [meetings, setMeetings] = useState<Meeting[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [activeOwner, setActiveOwner] = useState<string>('todos')
@@ -65,14 +67,16 @@ export default function CalendarioPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [tasksRes, chargesRes, clientsRes, membersRes] = await Promise.all([
+    const [tasksRes, chargesRes, meetingsRes, clientsRes, membersRes] = await Promise.all([
       fetch('/api/tasks').then(r => r.json()).catch(() => []),
       fetch(`/api/charges?month=${monthStr}`).then(r => r.json()).catch(() => []),
+      fetch('/api/meetings').then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
       fetch('/api/members').then(r => r.json()).catch(() => []),
     ])
     setTasks(Array.isArray(tasksRes) ? tasksRes : [])
     setCharges(Array.isArray(chargesRes) ? chargesRes : [])
+    setMeetings(Array.isArray(meetingsRes) ? meetingsRes : [])
     setClients(Array.isArray(clientsRes) ? clientsRes : [])
     setMembers(Array.isArray(membersRes) ? membersRes : [])
     setLoading(false)
@@ -93,6 +97,10 @@ export default function CalendarioPage() {
     : baseTasks.filter(t => t.assignees?.some(a => a.name === activeOwner))
 
   const visibleCharges = isJulia ? [] : charges
+
+  const visibleMeetings = isJulia
+    ? meetings.filter(m => m.attendees?.some(a => JULIA_TASK_MEMBERS.includes(a.name)))
+    : meetings
 
   const visibleMembers = isJulia
     ? members.filter(m => JULIA_TASK_MEMBERS.includes(m.name))
@@ -128,6 +136,23 @@ export default function CalendarioPage() {
         color: charge.paid_at ? '#22c55e' : '#7c3aed',
         amount: Number(charge.amount),
         status: charge.paid_at ? 'pago' : 'pendente',
+      })
+    }
+  }
+
+  for (const meeting of visibleMeetings) {
+    if (meeting.status === 'cancelada') continue
+    const d = new Date(meeting.meeting_date + 'T12:00:00')
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const day = d.getDate()
+      if (!eventsByDay[day]) eventsByDay[day] = []
+      eventsByDay[day].push({
+        id: meeting.id,
+        type: 'meeting',
+        title: meeting.title,
+        color: '#60a5fa',
+        status: meeting.status,
+        time: meeting.start_time,
       })
     }
   }
@@ -399,6 +424,7 @@ export default function CalendarioPage() {
                 const events = eventsByDay[day] ?? []
                 const taskEvents = events.filter(e => e.type === 'task')
                 const chargeEvents = events.filter(e => e.type === 'charge')
+                const meetingEvents = events.filter(e => e.type === 'meeting')
 
                 return (
                   <div
@@ -427,6 +453,14 @@ export default function CalendarioPage() {
                       <div key={e.id} className="flex items-center gap-1 mb-0.5">
                         <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: e.color }} />
                         <span className="text-[9px] truncate leading-tight" style={{ color: e.color }}>{formatBRL(e.amount ?? 0)}</span>
+                      </div>
+                    ))}
+
+                    {/* Reuniões */}
+                    {meetingEvents.slice(0, 1).map(e => (
+                      <div key={e.id} className="flex items-center gap-1 mb-0.5">
+                        <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: e.color }} />
+                        <span className="text-[9px] truncate leading-tight" style={{ color: e.color }}>{e.time ? e.time.slice(0, 5) + ' ' : ''}{e.title}</span>
                       </div>
                     ))}
 
@@ -464,11 +498,16 @@ export default function CalendarioPage() {
                         style={{ backgroundColor: e.color + '22' }}>
                         {e.type === 'task'
                           ? <CheckSquare size={10} style={{ color: e.color }} />
+                          : e.type === 'meeting'
+                          ? <CalendarClock size={10} style={{ color: e.color }} />
                           : <DollarSign size={10} style={{ color: e.color }} />
                         }
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-medium truncate">{e.title}</p>
+                        {e.type === 'meeting' && e.time && (
+                          <p className="text-[10px] text-[#60a5fa]">{e.time.slice(0, 5)}</p>
+                        )}
                         {e.amount !== undefined && (
                           <p className="text-[10px] text-muted-foreground">{formatBRL(e.amount)}</p>
                         )}
@@ -496,6 +535,7 @@ export default function CalendarioPage() {
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#f59e0b]" /> Tarefa média</div>
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#7c3aed]" /> Cobrança pendente</div>
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#22c55e]" /> Cobrança paga</div>
+        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#60a5fa]" /> Reunião</div>
       </div>
     </div>
   )

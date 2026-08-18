@@ -24,6 +24,7 @@ export const JULIA_NAV = [
   '/conteudo',
   '/clientes',
   '/tarefas',
+  '/reunioes',
   '/calendario',
   '/projetos',
   '/metas',

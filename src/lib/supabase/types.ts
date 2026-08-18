@@ -100,6 +100,22 @@ export interface Task {
   assignees?: Array<{ id: string; name: string; initials: string; color: string }>
 }
 
+export type MeetingStatus = 'agendada' | 'realizada' | 'cancelada'
+
+export interface Meeting {
+  id: string
+  title: string
+  client_id: string | null
+  meeting_date: string
+  start_time: string | null
+  location: string | null
+  notes: string | null
+  status: MeetingStatus
+  created_at: string
+  clients?: { id: string; name: string } | null
+  attendees?: Array<{ id: string; name: string; initials: string; color: string }>
+}
+
 export type OmarRole = 'user' | 'assistant'
 
 export interface OmarConversation {

@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, type Role } from '@/lib/roles'
 import { CeoBriefingHeader } from '@/components/domain/CeoBriefingHeader'
+import { TodayMeetingsCard } from '@/components/domain/TodayMeetingsCard'
 import type { Task } from '@/lib/supabase/types'
 
 // ── tipos ──────────────────────────────────────────────────────────────────────
@@ -265,6 +266,8 @@ function GustavoDashboard() {
         </button>
       </div>
 
+      <TodayMeetingsCard />
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard label="Clientes ativos" value={String(data.activeClients)} numericValue={data.activeClients} sub="na carteira" icon={Users} goalKey="activeClients" hide={hideNums} />
         <KpiCard label="MRR" value={formatBRL(data.mrr)} numericValue={data.mrr} sub="receita recorrente" icon={TrendingUp} accent goalKey="mrr" isCurrency hide={hideNums} />
@@ -423,6 +426,8 @@ function GabrielDashboard() {
           Central de conteúdo <ArrowUpRight size={12} />
         </Link>
       </div>
+
+      <TodayMeetingsCard />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -722,6 +727,8 @@ function ThomasDashboard() {
     <div className="space-y-8">
       <CeoBriefingHeader />
 
+      <TodayMeetingsCard />
+
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -903,6 +910,8 @@ function JuliaDashboard() {
   return (
     <div className="space-y-8">
       <CeoBriefingHeader />
+
+      <TodayMeetingsCard />
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
