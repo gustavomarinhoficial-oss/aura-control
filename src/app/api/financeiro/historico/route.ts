@@ -13,8 +13,9 @@ export async function GET() {
     months.push({ year: d.getFullYear(), month: d.getMonth() + 1, label, key })
   }
 
+  const last = months[months.length - 1]
   const from = `${months[0].key}-01`
-  const to = `${months[months.length - 1].key}-31`
+  const to = new Date(last.year, last.month, 0).toISOString().split('T')[0]
 
   const [chargesRes, expensesRes] = await Promise.all([
     supabase.from('charges').select('amount, paid_at').not('paid_at', 'is', null).gte('paid_at', from).lte('paid_at', to),

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { randomUUID } from 'crypto'
 
 const BUFFER_MONTHS = 3
 
@@ -9,12 +10,33 @@ function addMonths(dateStr: string, n: number): string {
   return d.toISOString().split('T')[0]
 }
 
+// Adota despesas recorrentes antigas (criadas antes do recurrence_group existir)
+// agrupando por descrição, pra que também passem a ter os meses futuros gerados.
+async function backfillLegacyGroups(supabase: ReturnType<typeof createServiceClient>) {
+  const { data: legacy } = await supabase
+    .from('expenses')
+    .select('id, description')
+    .eq('recurrent', true)
+    .is('recurrence_group', null)
+
+  if (!legacy?.length) return
+
+  const groupByDescription = new Map<string, string>()
+  for (const row of legacy) {
+    const key = row.description.trim()
+    if (!groupByDescription.has(key)) groupByDescription.set(key, randomUUID())
+    await supabase.from('expenses').update({ recurrence_group: groupByDescription.get(key) }).eq('id', row.id)
+  }
+}
+
 // Mantém sempre 3 meses de parcelas à frente pra cada despesa recorrente ativa,
 // gerando uma de cada vez conforme o tempo passa (mesmo padrão de /api/charges/generate).
 export async function POST() {
   const supabase = createServiceClient()
   const today = new Date().toISOString().split('T')[0]
   const futureLimit = addMonths(today, BUFFER_MONTHS)
+
+  await backfillLegacyGroups(supabase)
 
   const { data: rows, error } = await supabase
     .from('expenses')

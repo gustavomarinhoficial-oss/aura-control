@@ -17,7 +17,8 @@ export async function GET(request: Request) {
 
   let query = supabase.from('expenses').select('*').order('due_date', { ascending: true })
   if (month) {
-    query = query.gte('due_date', `${month}-01`).lte('due_date', `${month}-31`)
+    const monthStart = `${month}-01`
+    query = query.gte('due_date', monthStart).lt('due_date', addMonths(monthStart, 1))
   }
 
   const { data, error } = await query
