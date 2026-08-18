@@ -28,6 +28,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { data, error } = await supabase.from('expenses').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Valor mudou com data de vigência: atualiza as parcelas futuras não pagas
+  // da mesma despesa recorrente a partir dessa data (mesmo padrão de serviços/cobranças)
+  if (body.amount !== undefined && body.effective_date && data.recurrence_group) {
+    await supabase
+      .from('expenses')
+      .update({ amount: Number(body.amount) })
+      .eq('recurrence_group', data.recurrence_group)
+      .is('paid_at', null)
+      .gte('due_date', body.effective_date)
+      .neq('id', id)
+  }
+
   return NextResponse.json(data)
 }
 

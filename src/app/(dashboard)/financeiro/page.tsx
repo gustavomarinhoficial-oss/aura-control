@@ -26,6 +26,7 @@ interface Expense {
   due_date: string
   paid_at: string | null
   recurrent: boolean
+  recurrence_group: string | null
   notes: string | null
 }
 
@@ -122,6 +123,9 @@ function ExpenseModal({ initial, onClose, onSaved }: {
   } : { ...EMPTY_EXPENSE, due_date: new Date().toISOString().split('T')[0] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const isRecurringEdit = !!initial?.recurrence_group
+  const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0])
+  const amountChanged = initial ? Number(form.amount) !== initial.amount : false
 
   async function save() {
     if (!form.description.trim()) return setError('Informe a descrição')
@@ -131,7 +135,11 @@ function ExpenseModal({ initial, onClose, onSaved }: {
     const res = await fetch(initial ? `/api/expenses/${initial.id}` : '/api/expenses', {
       method: initial ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, amount: Number(form.amount) }),
+      body: JSON.stringify({
+        ...form,
+        amount: Number(form.amount),
+        ...(isRecurringEdit && amountChanged ? { effective_date: effectiveDate } : {}),
+      }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setSaving(false); return }
     onSaved()
@@ -180,11 +188,27 @@ function ExpenseModal({ initial, onClose, onSaved }: {
               placeholder="Referência, número NF..."
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))}
-              className="w-4 h-4 accent-[#7c3aed]" />
-            <span className="text-sm">Despesa recorrente (mensal)</span>
-          </label>
+          {initial ? (
+            isRecurringEdit && (
+              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <Tag size={11} />Despesa recorrente — as parcelas futuras seguem vinculadas.
+              </p>
+            )
+          ) : (
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))}
+                className="w-4 h-4 accent-[#7c3aed]" />
+              <span className="text-sm">Despesa recorrente (mensal)</span>
+            </label>
+          )}
+          {isRecurringEdit && amountChanged && (
+            <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/20 rounded-lg p-3 space-y-2">
+              <p className="text-xs text-foreground">O valor mudou. A partir de quando vale o novo valor?</p>
+              <input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)}
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+              <p className="text-[11px] text-muted-foreground">Atualiza esta e todas as parcelas futuras ainda não pagas.</p>
+            </div>
+          )}
         </div>
 
         {error && <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={12} />{error}</p>}

@@ -105,11 +105,12 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
     data.posts_agendados_semana = scheduled
   } else {
     // gustavo / admin — visão completa da empresa
-    const [servicesRes, chargesMonthRes, overdueChargesRes, expensesRes, contentRes, leadsRes] = await Promise.all([
+    const [servicesRes, chargesMonthRes, overdueChargesRes, expensesRes, expensesTodayRes, contentRes, leadsRes] = await Promise.all([
       db.from('services').select('amount').eq('active', true).eq('type', 'recorrente'),
       db.from('charges').select('amount, paid_at').gte('due_date', monthStart).lte('due_date', monthEnd),
       db.from('charges').select('id, amount').is('paid_at', null).lt('due_date', today),
       db.from('expenses').select('amount').gte('due_date', monthStart).lte('due_date', monthEnd),
+      db.from('expenses').select('description, amount').is('paid_at', null).eq('due_date', today),
       db.from('content_posts').select('id, status'),
       db.from('leads').select('stage, estimated_value'),
     ])
@@ -147,6 +148,14 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
       alerts.push(`${overdueCharges.length} cobrança${overdueCharges.length !== 1 ? 's' : ''} em atraso somando ${valorAtrasado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
     }
 
+    const expensesToday = expensesTodayRes.data ?? []
+    for (const e of expensesToday) {
+      alerts.push(`Hoje vence: ${e.description} — ${Number(e.amount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+    }
+    if (expensesToday.length > 0) {
+      stats.push({ label: 'Despesas vencendo hoje', value: String(expensesToday.length), href: '/financeiro' })
+    }
+
     data.financeiro = {
       mrr,
       receita_recebida_mes: receitaRecebida,
@@ -154,6 +163,7 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
       margem_mes: receitaRecebida - despesas,
       cobrancas_atrasadas: overdueCharges.length,
       valor_atrasado: valorAtrasado,
+      despesas_vencendo_hoje: expensesToday.map(e => ({ descricao: e.description, valor: Number(e.amount) })),
     }
     data.comercial = { pipeline_total: pipelineTotal, leads_ativos: leadsAtivos.length, leads_quentes: leadsQuentes.length }
     data.conteudo_aguardando_aprovacao = awaitingContent
