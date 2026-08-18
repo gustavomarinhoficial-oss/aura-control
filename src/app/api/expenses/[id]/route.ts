@@ -19,6 +19,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json(data)
   }
 
+  // Encerra a recorrência a partir de um mês: remove as parcelas futuras ainda
+  // não pagas do grupo e trava a geração automática de novas a partir dali.
+  if (body.action === 'stop_recurrence') {
+    const fromDate = body.from_date as string
+    if (!fromDate) return NextResponse.json({ error: 'from_date obrigatório' }, { status: 400 })
+
+    const { data: current, error: findError } = await supabase.from('expenses').select('recurrence_group').eq('id', id).single()
+    if (findError) return NextResponse.json({ error: findError.message }, { status: 500 })
+    if (!current.recurrence_group) return NextResponse.json({ error: 'Esta despesa não é recorrente' }, { status: 400 })
+
+    await supabase.from('expenses').update({ recurrence_end_date: fromDate }).eq('recurrence_group', current.recurrence_group)
+    await supabase.from('expenses').delete().eq('recurrence_group', current.recurrence_group).is('paid_at', null).gte('due_date', fromDate)
+
+    return NextResponse.json({ ok: true })
+  }
+
   const allowed = ['description', 'amount', 'category', 'due_date', 'recurrent', 'notes']
   const update: Record<string, unknown> = {}
   for (const key of allowed) {

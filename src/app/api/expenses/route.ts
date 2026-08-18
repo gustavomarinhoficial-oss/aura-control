@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { randomUUID } from 'crypto'
 
-const HORIZON_MONTHS = 6
+const HORIZON_MONTHS = 3
 
 function addMonths(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T12:00:00Z')

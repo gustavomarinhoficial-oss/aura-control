@@ -27,6 +27,7 @@ interface Expense {
   paid_at: string | null
   recurrent: boolean
   recurrence_group: string | null
+  recurrence_end_date: string | null
   notes: string | null
 }
 
@@ -124,8 +125,23 @@ function ExpenseModal({ initial, onClose, onSaved }: {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const isRecurringEdit = !!initial?.recurrence_group
-  const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0])
+  const [effectiveDate, setEffectiveDate] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
   const amountChanged = initial ? Number(form.amount) !== initial.amount : false
+  const [stopping, setStopping] = useState(false)
+  const [stopFrom, setStopFrom] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
+  const [stopSaving, setStopSaving] = useState(false)
+
+  async function stopRecurrence() {
+    if (!initial) return
+    setStopSaving(true)
+    const res = await fetch(`/api/expenses/${initial.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'stop_recurrence', from_date: stopFrom }),
+    })
+    if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setStopSaving(false); return }
+    onSaved()
+  }
 
   async function save() {
     if (!form.description.trim()) return setError('Informe a descrição')
@@ -188,12 +204,37 @@ function ExpenseModal({ initial, onClose, onSaved }: {
               placeholder="Referência, número NF..."
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
           </div>
-          {initial ? (
-            isRecurringEdit && (
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                <Tag size={11} />Despesa recorrente — as parcelas futuras seguem vinculadas.
-              </p>
-            )
+          {isRecurringEdit ? (
+            <div className="space-y-2">
+              {initial!.recurrence_end_date ? (
+                <p className="text-[11px] text-[#f59e0b] flex items-center gap-1.5">
+                  <Tag size={11} />Recorrência encerra a partir de {formatDate(initial!.recurrence_end_date)}.
+                </p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <Tag size={11} />Despesa recorrente — as parcelas futuras seguem vinculadas.
+                </p>
+              )}
+              {!stopping ? (
+                <button type="button" onClick={() => setStopping(true)} className="text-[11px] text-[#ef4444] hover:underline">
+                  Encerrar recorrência
+                </button>
+              ) : (
+                <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-lg p-3 space-y-2">
+                  <p className="text-xs text-foreground">A partir de qual mês parar de gerar essa despesa?</p>
+                  <input type="date" value={stopFrom} onChange={e => setStopFrom(e.target.value)}
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ef4444] transition-colors" />
+                  <p className="text-[11px] text-muted-foreground">Remove as parcelas futuras ainda não pagas a partir dessa data e para de gerar novas.</p>
+                  <div className="flex gap-2 pt-1">
+                    <button type="button" onClick={() => setStopping(false)} className="flex-1 border border-[#2a2a2a] text-xs py-2 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
+                    <button type="button" onClick={stopRecurrence} disabled={stopSaving}
+                      className="flex-1 bg-[#ef4444] hover:bg-[#dc2626] text-white text-xs py-2 rounded-lg transition-colors disabled:opacity-60 font-medium">
+                      {stopSaving ? 'Encerrando...' : 'Confirmar'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))}
@@ -267,7 +308,10 @@ export default function FinanceiroPage() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    fetch('/api/charges/generate', { method: 'POST' }).then(() => load()).catch(() => {})
+    Promise.all([
+      fetch('/api/charges/generate', { method: 'POST' }),
+      fetch('/api/expenses/generate', { method: 'POST' }),
+    ]).then(() => load()).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -610,6 +654,11 @@ export default function FinanceiroPage() {
                             <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: catInfo.color + '20', color: catInfo.color }}>
                               {catInfo.label}
                             </span>
+                            {e.recurrent && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1" title={e.recurrence_end_date ? `Encerra em ${formatDate(e.recurrence_end_date)}` : 'Recorrente'}>
+                                <Tag size={10} />{e.recurrence_end_date ? `até ${formatDate(e.recurrence_end_date)}` : 'recorrente'}
+                              </span>
+                            )}
                             {e.notes && <p className="text-xs text-muted-foreground truncate">{e.notes}</p>}
                           </div>
                         </div>
