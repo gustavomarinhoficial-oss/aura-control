@@ -181,7 +181,7 @@ export function OmarPanel({ open, onOpenChange }: { open: boolean; onOpenChange:
             {speech.error && (
               <p className="px-3 pb-1 text-[11px] text-[#ef4444]">{speech.error}</p>
             )}
-            <div className="border-t border-[#1f1f1f] p-3 flex gap-2">
+            <div className="border-t border-[#1f1f1f] p-3 flex gap-2" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}>
               <input
                 value={speech.recording && speech.interim ? speech.interim : input}
                 onChange={e => setInput(e.target.value)}

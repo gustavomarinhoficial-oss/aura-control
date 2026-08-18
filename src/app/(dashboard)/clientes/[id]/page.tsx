@@ -1290,7 +1290,7 @@ export default function ClientProfilePage() {
                       onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], label: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                       onBlur={() => saveExtras()}
                       placeholder="Rótulo (ex: Google Ads)"
-                      className="flex-1 bg-transparent border-b border-[#2a2a2a] pb-1 text-sm font-medium focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                      className="flex-1 min-w-0 bg-transparent border-b border-[#2a2a2a] pb-1 text-sm font-medium focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
                     />
                     <button
                       onClick={() => { const arr = extras.passwords.filter((_, j) => j !== i); setExtras(x => ({ ...x, passwords: arr })); saveExtras({ passwords: arr }) }}
@@ -1299,52 +1299,52 @@ export default function ClientProfilePage() {
                       <X size={13} />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="min-w-0">
                       <label className="block text-[10px] text-muted-foreground mb-1">Usuário / Email</label>
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
                         <input
                           value={pw.username}
                           onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], username: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                           onBlur={() => saveExtras()}
                           placeholder="usuario@email.com"
-                          className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
                         />
-                        <button onClick={() => navigator.clipboard.writeText(pw.username)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1"><Copy size={12} /></button>
+                        <button onClick={() => navigator.clipboard.writeText(pw.username)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"><Copy size={12} /></button>
                       </div>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="block text-[10px] text-muted-foreground mb-1">Senha</label>
-                      <div className="flex gap-1">
+                      <div className="flex items-center gap-1">
                         <input
                           type={revealedPasswords.has(i) ? 'text' : 'password'}
                           value={pw.password}
                           onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], password: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                           onBlur={() => saveExtras()}
                           placeholder="••••••••"
-                          className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
                         />
                         <button
                           onClick={() => setRevealedPasswords(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n })}
-                          className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1"
+                          className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"
                         >
                           {revealedPasswords.has(i) ? <EyeOff size={12} /> : <Eye size={12} />}
                         </button>
-                        <button onClick={() => navigator.clipboard.writeText(pw.password)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1"><Copy size={12} /></button>
+                        <button onClick={() => navigator.clipboard.writeText(pw.password)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"><Copy size={12} /></button>
                       </div>
                     </div>
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <label className="block text-[10px] text-muted-foreground mb-1">URL (opcional)</label>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-1">
                       <input
                         value={pw.url}
                         onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], url: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                         onBlur={() => saveExtras()}
                         placeholder="https://..."
-                        className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                        className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
                       />
-                      <button onClick={() => navigator.clipboard.writeText(pw.url)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1"><Copy size={12} /></button>
+                      <button onClick={() => navigator.clipboard.writeText(pw.url)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"><Copy size={12} /></button>
                     </div>
                   </div>
                 </div>
