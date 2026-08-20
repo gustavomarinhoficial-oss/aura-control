@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
-  Trash2, BarChart2, TrendingUp, ImageIcon,
+  Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import {
@@ -957,7 +957,80 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
   )
 }
 
-// â"€â"€ ConteudoPage â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// ── ShareModal ────────────────────────────────────────────────────────────────
+function ShareModal({ client, onClose }: { client: Client; onClose: () => void }) {
+  const [token, setToken] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [regenerating, setRegenerating] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const loadToken = useCallback(async () => {
+    const res = await fetch(`/api/clients/${client.id}/share-link`).catch(() => null)
+    if (res?.ok) { const d = await res.json(); setToken(d.token) }
+    setLoading(false)
+  }, [client.id])
+
+  useEffect(() => { loadToken() }, [loadToken])
+
+  const url = token ? `${window.location.origin}/publico/${token}` : ''
+
+  function copyLink() {
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function regenerate() {
+    if (!confirm('Isso invalida o link atual — quem tiver o link antigo perde o acesso. Continuar?')) return
+    setRegenerating(true)
+    const res = await fetch(`/api/clients/${client.id}/share-link`, { method: 'POST' })
+    if (res.ok) { const d = await res.json(); setToken(d.token) }
+    setRegenerating(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Share2 size={15} className="text-[#a78bfa]" />
+            <h2 className="text-sm font-semibold">Compartilhar calendário — {client.name}</h2>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={15} /></button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Link público, sem login. Mostra só o calendário de conteúdo de <strong>{client.name}</strong> — o cliente pode ver e aprovar/reprovar cada post.
+        </p>
+        {loading ? (
+          <div className="h-10 bg-[#111111] rounded-lg animate-pulse" />
+        ) : (
+          <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs text-foreground break-all">{url}</div>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={copyLink}
+            disabled={loading}
+            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg border transition-all disabled:opacity-50 ${
+              copied ? 'border-[#22c55e]/40 text-[#22c55e] bg-[#22c55e]/5' : 'border-[#2a2a2a] hover:bg-[#222222]'
+            }`}
+          >
+            {copied ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar link</>}
+          </button>
+          <button
+            onClick={regenerate}
+            disabled={loading || regenerating}
+            title="Gerar novo link (invalida o atual)"
+            className="flex items-center justify-center gap-2 text-sm px-3 py-2.5 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-foreground hover:bg-[#222222] transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={regenerating ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ConteudoPage ─────────────────────────────────────────────────────────────
 export default function ConteudoPage() {
   const [clients, setClients]         = useState<Client[]>([])
   const [posts, setPosts]             = useState<ContentPost[]>([])
@@ -970,6 +1043,7 @@ export default function ConteudoPage() {
   })
   const [selectedPost, setSelectedPost]     = useState<ContentPost | null>(null)
   const [showNew, setShowNew]               = useState(false)
+  const [showShare, setShowShare]           = useState(false)
   const loadClients = useCallback(async () => {
     const res = await fetch('/api/clients').catch(() => null)
     if (!res?.ok) return
@@ -1041,13 +1115,24 @@ export default function ConteudoPage() {
                 {isAllClients ? 'Todos os clientes' : activeClientObj?.name ?? ''}
               </p>
             </div>
-            <button
-              onClick={() => setShowNew(true)}
-              className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm px-4 py-2.5 rounded-xl transition-colors font-medium"
-            >
-              <Plus size={16} />
-              Novo Post
-            </button>
+            <div className="flex items-center gap-2">
+              {!isAllClients && activeClientObj && (
+                <button
+                  onClick={() => setShowShare(true)}
+                  className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm px-4 py-2.5 rounded-xl transition-colors font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <Share2 size={15} />
+                  <span className="hidden sm:inline">Compartilhar</span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowNew(true)}
+                className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm px-4 py-2.5 rounded-xl transition-colors font-medium"
+              >
+                <Plus size={16} />
+                Novo Post
+              </button>
+            </div>
           </div>
 
           {/* client tabs */}
@@ -1215,6 +1300,10 @@ export default function ConteudoPage() {
           onClose={() => setShowNew(false)}
           onCreated={onCreated}
         />
+      )}
+
+      {showShare && activeClientObj && (
+        <ShareModal client={activeClientObj} onClose={() => setShowShare(false)} />
       )}
     </>
   )
