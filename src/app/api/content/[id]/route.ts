@@ -6,7 +6,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const supabase = createServiceClient()
   const body = await request.json()
 
-  const allowed = ['title', 'caption', 'platform', 'status', 'scheduled_date', 'published_at', 'responsible', 'result', 'notes', 'client_id', 'media_url', 'media_urls']
+  const allowed = ['title', 'caption', 'platform', 'status', 'scheduled_date', 'published_at', 'responsible', 'result', 'notes', 'client_id', 'media_url', 'media_urls', 'rejection_reason']
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
   for (const key of allowed) {
     if (key in body) update[key] = body[key] === '' ? null : body[key]

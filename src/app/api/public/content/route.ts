@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
   const { data: posts, error } = await supabase
     .from('content_posts')
-    .select('id, title, caption, platform, status, scheduled_date, published_at, media_url, media_urls, created_at')
+    .select('id, title, caption, platform, status, scheduled_date, published_at, media_url, media_urls, rejection_reason, created_at')
     .eq('client_id', client.id)
     .order('scheduled_date', { ascending: true, nullsFirst: false })
 

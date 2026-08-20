@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Check, X, RefreshCw, Loader2, CalendarDays, ChevronDown, ChevronRight,
+  ChevronLeft, List, AlertCircle, Expand,
 } from 'lucide-react'
 
 interface Post {
@@ -16,6 +17,7 @@ interface Post {
   published_at: string | null
   media_url: string | null
   media_urls: string[] | null
+  rejection_reason: string | null
   created_at: string
 }
 
@@ -38,29 +40,128 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   publicado:             { label: 'Publicado',             color: '#22c55e' },
   reprovado:             { label: 'Reprovado',              color: '#ef4444' },
 }
+const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const DAY_NAMES = ['D','S','T','Q','Q','S','S']
 
 function formatDateLong(dateStr: string) {
   const d = new Date(dateStr + 'T12:00:00')
   return d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
-function firstMedia(post: Post): string | null {
-  if (post.media_url) return post.media_url
-  if (post.media_urls && post.media_urls.length > 0) return post.media_urls[0]
-  return null
+function postMedia(post: Post): string[] {
+  if (post.media_urls && post.media_urls.length > 0) return post.media_urls
+  if (post.media_url) return [post.media_url]
+  return []
 }
 
-function PostCard({ post, onAction, acting }: { post: Post; onAction: (id: string, status: 'aprovado' | 'reprovado') => void; acting: boolean }) {
-  const media = firstMedia(post)
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+function Lightbox({ images, index, onIndexChange, onClose }: { images: string[]; index: number; onIndexChange: (i: number) => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/95 flex items-center justify-center" onClick={onClose}>
+      <button
+        onClick={onClose}
+        className="absolute top-[calc(1rem+env(safe-area-inset-top))] right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-10"
+      >
+        <X size={18} />
+      </button>
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={e => { e.stopPropagation(); onIndexChange((index - 1 + images.length) % images.length) }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-10"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onIndexChange((index + 1) % images.length) }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors z-10"
+          >
+            <ChevronRight size={20} />
+          </button>
+          <div className="absolute bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 text-xs text-white/70 bg-black/50 px-2.5 py-1 rounded-full">
+            {index + 1} / {images.length}
+          </div>
+        </>
+      )}
+
+      <img
+        src={images[index]}
+        alt=""
+        className="max-w-full max-h-full object-contain"
+        onClick={e => e.stopPropagation()}
+      />
+    </div>
+  )
+}
+
+// ── RejectModal ──────────────────────────────────────────────────────────────
+function RejectModal({ onConfirm, onClose, saving }: { onConfirm: (reason: string) => void; onClose: () => void; saving: boolean }) {
+  const [reason, setReason] = useState('')
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/70 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="bg-[#161616] border border-[#262626] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm p-5 space-y-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <AlertCircle size={16} className="text-[#ef4444]" />
+          <h3 className="text-sm font-semibold text-white">Por que está reprovando?</h3>
+        </div>
+        <p className="text-xs text-[#7a7a7a]">Conta pra gente o que precisa mudar — assim já ajustamos certinho.</p>
+        <textarea
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          rows={4}
+          autoFocus
+          placeholder="Ex: trocar a foto, mudar o texto da legenda, cor não combina..."
+          className="w-full bg-[#0d0d0d] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-[#5a5a5a] focus:outline-none focus:border-[#ef4444] transition-colors resize-none"
+        />
+        <div className="flex gap-2 pt-1">
+          <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-white text-sm py-2.5 rounded-xl hover:bg-[#1f1f1f] transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={() => reason.trim() && onConfirm(reason.trim())}
+            disabled={!reason.trim() || saving}
+            className="flex-1 bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm py-2.5 rounded-xl transition-colors disabled:opacity-40 font-medium"
+          >
+            {saving ? 'Enviando...' : 'Reprovar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── PostCard ─────────────────────────────────────────────────────────────────
+function PostCard({ post, onApprove, onReject, acting }: {
+  post: Post
+  onApprove: (id: string) => void
+  onReject: (id: string) => void
+  acting: boolean
+}) {
+  const media = postMedia(post)
   const st = STATUS_LABEL[post.status] ?? { label: post.status, color: '#6b7280' }
   const canAct = post.status !== 'publicado'
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   return (
     <div className="bg-[#161616] border border-[#262626] rounded-2xl overflow-hidden">
-      {media && (
-        <div className="w-full aspect-[4/3] bg-[#0d0d0d]">
-          <img src={media} alt={post.title} className="w-full h-full object-cover" />
-        </div>
+      {media.length > 0 && (
+        <button
+          onClick={() => setLightboxIndex(0)}
+          className="relative w-full aspect-[4/3] bg-[#0d0d0d] block group"
+        >
+          <img src={media[0]} alt={post.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-black/0 group-active:bg-black/20 transition-colors flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <Expand size={15} className="text-white" />
+            </div>
+          </div>
+          {media.length > 1 && (
+            <span className="absolute bottom-2 right-2 bg-black/70 text-[10px] text-white px-1.5 py-0.5 rounded-full">
+              ⊞ {media.length}
+            </span>
+          )}
+        </button>
       )}
       <div className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
@@ -83,10 +184,17 @@ function PostCard({ post, onAction, acting }: { post: Post; onAction: (id: strin
           </p>
         )}
 
+        {post.status === 'reprovado' && post.rejection_reason && (
+          <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-lg p-2.5">
+            <p className="text-[10px] text-[#ef4444] font-medium uppercase tracking-wider mb-0.5">Seu motivo</p>
+            <p className="text-xs text-[#e5e5e5] whitespace-pre-wrap">{post.rejection_reason}</p>
+          </div>
+        )}
+
         {canAct && (
           <div className="flex gap-2 pt-1">
             <button
-              onClick={() => onAction(post.id, 'aprovado')}
+              onClick={() => onApprove(post.id)}
               disabled={acting}
               className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
                 post.status === 'aprovado'
@@ -97,7 +205,7 @@ function PostCard({ post, onAction, acting }: { post: Post; onAction: (id: strin
               <Check size={15} /> {post.status === 'aprovado' ? 'Aprovado' : 'Aprovar'}
             </button>
             <button
-              onClick={() => onAction(post.id, 'reprovado')}
+              onClick={() => onReject(post.id)}
               disabled={acting}
               className={`flex-1 flex items-center justify-center gap-1.5 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50 ${
                 post.status === 'reprovado'
@@ -110,6 +218,114 @@ function PostCard({ post, onAction, acting }: { post: Post; onAction: (id: strin
           </div>
         )}
       </div>
+
+      {lightboxIndex !== null && (
+        <Lightbox images={media} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+    </div>
+  )
+}
+
+// ── CalendarView ─────────────────────────────────────────────────────────────
+function CalendarView({ posts, onApprove, onReject, actingId }: {
+  posts: Post[]
+  onApprove: (id: string) => void
+  onReject: (id: string) => void
+  actingId: string | null
+}) {
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth())
+  const [selectedDay, setSelectedDay] = useState<number | null>(now.getMonth() === month && now.getFullYear() === year ? now.getDate() : null)
+
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+
+  const byDay: Record<number, Post[]> = {}
+  for (const post of posts) {
+    if (!post.scheduled_date) continue
+    const [y, m, d] = post.scheduled_date.split('-').map(Number)
+    if (y === year && m - 1 === month) {
+      if (!byDay[d]) byDay[d] = []
+      byDay[d].push(post)
+    }
+  }
+
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  function prevMonth() {
+    setSelectedDay(null)
+    if (month === 0) { setYear(y => y - 1); setMonth(11) } else setMonth(m => m - 1)
+  }
+  function nextMonth() {
+    setSelectedDay(null)
+    if (month === 11) { setYear(y => y + 1); setMonth(0) } else setMonth(m => m + 1)
+  }
+
+  const selectedPosts = selectedDay ? (byDay[selectedDay] ?? []) : []
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-[#161616] border border-[#262626] rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-3 border-b border-[#262626]">
+          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#222] text-[#9ca3af] hover:text-white transition-colors">
+            <ChevronLeft size={16} />
+          </button>
+          <p className="text-sm font-semibold">{MONTH_NAMES[month]} {year}</p>
+          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#222] text-[#9ca3af] hover:text-white transition-colors">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 border-b border-[#1f1f1f]">
+          {DAY_NAMES.map((d, i) => (
+            <div key={i} className="text-center text-[10px] text-[#6a6a6a] font-medium py-2">{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {cells.map((day, i) => {
+            const dayStr = day ? `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` : ''
+            const isToday = dayStr === todayStr
+            const isSelected = day !== null && selectedDay === day
+            const dayPosts = day ? (byDay[day] ?? []) : []
+            return (
+              <button
+                key={i}
+                disabled={!day}
+                onClick={() => setSelectedDay(isSelected ? null : day)}
+                className={`min-h-[52px] p-1 flex flex-col items-center gap-0.5 border-b border-r border-[#1a1a1a] transition-colors ${
+                  isSelected ? 'bg-[#7c3aed]/15' : day ? 'hover:bg-[#1c1c1c]' : ''
+                }`}
+              >
+                {day && (
+                  <>
+                    <span className={`text-[11px] w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-[#7c3aed] text-white font-semibold' : 'text-[#9ca3af]'}`}>
+                      {day}
+                    </span>
+                    <div className="flex gap-0.5 flex-wrap justify-center">
+                      {dayPosts.slice(0, 3).map(p => (
+                        <span key={p.id} className="w-1.5 h-1.5 rounded-full" style={{ background: (STATUS_LABEL[p.status] ?? STATUS_LABEL.rascunho).color }} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {selectedDay && (
+        <div className="space-y-3">
+          <p className="text-xs text-[#7a7a7a]">
+            {selectedPosts.length === 0 ? 'Nenhum post nesse dia' : `${selectedPosts.length} post${selectedPosts.length !== 1 ? 's' : ''} — ${selectedDay} de ${MONTH_NAMES[month]}`}
+          </p>
+          {selectedPosts.map(post => (
+            <PostCard key={post.id} post={post} onApprove={onApprove} onReject={onReject} acting={actingId === post.id} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -125,6 +341,8 @@ export default function PublicCalendarPage() {
   const [notFound, setNotFound] = useState(false)
   const [actingId, setActingId] = useState<string | null>(null)
   const [showPast, setShowPast] = useState(false)
+  const [viewMode, setViewMode] = useState<'lista' | 'calendario'>('lista')
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
@@ -139,18 +357,19 @@ export default function PublicCalendarPage() {
 
   useEffect(() => { load() }, [load])
 
-  async function handleAction(id: string, status: 'aprovado' | 'reprovado') {
+  async function submitStatus(id: string, status: 'aprovado' | 'reprovado', reason?: string) {
     setActingId(id)
     const res = await fetch(`/api/public/content/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, status }),
+      body: JSON.stringify({ token, status, reason }),
     })
     if (res.ok) {
       const updated = await res.json()
       setPosts(ps => ps.map(p => p.id === id ? updated : p))
     }
     setActingId(null)
+    setRejectingId(null)
   }
 
   if (loading) {
@@ -193,7 +412,22 @@ export default function PublicCalendarPage() {
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           </button>
         </div>
-        <p className="text-xs text-[#7a7a7a] mb-6">Acompanhe, aprove ou reprove os posts planejados.</p>
+        <p className="text-xs text-[#7a7a7a] mb-4">Acompanhe, aprove ou reprove os posts planejados.</p>
+
+        <div className="flex items-center bg-[#161616] border border-[#262626] rounded-xl p-1 gap-1 mb-5 w-fit">
+          <button
+            onClick={() => setViewMode('lista')}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'lista' ? 'bg-[#2a2a2a] text-white' : 'text-[#8a8a8a] hover:text-white'}`}
+          >
+            <List size={13} /> Lista
+          </button>
+          <button
+            onClick={() => setViewMode('calendario')}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${viewMode === 'calendario' ? 'bg-[#2a2a2a] text-white' : 'text-[#8a8a8a] hover:text-white'}`}
+          >
+            <CalendarDays size={13} /> Calendário
+          </button>
+        </div>
 
         {upcoming.length === 0 && past.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -202,35 +436,68 @@ export default function PublicCalendarPage() {
           </div>
         )}
 
-        {upcoming.length > 0 && (
-          <div className="space-y-3">
-            {upcoming.map(post => (
-              <PostCard key={post.id} post={post} onAction={handleAction} acting={actingId === post.id} />
-            ))}
-          </div>
-        )}
-
-        {past.length > 0 && (
-          <div className="mt-6 space-y-3">
-            <button
-              onClick={() => setShowPast(v => !v)}
-              className="flex items-center gap-1.5 text-xs text-[#7a7a7a] hover:text-white transition-colors"
-            >
-              {showPast ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-              Conteúdos anteriores ({past.length})
-            </button>
-            {showPast && (
-              <div className="space-y-3 opacity-80">
-                {past.map(post => (
-                  <PostCard key={post.id} post={post} onAction={handleAction} acting={actingId === post.id} />
+        {viewMode === 'calendario' ? (
+          (upcoming.length > 0 || past.length > 0) && (
+            <CalendarView
+              posts={posts}
+              onApprove={id => submitStatus(id, 'aprovado')}
+              onReject={id => setRejectingId(id)}
+              actingId={actingId}
+            />
+          )
+        ) : (
+          <>
+            {upcoming.length > 0 && (
+              <div className="space-y-3">
+                {upcoming.map(post => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onApprove={id => submitStatus(id, 'aprovado')}
+                    onReject={id => setRejectingId(id)}
+                    acting={actingId === post.id}
+                  />
                 ))}
               </div>
             )}
-          </div>
+
+            {past.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <button
+                  onClick={() => setShowPast(v => !v)}
+                  className="flex items-center gap-1.5 text-xs text-[#7a7a7a] hover:text-white transition-colors"
+                >
+                  {showPast ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                  Conteúdos anteriores ({past.length})
+                </button>
+                {showPast && (
+                  <div className="space-y-3 opacity-80">
+                    {past.map(post => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onApprove={id => submitStatus(id, 'aprovado')}
+                        onReject={id => setRejectingId(id)}
+                        acting={actingId === post.id}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         <p className="text-center text-[10px] text-[#4a4a4a] mt-10">Aura Control</p>
       </div>
+
+      {rejectingId && (
+        <RejectModal
+          saving={actingId === rejectingId}
+          onClose={() => setRejectingId(null)}
+          onConfirm={reason => submitStatus(rejectingId, 'reprovado', reason)}
+        />
+      )}
     </div>
   )
 }

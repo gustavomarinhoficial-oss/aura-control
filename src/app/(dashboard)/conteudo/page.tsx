@@ -28,6 +28,7 @@ interface ContentPost {
   notes: string | null
   media_url: string | null
   media_urls: string[] | null
+  rejection_reason: string | null
   created_at: string
   clients?: { id: string; name: string } | null
 }
@@ -279,6 +280,14 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             placeholder="Titulo do post"
             className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/30"
           />
+
+          {/* motivo da reprovação (informado pelo cliente no link público) */}
+          {form.status === 'reprovado' && form.rejection_reason && (
+            <div className="bg-[#ef4444]/10 border border-[#ef4444]/25 rounded-lg p-3 space-y-1">
+              <p className="text-[10px] text-[#ef4444] font-medium uppercase tracking-wider">Reprovado pelo cliente — o que alterar</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{form.rejection_reason}</p>
+            </div>
+          )}
 
           {/* meta grid */}
           <div className="grid grid-cols-2 gap-4">
