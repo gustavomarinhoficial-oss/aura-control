@@ -137,12 +137,23 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
     const toUpload = Array.from(files).slice(0, MAX_IMAGES - values.length)
     for (const file of toUpload) {
       try {
-        const fd = new FormData()
-        fd.append('file', file)
-        const res = await fetch('/api/upload', { method: 'POST', body: fd })
-        const json = await res.json()
-        if (res.ok) newUrls.push(json.url)
-        else setUploadErr(json.error ?? `Erro ${res.status}`)
+        // 1) pede uma URL assinada pro servidor (payload pequeno, só o nome do arquivo)
+        const presignRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        })
+        const presignJson = await presignRes.json()
+        if (!presignRes.ok) { setUploadErr(presignJson.error ?? `Erro ${presignRes.status}`); continue }
+
+        // 2) envia o arquivo direto pro R2, sem passar pela função da Vercel
+        const putRes = await fetch(presignJson.uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        })
+        if (putRes.ok) newUrls.push(presignJson.publicUrl)
+        else setUploadErr(`Erro ao enviar arquivo (${putRes.status})`)
       } catch {
         setUploadErr('Falha na conexão')
       }
