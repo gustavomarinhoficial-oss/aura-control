@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
   Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
+  Download, Play,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import {
@@ -124,11 +125,97 @@ function toDirectImageUrl(url: string): string {
   return url
 }
 
+const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv']
+function isVideoUrl(url: string): boolean {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
+  return !!ext && VIDEO_EXTS.includes(ext)
+}
+
+// Mapa de extensão → MIME pra quando o navegador não identifica o file.type
+// (comum em HEIC de iPhone e alguns vídeos) — usado tanto na hora de pedir a
+// URL assinada quanto no PUT direto pro R2, sempre o MESMO valor resolvido.
+const EXT_MIME: Record<string, string> = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+  heic: 'image/heic', heif: 'image/heif', bmp: 'image/bmp',
+  mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', m4v: 'video/x-m4v',
+  avi: 'video/x-msvideo', mkv: 'video/x-matroska',
+}
+function resolveContentType(file: File): string {
+  if (file.type) return file.type
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return EXT_MIME[ext] ?? 'application/octet-stream'
+}
+
+const MAX_IMAGE_MB = 15
+const MAX_VIDEO_MB = 300
+
+// ── MediaLightbox ──────────────────────────────────────────────────────────────────────────────────
+function MediaLightbox({ urls, index, onIndexChange, onClose }: {
+  urls: string[]; index: number; onIndexChange: (i: number) => void; onClose: () => void
+}) {
+  const [downloading, setDownloading] = useState(false)
+  const url = urls[index]
+  const video = isVideoUrl(url)
+
+  async function download() {
+    setDownloading(true)
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = url.split('/').pop()?.split('?')[0] || 'arquivo'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(url, '_blank')
+    }
+    setDownloading(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] bg-black/95 flex items-center justify-center" onClick={onClose}>
+      <button onClick={onClose}
+        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10 transition-colors">
+        <X size={18} />
+      </button>
+      <button onClick={e => { e.stopPropagation(); download() }} disabled={downloading}
+        className="absolute top-4 left-4 flex items-center gap-1.5 px-3 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium z-10 transition-colors disabled:opacity-50">
+        <Download size={14} /> {downloading ? 'Baixando...' : 'Baixar'}
+      </button>
+      {urls.length > 1 && (
+        <>
+          <button onClick={e => { e.stopPropagation(); onIndexChange((index - 1 + urls.length) % urls.length) }}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10 transition-colors">
+            <ChevronLeft size={20} />
+          </button>
+          <button onClick={e => { e.stopPropagation(); onIndexChange((index + 1) % urls.length) }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10 transition-colors">
+            <ChevronRight size={20} />
+          </button>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs text-white/70 bg-black/50 px-2.5 py-1 rounded-full">
+            {index + 1} / {urls.length}
+          </div>
+        </>
+      )}
+      {video ? (
+        <video src={url} controls autoPlay className="max-w-full max-h-full" onClick={e => e.stopPropagation()} />
+      ) : (
+        <img src={toDirectImageUrl(url)} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+      )}
+    </div>
+  )
+}
+
 // ── CarouselUpload ─────────────────────────────────────────────────────────────────────────────────
 const MAX_IMAGES = 10
 function CarouselUpload({ values, onChange }: { values: string[]; onChange: (urls: string[]) => void }) {
   const [uploading, setUploading] = useState(false)
   const [uploadErr, setUploadErr] = useState<string | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function handleFiles(files: FileList) {
@@ -137,12 +224,22 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
     const newUrls: string[] = []
     const toUpload = Array.from(files).slice(0, MAX_IMAGES - values.length)
     for (const file of toUpload) {
+      const isVideo = file.type.startsWith('video/') || VIDEO_EXTS.includes(file.name.split('.').pop()?.toLowerCase() ?? '')
+      const maxBytes = (isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB) * 1024 * 1024
+      if (file.size > maxBytes) {
+        setUploadErr(`"${file.name}" é muito grande (máx. ${isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB}MB)`)
+        continue
+      }
       try {
+        // resolve o content-type UMA vez e reusa o mesmo valor nos dois passos —
+        // se divergir entre o presign e o PUT, o R2 recusa o upload
+        const contentType = resolveContentType(file)
+
         // 1) pede uma URL assinada pro servidor (payload pequeno, só o nome do arquivo)
         const presignRes = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ filename: file.name, contentType: file.type }),
+          body: JSON.stringify({ filename: file.name, contentType }),
         })
         const presignJson = await presignRes.json()
         if (!presignRes.ok) { setUploadErr(presignJson.error ?? `Erro ${presignRes.status}`); continue }
@@ -150,11 +247,11 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
         // 2) envia o arquivo direto pro R2, sem passar pela função da Vercel
         const putRes = await fetch(presignJson.uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          headers: { 'Content-Type': contentType },
           body: file,
         })
         if (putRes.ok) newUrls.push(presignJson.publicUrl)
-        else setUploadErr(`Erro ao enviar arquivo (${putRes.status})`)
+        else setUploadErr(`Erro ao enviar "${file.name}" (${putRes.status})`)
       } catch {
         setUploadErr('Falha na conexão')
       }
@@ -167,23 +264,39 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
 
   return (
     <div className="space-y-2">
-      <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
+      <input ref={inputRef} type="file" accept="image/*,video/*" multiple className="hidden"
         onChange={e => { if (e.target.files?.length) { handleFiles(e.target.files); e.target.value = '' } }} />
       {values.length > 0 ? (
         <div className="flex gap-2 flex-wrap">
-          {values.map((url, i) => (
-            <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[#2a2a2a] shrink-0">
-              <img src={toDirectImageUrl(url)} alt="" className="w-full h-full object-cover"
-                onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }} />
-              {i === 0 && values.length > 1 && (
-                <div className="absolute bottom-0.5 left-0.5 bg-black/70 text-[8px] text-white px-1 rounded">capa</div>
-              )}
-              <button onClick={() => remove(i)}
-                className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-[#ef4444]/80 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <X size={8} />
-              </button>
-            </div>
-          ))}
+          {values.map((url, i) => {
+            const video = isVideoUrl(url)
+            return (
+              <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[#2a2a2a] shrink-0">
+                <button type="button" onClick={() => setLightboxIndex(i)} className="w-full h-full block">
+                  {video ? (
+                    <video src={url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                  ) : (
+                    <img src={toDirectImageUrl(url)} alt="" className="w-full h-full object-cover"
+                      onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }} />
+                  )}
+                </button>
+                {video && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center">
+                      <Play size={11} className="text-white ml-0.5" fill="white" />
+                    </div>
+                  </div>
+                )}
+                {i === 0 && values.length > 1 && (
+                  <div className="absolute bottom-0.5 left-0.5 bg-black/70 text-[8px] text-white px-1 rounded">capa</div>
+                )}
+                <button onClick={() => remove(i)}
+                  className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-[#ef4444]/80 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X size={8} />
+                </button>
+              </div>
+            )
+          })}
           {values.length < MAX_IMAGES && (
             <button onClick={() => inputRef.current?.click()} disabled={uploading}
               className="w-20 h-20 border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-[#a78bfa] transition-colors shrink-0">
@@ -198,11 +311,14 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
           className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors">
           {uploading
             ? <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
-            : <><ImageIcon size={20} /><span className="text-xs">Clique para fazer upload</span><span className="text-[10px] opacity-50">PNG, JPG — até {MAX_IMAGES} imagens (carrossel)</span></>}
+            : <><ImageIcon size={20} /><span className="text-xs">Clique para fazer upload</span><span className="text-[10px] opacity-50">Fotos ou vídeos — até {MAX_IMAGES} arquivos (carrossel)</span></>}
         </button>
       )}
-      {values.length > 1 && <p className="text-[10px] text-[#a78bfa]">⊞ Carrossel · {values.length} imagens · a primeira é a capa</p>}
+      {values.length > 1 && <p className="text-[10px] text-[#a78bfa]">⊞ Carrossel · {values.length} arquivos · o primeiro é a capa</p>}
       {uploadErr && <p className="text-[11px] text-[#ef4444]">{uploadErr}</p>}
+      {lightboxIndex !== null && (
+        <MediaLightbox urls={values} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
     </div>
   )
 }
@@ -681,8 +797,12 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
                           const count = post.media_urls?.length ?? (post.media_url ? 1 : 0)
                           return thumb ? (
                             <div className="relative">
-                              <img src={toDirectImageUrl(thumb)} alt="" className="w-full h-14 object-cover"
-                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                              {isVideoUrl(thumb) ? (
+                                <video src={thumb} className="w-full h-14 object-cover" muted playsInline preload="metadata" />
+                              ) : (
+                                <img src={toDirectImageUrl(thumb)} alt="" className="w-full h-14 object-cover"
+                                  onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                              )}
                               {count > 1 && (
                                 <span className="absolute bottom-0.5 right-0.5 bg-black/70 text-[8px] text-white px-1 rounded">⊞ {count}</span>
                               )}

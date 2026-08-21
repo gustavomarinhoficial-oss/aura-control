@@ -15,7 +15,11 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null)
   const filename = body?.filename as string | undefined
-  const contentType = (body?.contentType as string | undefined) || 'image/jpeg'
+  // O navegador manda o mesmo contentType que vai usar no PUT direto pro R2 —
+  // tem que ser IDÊNTICO ao que foi assinado aqui, senão o R2 recusa com
+  // SignatureDoesNotMatch (era a causa do "erro ao enviar arquivo" em fotos
+  // cujo file.type vinha vazio no navegador, ex: alguns HEIC de iPhone).
+  const contentType = (body?.contentType as string | undefined) || 'application/octet-stream'
   if (!filename) return NextResponse.json({ error: 'Nome do arquivo obrigatório' }, { status: 400 })
 
   const r2 = new S3Client({

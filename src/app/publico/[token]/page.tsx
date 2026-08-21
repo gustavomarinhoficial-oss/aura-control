@@ -54,6 +54,12 @@ function postMedia(post: Post): string[] {
   return []
 }
 
+const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv']
+function isVideoUrl(url: string): boolean {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
+  return !!ext && VIDEO_EXTS.includes(ext)
+}
+
 // ── Lightbox ─────────────────────────────────────────────────────────────────
 function Lightbox({ images, index, onIndexChange, onClose }: { images: string[]; index: number; onIndexChange: (i: number) => void; onClose: () => void }) {
   return (
@@ -85,12 +91,22 @@ function Lightbox({ images, index, onIndexChange, onClose }: { images: string[];
         </>
       )}
 
-      <img
-        src={images[index]}
-        alt=""
-        className="max-w-full max-h-full object-contain"
-        onClick={e => e.stopPropagation()}
-      />
+      {isVideoUrl(images[index]) ? (
+        <video
+          src={images[index]}
+          controls
+          autoPlay
+          className="max-w-full max-h-full"
+          onClick={e => e.stopPropagation()}
+        />
+      ) : (
+        <img
+          src={images[index]}
+          alt=""
+          className="max-w-full max-h-full object-contain"
+          onClick={e => e.stopPropagation()}
+        />
+      )}
     </div>
   )
 }
@@ -150,7 +166,11 @@ function PostCard({ post, onApprove, onReject, acting }: {
           onClick={() => setLightboxIndex(0)}
           className="relative w-full aspect-[4/3] bg-[#0d0d0d] block group"
         >
-          <img src={media[0]} alt={post.title} className="w-full h-full object-cover" />
+          {isVideoUrl(media[0]) ? (
+            <video src={media[0]} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+          ) : (
+            <img src={media[0]} alt={post.title} className="w-full h-full object-cover" />
+          )}
           <div className="absolute inset-0 bg-black/0 group-active:bg-black/20 transition-colors flex items-center justify-center">
             <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Expand size={15} className="text-white" />
