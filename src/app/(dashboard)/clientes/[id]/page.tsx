@@ -70,9 +70,9 @@ export default function ClientProfilePage() {
   const [showNewService, setShowNewService] = useState(false)
   const [savingService, setSavingService] = useState(false)
   const [serviceError, setServiceError] = useState('')
-  const [newService, setNewService] = useState({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0] })
+  const [newService, setNewService] = useState({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], first_charge_date: '' })
   const [editingService, setEditingService] = useState<string | null>(null)
-  const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0] })
+  const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: '' })
   const [savingEditService, setSavingEditService] = useState(false)
   const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados' | 'editorial' | 'relatorios'>('visao')
   const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
@@ -321,13 +321,13 @@ export default function ClientProfilePage() {
     if (!res.ok) { setServiceError('Erro ao salvar'); setSavingService(false); return }
     setSavingService(false)
     setShowNewService(false)
-    setNewService({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0] })
+    setNewService({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], first_charge_date: '' })
     load()
   }
 
   function startEditService(s: Service) {
     setEditingService(s.id)
-    setEditServiceForm({ name: s.name, amount: String(s.amount), recurrence: s.recurrence ?? 'mensal', contract_end: s.contract_end ?? '', effective_date: new Date().toISOString().split('T')[0] })
+    setEditServiceForm({ name: s.name, amount: String(s.amount), recurrence: s.recurrence ?? 'mensal', contract_end: s.contract_end ?? '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: s.first_charge_date ?? '' })
   }
 
   async function saveEditService(serviceId: string, originalAmount: number) {
@@ -343,6 +343,7 @@ export default function ClientProfilePage() {
         recurrence: editServiceForm.recurrence,
         contract_end: editServiceForm.contract_end || null,
         effective_date: amountChanged ? editServiceForm.effective_date : undefined,
+        first_charge_date: editServiceForm.first_charge_date || null,
       }),
     })
     setSavingEditService(false)
@@ -615,6 +616,13 @@ export default function ClientProfilePage() {
                   <label className="block text-xs text-muted-foreground mb-1">Início</label>
                   <input type="date" value={newService.started_at} onChange={e => setNewService(s => ({ ...s, started_at: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
                 </div>
+                {newService.type === 'recorrente' && (
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Cobrar a partir de <span className="text-[#555]">(opcional)</span></label>
+                    <input type="date" value={newService.first_charge_date} onChange={e => setNewService(s => ({ ...s, first_charge_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Se o cliente entrou no meio do mês e só vai pagar mais pra frente, defina aqui.</p>
+                  </div>
+                )}
               </div>
               {serviceError && <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={11} />{serviceError}</p>}
               <div className="flex gap-3">
@@ -659,6 +667,13 @@ export default function ClientProfilePage() {
                           <label className="block text-xs text-muted-foreground mb-1">Término do contrato</label>
                           <input type="date" value={editServiceForm.contract_end} onChange={e => setEditServiceForm(f => ({ ...f, contract_end: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
                         </div>
+                        {s.type === 'recorrente' && (
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">Cobrar a partir de</label>
+                            <input type="date" value={editServiceForm.first_charge_date} onChange={e => setEditServiceForm(f => ({ ...f, first_charge_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                            <p className="text-[10px] text-muted-foreground mt-1">Cobranças pendentes antes dessa data são removidas.</p>
+                          </div>
+                        )}
                       </div>
                       {parseFloat(editServiceForm.amount) !== Number(s.amount) && (
                         <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/30 rounded-lg px-4 py-3">
@@ -694,6 +709,11 @@ export default function ClientProfilePage() {
                             </span>
                           )
                         })()}
+                        {s.first_charge_date && s.first_charge_date > new Date().toISOString().split('T')[0] && (
+                          <span className="flex items-center gap-1 text-[10px] mt-0.5 text-[#a78bfa]">
+                            <Clock size={9} /> Primeira cobrança em {formatDate(s.first_charge_date)}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-semibold">{formatBRL(Number(s.amount))}</span>
@@ -1580,7 +1600,7 @@ export default function ClientProfilePage() {
                   className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
                 >
                   <option value="">Não definido</option>
-                  {[1,5,10,15,20,25,28].map(d => <option key={d} value={d}>Todo dia {d}</option>)}
+                  {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
                 </select>
               </div>
               <div>

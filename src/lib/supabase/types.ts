@@ -35,6 +35,7 @@ export interface Service {
   started_at: string
   ended_at: string | null
   contract_end: string | null
+  first_charge_date: string | null
   active: boolean
   created_at: string
 }

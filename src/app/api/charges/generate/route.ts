@@ -66,6 +66,15 @@ export async function POST() {
         dueDate = addMonths(service.started_at, 1)
         while (dueDate < today) dueDate = addMonths(dueDate, monthStep)
       }
+
+      // Cliente entrou no meio do mês mas só deve começar a pagar mais pra
+      // frente: empurra a primeira cobrança pra não ficar antes dessa data
+      if (service.first_charge_date) {
+        while (dueDate < service.first_charge_date) {
+          dueDate = addMonths(dueDate, monthStep)
+          if (billingDay) dueDate = withBillingDay(dueDate, billingDay)
+        }
+      }
     }
 
     // Gera cobranÃ§as atÃ© o futureLimit

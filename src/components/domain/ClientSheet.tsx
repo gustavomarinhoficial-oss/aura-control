@@ -25,9 +25,9 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
   const [showNewService, setShowNewService] = useState(false)
   const [savingService, setSavingService] = useState(false)
   const [serviceError, setServiceError] = useState('')
-  const [newService, setNewService] = useState({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], contract_end: '', billing_day: '' })
+  const [newService, setNewService] = useState({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], contract_end: '', billing_day: '', first_charge_date: '' })
   const [editingService, setEditingService] = useState<string | null>(null)
-  const [editServiceForm, setEditServiceForm] = useState<{ name: string; amount: string; recurrence: string; contract_end: string }>({ name: '', amount: '', recurrence: 'mensal', contract_end: '' })
+  const [editServiceForm, setEditServiceForm] = useState<{ name: string; amount: string; recurrence: string; contract_end: string; first_charge_date: string }>({ name: '', amount: '', recurrence: 'mensal', contract_end: '', first_charge_date: '' })
   const [savingEditService, setSavingEditService] = useState(false)
   const newServiceRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -71,7 +71,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
     const res = await fetch('/api/services', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newService, client_id: clientId, amount: parseFloat(newService.amount), contract_end: newService.contract_end || null }),
+      body: JSON.stringify({ ...newService, client_id: clientId, amount: parseFloat(newService.amount), contract_end: newService.contract_end || null, first_charge_date: newService.first_charge_date || null }),
     })
 
     if (!res.ok) {
@@ -83,7 +83,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
 
     setSavingService(false)
     setShowNewService(false)
-    setNewService({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], contract_end: '', billing_day: '' })
+    setNewService({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], contract_end: '', billing_day: '', first_charge_date: '' })
     setServiceError('')
     load()
     onRefresh()
@@ -106,6 +106,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
       amount: String(s.amount),
       recurrence: s.recurrence ?? 'mensal',
       contract_end: s.contract_end ?? '',
+      first_charge_date: s.first_charge_date ?? '',
     })
   }
 
@@ -119,6 +120,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
         amount: parseFloat(editServiceForm.amount),
         recurrence: editServiceForm.recurrence,
         contract_end: editServiceForm.contract_end || null,
+        first_charge_date: editServiceForm.first_charge_date || null,
       }),
     })
     setSavingEditService(false)
@@ -170,7 +172,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                     className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
                   >
                     <option value="">Não definido</option>
-                    {[1,5,10,15,20,25,28].map(d => <option key={d} value={d}>Todo dia {d}</option>)}
+                    {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
                   </select>
                 </div>
                 <div>
@@ -243,6 +245,18 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                 <EditField label="Início" value={newService.started_at} onChange={v => setNewService(s => ({ ...s, started_at: v }))} type="date" />
                 {newService.type === 'recorrente' && client.billing_day && (
                   <p className="text-[10px] text-muted-foreground">Cobranças geradas no dia <span className="text-foreground font-medium">{client.billing_day}</span> de cada mês (vencimento do cliente).</p>
+                )}
+                {newService.type === 'recorrente' && (
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Cobrar a partir de <span className="text-[#555]">(opcional)</span></label>
+                    <input
+                      type="date"
+                      value={newService.first_charge_date}
+                      onChange={e => setNewService(s => ({ ...s, first_charge_date: e.target.value }))}
+                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">Se o cliente entrou no meio do mês e só vai pagar mais pra frente, defina aqui. Nenhuma cobrança é gerada antes dessa data.</p>
+                  </div>
                 )}
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">Término do contrato <span className="text-[#555]">(opcional)</span></label>
@@ -331,6 +345,18 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                             className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
                           />
                         </div>
+                        {s.type === 'recorrente' && (
+                          <div>
+                            <label className="block text-[10px] text-muted-foreground mb-1">Cobrar a partir de <span className="text-[#555]">(opcional)</span></label>
+                            <input
+                              type="date"
+                              value={editServiceForm.first_charge_date}
+                              onChange={e => setEditServiceForm(f => ({ ...f, first_charge_date: e.target.value }))}
+                              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                            />
+                            <p className="text-[10px] text-muted-foreground mt-1">Cobranças pendentes antes dessa data são removidas.</p>
+                          </div>
+                        )}
                         <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => setEditingService(null)}
@@ -366,6 +392,11 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                               </span>
                             )
                           })()}
+                          {s.first_charge_date && s.first_charge_date > new Date().toISOString().split('T')[0] && (
+                            <span className="flex items-center gap-1 text-[10px] mt-0.5 text-[#a78bfa]">
+                              <Clock size={9} /> Primeira cobrança em {formatDate(s.first_charge_date)}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => startEditService(s)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors">

@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       recurrence: body.recurrence || null,
       started_at: body.started_at,
       contract_end: body.contract_end || null,
+      first_charge_date: body.first_charge_date || null,
       active: true,
     })
     .select()
@@ -66,6 +67,14 @@ export async function POST(request: Request) {
       // Sem dia fixo: comeÃ§a 1 dia apÃ³s o inÃ­cio e avanÃ§a atÃ© o futuro
       dueDate = addDays(body.started_at, 1)
       while (dueDate < today) {
+        dueDate = addMonths(dueDate, monthStep)
+      }
+    }
+
+    // Cliente entrou no meio do mês mas só deve começar a pagar mais pra
+    // frente: empurra a primeira cobrança pra não ficar antes dessa data
+    if (body.first_charge_date) {
+      while (dueDate < body.first_charge_date) {
         dueDate = addMonths(dueDate, monthStep)
       }
     }

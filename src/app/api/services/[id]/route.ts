@@ -14,6 +14,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.contract_end !== undefined) updates.contract_end = body.contract_end || null
   if (body.started_at !== undefined) updates.started_at = body.started_at
   if (body.ended_at !== undefined) updates.ended_at = body.ended_at
+  if (body.first_charge_date !== undefined) updates.first_charge_date = body.first_charge_date || null
 
   const { data, error } = await supabase
     .from('services')
@@ -32,6 +33,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .eq('service_id', id)
       .eq('status', 'pendente')
       .gte('due_date', body.effective_date)
+  }
+
+  // Adiou o início da cobrança: remove cobranças ainda não pagas que ficaram
+  // antes dessa nova data (não devem existir como pendência no sistema)
+  if (body.first_charge_date) {
+    await supabase
+      .from('charges')
+      .delete()
+      .eq('service_id', id)
+      .is('paid_at', null)
+      .lt('due_date', body.first_charge_date)
   }
 
   return NextResponse.json(data)

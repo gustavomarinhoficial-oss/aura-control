@@ -47,7 +47,7 @@ export function NewClientModal({ onClose, onCreated }: Props) {
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
             >
               <option value="">Não definido</option>
-              {[1,5,10,15,20,25,28].map(d => <option key={d} value={d}>Todo dia {d}</option>)}
+              {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
             </select>
             <p className="text-[10px] text-muted-foreground mt-1">Dia do mês em que as cobranças vencem para este cliente.</p>
           </div>
