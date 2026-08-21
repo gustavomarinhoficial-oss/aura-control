@@ -113,7 +113,7 @@ export default function RelatoriosPage() {
           <FileBarChart size={28} className="text-muted-foreground" strokeWidth={1} />
           <div>
             <p className="text-sm font-medium">Nenhum relatório ainda</p>
-            <p className="text-xs text-muted-foreground mt-0.5">O primeiro é gerado toda sexta-feira às 17h</p>
+            <p className="text-xs text-muted-foreground mt-0.5">O primeiro é gerado toda sexta-feira às 16h</p>
           </div>
         </div>
       </div>
