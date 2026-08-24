@@ -7,6 +7,7 @@ import { Plus, Search, ChevronRight } from 'lucide-react'
 import { NewClientModal } from '@/components/domain/NewClientModal'
 import Link from 'next/link'
 import { useRole } from '@/lib/hooks/useRole'
+import { isFinanceRestricted } from '@/lib/roles'
 import type { Client, Service } from '@/lib/supabase/types'
 
 type ClientWithServices = Client & { services: Service[] }
@@ -20,7 +21,7 @@ const statusColor: Record<string, string> = {
 
 export default function ClientesPage() {
   const router = useRouter()
-  const isJulia = useRole() === 'julia'
+  const hideFinance = isFinanceRestricted(useRole())
   const [clients, setClients] = useState<ClientWithServices[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -58,7 +59,7 @@ export default function ClientesPage() {
           <h1 className="text-xl font-semibold tracking-tight">Clientes</h1>
           <p className="text-sm text-muted-foreground mt-1">{clients.filter(c => c.status === 'ativo').length} ativos</p>
         </div>
-        {!isJulia && (
+        {!hideFinance && (
           <button
             onClick={() => setShowNew(true)}
             className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -121,10 +122,10 @@ export default function ClientesPage() {
                 <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor[c.status]}`}>
                   {statusLabel[c.status]}
                 </span>
-                {!isJulia && clientMRR(c) > 0 && (
+                {!hideFinance && clientMRR(c) > 0 && (
                   <span className="text-[10px] text-muted-foreground">{formatBRL(clientMRR(c))}/mês</span>
                 )}
-                {!isJulia && activeServices(c) > 0 && (
+                {!hideFinance && activeServices(c) > 0 && (
                   <span className="text-[10px] text-muted-foreground">{activeServices(c)} serv.</span>
                 )}
               </div>
@@ -148,7 +149,7 @@ export default function ClientesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[#2a2a2a]">
-                {(isJulia ? ['Nome', 'Status', 'Desde', ''] : ['Nome', 'Status', 'Serviços', 'MRR', 'Desde', '']).map(h => (
+                {(hideFinance ? ['Nome', 'Status', 'Desde', ''] : ['Nome', 'Status', 'Serviços', 'MRR', 'Desde', '']).map(h => (
                   <th key={h} className="text-left text-xs text-muted-foreground font-medium px-5 py-3">{h}</th>
                 ))}
               </tr>
@@ -166,8 +167,8 @@ export default function ClientesPage() {
                       {statusLabel[c.status]}
                     </span>
                   </td>
-                  {!isJulia && <td className="px-5 py-4 text-sm text-muted-foreground">{activeServices(c)}</td>}
-                  {!isJulia && <td className="px-5 py-4 text-sm font-medium">{formatBRL(clientMRR(c))}</td>}
+                  {!hideFinance && <td className="px-5 py-4 text-sm text-muted-foreground">{activeServices(c)}</td>}
+                  {!hideFinance && <td className="px-5 py-4 text-sm font-medium">{formatBRL(clientMRR(c))}</td>}
                   <td className="px-5 py-4 text-sm text-muted-foreground">{formatDate(c.started_at)}</td>
                   <td className="px-5 py-4">
                     <ChevronRight size={14} className="text-muted-foreground" />

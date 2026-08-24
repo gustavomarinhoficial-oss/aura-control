@@ -9,6 +9,11 @@ export function getRole(userMetadata?: Record<string, unknown> | null): Role {
   return 'default'
 }
 
+// Papéis sem acesso a valores/dados financeiros (MRR, cobranças, serviços com preço)
+export function isFinanceRestricted(role: Role): boolean {
+  return role === 'julia' || role === 'mariana'
+}
+
 export const ROLE_NAME: Record<Role, string> = {
   gustavo: 'Gustavo',
   gabriel: 'Gabriel',

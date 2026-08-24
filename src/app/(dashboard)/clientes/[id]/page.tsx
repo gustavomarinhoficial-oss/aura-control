@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { useRole } from '@/lib/hooks/useRole'
+import { isFinanceRestricted } from '@/lib/roles'
 import { createClient } from '@/lib/supabase/client'
 import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
@@ -58,7 +59,7 @@ export default function ClientProfilePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const isJulia = useRole() === 'julia'
+  const isJulia = isFinanceRestricted(useRole())
 
   const [client, setClient] = useState<FullClient | null>(null)
   const [charges, setCharges] = useState<Charge[]>([])

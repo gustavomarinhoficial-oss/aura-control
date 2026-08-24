@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Mic, MicOff, CheckSquare, DollarSign, Calend
 import { formatBRL } from '@/lib/utils/format'
 import { parseVoiceInput } from '@/lib/utils/parse-voice'
 import { useRole } from '@/lib/hooks/useRole'
-import { JULIA_TASK_MEMBERS } from '@/lib/roles'
+import { JULIA_TASK_MEMBERS, isFinanceRestricted } from '@/lib/roles'
 import type { Task, Charge, Member, Meeting } from '@/lib/supabase/types'
 
 interface Client { id: string; name: string }
@@ -38,6 +38,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 export default function CalendarioPage() {
   const role = useRole()
   const isJulia = role === 'julia'
+  const hideFinance = isFinanceRestricted(role)
 
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -96,7 +97,7 @@ export default function CalendarioPage() {
     ? baseTasks
     : baseTasks.filter(t => t.assignees?.some(a => a.name === activeOwner))
 
-  const visibleCharges = isJulia ? [] : charges
+  const visibleCharges = hideFinance ? [] : charges
 
   const visibleMeetings = isJulia
     ? meetings.filter(m => m.attendees?.some(a => JULIA_TASK_MEMBERS.includes(a.name)))
