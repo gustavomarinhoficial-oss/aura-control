@@ -4,23 +4,24 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getRole, ROLE_NAME, JULIA_NAV, type Role } from '@/lib/roles'
-import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart } from 'lucide-react'
+import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, type Role } from '@/lib/roles'
+import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake } from 'lucide-react'
 
 const ALL_NAV = [
-  { href: '/dashboard',    label: 'Dashboard',   icon: LayoutDashboard },
-  { href: '/pipeline',     label: 'Pipeline',    icon: Kanban },
-  { href: '/clientes',     label: 'Clientes',    icon: Users },
-  { href: '/projetos',     label: 'Projetos',    icon: Layers },
-  { href: '/conteudo',     label: 'Conteúdo',    icon: Newspaper },
-  { href: '/ia',           label: 'Central IA',  icon: Brain },
-  { href: '/financeiro',   label: 'Financeiro',  icon: DollarSign },
-  { href: '/relatorios',   label: 'Relatórios',  icon: FileBarChart },
-  { href: '/metas',        label: 'Metas',       icon: Target },
-  { href: '/tarefas',      label: 'Tarefas',     icon: CheckSquare },
-  { href: '/reunioes',     label: 'Reuniões',    icon: CalendarClock },
-  { href: '/calendario',   label: 'Calendário',  icon: CalendarDays },
-  { href: '/configuracoes',label: 'Config.',     icon: Settings },
+  { href: '/dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
+  { href: '/pipeline',       label: 'Pipeline',       icon: Kanban },
+  { href: '/clientes',       label: 'Clientes',       icon: Users },
+  { href: '/projetos',       label: 'Projetos',       icon: Layers },
+  { href: '/conteudo',       label: 'Conteúdo',       icon: Newspaper },
+  { href: '/influenciadores',label: 'Influenciadores',icon: Handshake },
+  { href: '/ia',             label: 'Central IA',     icon: Brain },
+  { href: '/financeiro',     label: 'Financeiro',     icon: DollarSign },
+  { href: '/relatorios',     label: 'Relatórios',     icon: FileBarChart },
+  { href: '/metas',          label: 'Metas',          icon: Target },
+  { href: '/tarefas',        label: 'Tarefas',        icon: CheckSquare },
+  { href: '/reunioes',       label: 'Reuniões',       icon: CalendarClock },
+  { href: '/calendario',     label: 'Calendário',     icon: CalendarDays },
+  { href: '/configuracoes', label: 'Config.',         icon: Settings },
 ]
 
 const ROLE_COLOR: Record<Role, string> = {
@@ -29,6 +30,7 @@ const ROLE_COLOR: Record<Role, string> = {
   thomas:  '#60a5fa',
   admin:   '#f59e0b',
   julia:   '#f472b6',
+  mariana: '#22d3ee',
   default: '#6b7280',
 }
 
@@ -66,6 +68,8 @@ export function Sidebar() {
 
   const nav = role === 'julia'
     ? JULIA_NAV.map(href => ALL_NAV.find(n => n.href === href)).filter(Boolean) as typeof ALL_NAV
+    : role === 'mariana'
+    ? MARIANA_NAV.map(href => ALL_NAV.find(n => n.href === href)).filter(Boolean) as typeof ALL_NAV
     : ALL_NAV
 
   async function handleSignOut() {
@@ -97,7 +101,7 @@ export function Sidebar() {
             <div className="min-w-0">
               <p className="text-[11px] font-medium text-foreground truncate">{userName}</p>
               <p className="text-[9px] text-muted-foreground">
-                {role === 'julia' ? 'Social Media' : role === 'admin' ? 'Admin' : 'Sócio'}
+                {role === 'julia' ? 'Social Media' : role === 'mariana' ? 'Assistente Executiva' : role === 'admin' ? 'Admin' : 'Sócio'}
               </p>
             </div>
           </div>

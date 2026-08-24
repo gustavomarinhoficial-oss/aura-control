@@ -1,6 +1,6 @@
-export type Role = 'gustavo' | 'gabriel' | 'thomas' | 'admin' | 'julia' | 'default'
+export type Role = 'gustavo' | 'gabriel' | 'thomas' | 'admin' | 'julia' | 'mariana' | 'default'
 
-const VALID_ROLES = new Set<string>(['gustavo', 'gabriel', 'thomas', 'admin', 'julia'])
+const VALID_ROLES = new Set<string>(['gustavo', 'gabriel', 'thomas', 'admin', 'julia', 'mariana'])
 
 // Role vem do user_metadata do Supabase (campo "role"), configurado no painel admin
 export function getRole(userMetadata?: Record<string, unknown> | null): Role {
@@ -15,6 +15,7 @@ export const ROLE_NAME: Record<Role, string> = {
   thomas:  'Thomas',
   admin:   'Admin',
   julia:   'Julia',
+  mariana: 'Mariana',
   default: '',
 }
 
@@ -41,3 +42,27 @@ export const BLOCKED_FOR_JULIA = [
 
 // Membros cujas tarefas a Julia pode ver
 export const JULIA_TASK_MEMBERS = ['Julia', 'Gabriel']
+
+// Rotas visíveis pra Mariana (assistente executiva), na ordem da sidebar —
+// foco em agenda/organização; conteúdo é a última prioridade dela.
+export const MARIANA_NAV = [
+  '/dashboard',
+  '/tarefas',
+  '/reunioes',
+  '/calendario',
+  '/clientes',
+  '/influenciadores',
+  '/conteudo',
+]
+
+// Rotas bloqueadas pra Mariana (middleware redireciona) — sem acesso a
+// números internos da empresa (financeiro, pipeline, relatórios) nem config
+export const BLOCKED_FOR_MARIANA = [
+  '/pipeline',
+  '/financeiro',
+  '/configuracoes',
+  '/relatorios',
+  '/projetos',
+  '/metas',
+  '/ia',
+]

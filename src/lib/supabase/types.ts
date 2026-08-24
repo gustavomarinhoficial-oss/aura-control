@@ -3,6 +3,7 @@ export type ServiceType = 'recorrente' | 'avulso'
 export type ServiceRecurrence = 'mensal' | 'trimestral' | 'anual' | 'único'
 export type ChargeStatus = 'pendente' | 'pago' | 'atrasado'
 export type GoalType = 'mrr' | 'clientes' | 'custom'
+export type InfluencerStatus = 'a_contatar' | 'em_contato' | 'negociando' | 'fechado' | 'recusado'
 
 export interface Client {
   id: string
@@ -51,6 +52,23 @@ export interface Charge {
   status: ChargeStatus
   created_at: string
   clients?: { name: string }
+}
+
+export interface Influencer {
+  id: string
+  name: string
+  niche: string | null
+  instagram: string | null
+  phone: string | null
+  email: string | null
+  client_id: string | null
+  status: InfluencerStatus
+  value: number | null
+  responsible: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  clients?: { id: string; name: string } | null
 }
 
 export interface Goal {

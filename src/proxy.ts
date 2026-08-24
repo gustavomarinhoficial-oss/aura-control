@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getRole, BLOCKED_FOR_JULIA } from '@/lib/roles'
+import { getRole, BLOCKED_FOR_JULIA, BLOCKED_FOR_MARIANA } from '@/lib/roles'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -61,6 +61,17 @@ export async function proxy(request: NextRequest) {
       if (isBlocked) {
         const url = request.nextUrl.clone()
         url.pathname = '/conteudo'
+        return NextResponse.redirect(url)
+      }
+    }
+
+    if (role === 'mariana') {
+      const isBlocked = BLOCKED_FOR_MARIANA.some(
+        (route: string) => pathname === route || pathname.startsWith(route + '/')
+      )
+      if (isBlocked) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/tarefas'
         return NextResponse.redirect(url)
       }
     }

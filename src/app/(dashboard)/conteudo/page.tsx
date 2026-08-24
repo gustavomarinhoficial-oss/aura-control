@@ -57,7 +57,7 @@ const STATUSES = [
   { key: 'reprovado',             label: 'Reprovado',             color: '#ef4444' },
 ]
 
-const PARTNERS = ['Gustavo', 'Thomas', 'Gabriel', 'Julia']
+const PARTNERS = ['Gustavo', 'Thomas', 'Gabriel', 'Julia', 'Mariana']
 
 type ResultField = { key: string; label: string }
 const RESULT_FIELDS: Record<string, ResultField[]> = {
