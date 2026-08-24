@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getRole, type Role } from '@/lib/roles'
 import { CeoBriefingHeader } from '@/components/domain/CeoBriefingHeader'
 import { TodayMeetingsCard } from '@/components/domain/TodayMeetingsCard'
-import type { Task } from '@/lib/supabase/types'
+import type { Task, Meeting } from '@/lib/supabase/types'
 
 // ── tipos ──────────────────────────────────────────────────────────────────────
 interface DashboardData {
@@ -1025,6 +1025,167 @@ function JuliaDashboard() {
   )
 }
 
+// ── Dashboard da Mariana (assistente executiva) ───────────────────────────────
+// Sem nenhum dado financeiro/interno — só o que ela precisa pra organizar
+// a agenda: reuniões e tarefas do time.
+function MarianaDashboard() {
+  const [tasks, setTasks]     = useState<Task[]>([])
+  const [meetings, setMeetings] = useState<Meeting[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/tasks').then(r => r.json()).catch(() => []),
+      fetch('/api/meetings').then(r => r.json()).catch(() => []),
+    ]).then(([t, m]) => {
+      setTasks(Array.isArray(t) ? t.filter((task: Task) => task.status !== 'concluido') : [])
+      setMeetings(Array.isArray(m) ? m : [])
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-5 h-5 border-2 border-[#22d3ee] border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  const today   = new Date().toISOString().split('T')[0]
+  const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
+
+  const reunioesHoje   = meetings.filter(m => m.meeting_date === today && m.status === 'agendada')
+  const reunioesSemana = meetings.filter(m => m.meeting_date >= today && m.meeting_date <= weekEnd && m.status === 'agendada')
+  const tarefasAtrasadas = tasks.filter(t => t.due_date && t.due_date < today)
+
+  const proximasReunioes = reunioesSemana
+    .sort((a, b) => a.meeting_date === b.meeting_date ? (a.start_time ?? '').localeCompare(b.start_time ?? '') : a.meeting_date.localeCompare(b.meeting_date))
+    .slice(0, 6)
+
+  const tarefasOrdenadas = [...tasks]
+    .sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999'))
+    .slice(0, 6)
+
+  const kpis = [
+    { label: 'Reuniões hoje',      value: reunioesHoje.length,     color: '#22d3ee' },
+    { label: 'Reuniões esta semana', value: reunioesSemana.length, color: '#60a5fa' },
+    { label: 'Tarefas abertas',    value: tasks.length,            color: '#a78bfa' },
+    { label: 'Tarefas atrasadas',  value: tarefasAtrasadas.length, color: tarefasAtrasadas.length > 0 ? '#ef4444' : '#22c55e' },
+  ]
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight">
+          {new Date().getHours() < 12 ? 'Bom dia' : new Date().getHours() < 18 ? 'Boa tarde' : 'Boa noite'}, Mariana 👋
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
+        </p>
+      </div>
+
+      <TodayMeetingsCard />
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map(k => (
+          <div key={k.label} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3">{k.label}</p>
+            <p className="text-2xl font-semibold" style={{ color: k.color }}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Próximas reuniões */}
+        <div className="bg-[#1a1a1a] border border-[#22d3ee]/20 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CalendarDays size={13} className="text-[#22d3ee]" />
+              <h2 className="text-sm font-medium">Próximas reuniões</h2>
+              {reunioesSemana.length > 0 && (
+                <span className="text-[10px] bg-[#22d3ee]/10 text-[#22d3ee] px-1.5 py-0.5 rounded-full">{reunioesSemana.length}</span>
+              )}
+            </div>
+            <Link href="/reunioes" className="text-xs text-[#22d3ee] hover:opacity-80 transition-opacity flex items-center gap-1">
+              Ver todas <ArrowUpRight size={10} />
+            </Link>
+          </div>
+          {proximasReunioes.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma reunião nos próximos 7 dias</p>
+          ) : (
+            <div className="space-y-2">
+              {proximasReunioes.map(meeting => {
+                const isToday = meeting.meeting_date === today
+                return (
+                  <div key={meeting.id} className="flex items-center gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isToday ? 'bg-[#22d3ee]' : 'bg-[#3a3a3a]'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{meeting.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {meeting.clients && <span className="text-[10px] text-muted-foreground">{meeting.clients.name}</span>}
+                        {meeting.start_time && <span className="text-[10px] text-muted-foreground">{meeting.start_time.slice(0, 5)}</span>}
+                      </div>
+                    </div>
+                    <span className={`text-[10px] shrink-0 ${isToday ? 'text-[#22d3ee] font-medium' : 'text-muted-foreground'}`}>
+                      {isToday ? 'hoje' : formatDate(meeting.meeting_date)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Tarefas abertas */}
+        <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${tarefasAtrasadas.length > 0 ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CheckSquare size={13} className={tarefasAtrasadas.length > 0 ? 'text-[#ef4444]' : 'text-[#a78bfa]'} />
+              <h2 className="text-sm font-medium">Tarefas abertas</h2>
+              {tasks.length > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tarefasAtrasadas.length > 0 ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#7c3aed]/10 text-[#a78bfa]'}`}>
+                  {tasks.length}
+                </span>
+              )}
+            </div>
+            <Link href="/tarefas" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">
+              Ver todas <ArrowUpRight size={10} />
+            </Link>
+          </div>
+          {tarefasOrdenadas.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">Nenhuma tarefa aberta 🎉</p>
+          ) : (
+            <div className="space-y-2">
+              {tarefasOrdenadas.map(task => {
+                const isOverdue = task.due_date && task.due_date < today
+                return (
+                  <div key={task.id} className="flex items-center gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-4 py-3">
+                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${isOverdue ? 'bg-[#ef4444]' : 'bg-[#3a3a3a]'}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{task.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {task.assignees && task.assignees.length > 0 && (
+                          <span className="text-[10px] text-muted-foreground">{task.assignees.map(a => a.name).join(', ')}</span>
+                        )}
+                        {task.clients && <span className="text-[10px] text-muted-foreground">{task.clients.name}</span>}
+                      </div>
+                    </div>
+                    {task.due_date && (
+                      <span className={`text-[10px] shrink-0 ${isOverdue ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>
+                        {formatDate(task.due_date)}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Página principal — detecta role e renderiza o dashboard certo ───────────────
 export default function DashboardPage() {
   const [role, setRole]     = useState<Role | null>(null)
@@ -1047,5 +1208,6 @@ export default function DashboardPage() {
   if (role === 'gabriel') return <GabrielDashboard />
   if (role === 'thomas')  return <ThomasDashboard />
   if (role === 'julia')   return <JuliaDashboard />
+  if (role === 'mariana') return <MarianaDashboard />
   return <GustavoDashboard />
 }
