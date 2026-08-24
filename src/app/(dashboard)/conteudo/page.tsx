@@ -728,15 +728,24 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
 }
 
 // â"€â"€ ContentCalendar â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-function ContentCalendar({ posts, month, year, onPostClick }: {
+function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   posts: ContentPost[]
   month: number
   year: number
   onPostClick: (p: ContentPost) => void
+  onPostMoved: (postId: string, newDate: string) => void
 }) {
   const firstDay    = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const today       = new Date()
+
+  const [activeDrag, setActiveDrag] = useState<ContentPost | null>(null)
+  const [dragPos, setDragPos]       = useState({ x: 0, y: 0 })
+  const [overDay, setOverDay]       = useState<number | null>(null)
+  const pendingDrag = useRef<{ post: ContentPost; x: number; y: number; pointerId: number; el: Element } | null>(null)
+  const isDraggingRef = useRef(false)
+  const overDayRef     = useRef<number | null>(null)
+  const dayRefs         = useRef<Map<number, Element>>(new Map())
 
   const byDay: Record<number, ContentPost[]> = {}
   for (const post of posts) {
@@ -757,6 +766,37 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
   const isToday = (d: number) =>
     d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
 
+  function startDrag(e: React.PointerEvent, post: ContentPost) {
+    pendingDrag.current = { post, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el: e.currentTarget as Element }
+    isDraggingRef.current = false
+  }
+
+  function moveDrag(e: React.PointerEvent) {
+    const p = pendingDrag.current
+    if (!p) return
+    if (!isDraggingRef.current && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return
+    if (!isDraggingRef.current) { isDraggingRef.current = true; p.el.setPointerCapture(p.pointerId) }
+    setActiveDrag(p.post)
+    setDragPos({ x: e.clientX, y: e.clientY })
+    let found: number | null = null
+    for (const [day, el] of dayRefs.current.entries()) {
+      const r = el.getBoundingClientRect()
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) { found = day; break }
+    }
+    overDayRef.current = found
+    setOverDay(found)
+  }
+
+  function endDrag() {
+    const p = pendingDrag.current
+    if (isDraggingRef.current && p && overDayRef.current) {
+      const newDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(overDayRef.current).padStart(2, '0')}`
+      if (newDate !== postDate(p.post)) onPostMoved(p.post.id, newDate)
+    }
+    pendingDrag.current = null; isDraggingRef.current = false
+    setActiveDrag(null); setOverDay(null); overDayRef.current = null
+  }
+
   return (
     <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
       {/* day headers */}
@@ -774,7 +814,10 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
           return (
             <div
               key={i}
-              className={`min-h-[110px] p-1.5 border-b border-[#1a1a1a] ${isLast ? '' : 'border-r border-r-[#1a1a1a]'} ${day ? '' : 'bg-[#0c0c0c]'}`}
+              ref={el => { if (day) { if (el) dayRefs.current.set(day, el); else dayRefs.current.delete(day) } }}
+              className={`min-h-[110px] p-1.5 border-b transition-colors ${isLast ? '' : 'border-r border-r-[#1a1a1a]'} ${
+                day && overDay === day ? 'bg-[#7c3aed]/10 border-b-[#7c3aed]/40' : day ? 'border-b-[#1a1a1a]' : 'bg-[#0c0c0c] border-b-[#1a1a1a]'
+              }`}
             >
               {day && (
                 <>
@@ -787,9 +830,13 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
                     {(byDay[day] ?? []).slice(0, 3).map(post => (
                       <button
                         key={post.id}
-                        onClick={() => onPostClick(post)}
-                        className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity"
-                        style={{ background: pColor(post.platform) + '22' }}
+                        onPointerDown={e => startDrag(e, post)}
+                        onPointerMove={moveDrag}
+                        onPointerUp={endDrag}
+                        onPointerCancel={endDrag}
+                        onClick={() => { if (!isDraggingRef.current) onPostClick(post) }}
+                        style={{ background: pColor(post.platform) + '22', touchAction: 'none', opacity: activeDrag?.id === post.id ? 0.35 : 1 }}
+                        className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
                         title={`${post.title} - ${sInfo(post.status).label}`}
                       >
                         {(() => {
@@ -836,6 +883,24 @@ function ContentCalendar({ posts, month, year, onPostClick }: {
           )
         })}
       </div>
+
+      {/* Ghost card durante o arrasto */}
+      {activeDrag && (
+        <div
+          style={{
+            position: 'fixed',
+            left: dragPos.x - 70,
+            top: dragPos.y - 20,
+            width: 140,
+            zIndex: 9999,
+            pointerEvents: 'none',
+            transform: 'rotate(2deg)',
+          }}
+          className="bg-[#111111] border border-[#7c3aed] rounded-lg px-2.5 py-2 shadow-2xl opacity-95"
+        >
+          <p className="text-[10px] font-medium truncate" style={{ color: pColor(activeDrag.platform) }}>{activeDrag.title}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -1207,6 +1272,16 @@ export default function ConteudoPage() {
     setSelectedPost(prev => prev?.id === updated.id ? updated : prev)
   }
 
+  async function onPostMoved(postId: string, newDate: string) {
+    setPosts(ps => ps.map(p => p.id === postId ? { ...p, scheduled_date: newDate } : p))
+    const res = await fetch(`/api/content/${postId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduled_date: newDate }),
+    })
+    if (res.ok) { const updated = await res.json(); onSaved(updated) }
+  }
+
   function onDeleted() {
     if (selectedPost) setPosts(ps => ps.filter(p => p.id !== selectedPost.id))
     setSelectedPost(null)
@@ -1408,6 +1483,7 @@ export default function ConteudoPage() {
               month={currentMonth.month}
               year={currentMonth.year}
               onPostClick={setSelectedPost}
+              onPostMoved={onPostMoved}
             />
           ) : viewMode === 'metricas' ? (
             <MetricasView
