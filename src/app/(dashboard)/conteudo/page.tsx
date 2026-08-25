@@ -835,6 +835,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                         onPointerUp={endDrag}
                         onPointerCancel={endDrag}
                         onClick={() => { if (!isDraggingRef.current) onPostClick(post) }}
+                        onDragStart={e => e.preventDefault()}
                         style={{ background: pColor(post.platform) + '22', touchAction: 'none', opacity: activeDrag?.id === post.id ? 0.35 : 1 }}
                         className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
                         title={`${post.title} - ${sInfo(post.status).label}`}
@@ -845,9 +846,9 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           return thumb ? (
                             <div className="relative">
                               {isVideoUrl(thumb) ? (
-                                <video src={thumb} className="w-full h-14 object-cover" muted playsInline preload="metadata" />
+                                <video src={thumb} className="w-full h-14 object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
                               ) : (
-                                <img src={toDirectImageUrl(thumb)} alt="" className="w-full h-14 object-cover"
+                                <img src={toDirectImageUrl(thumb)} alt="" draggable={false} className="w-full h-14 object-cover pointer-events-none"
                                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
                               )}
                               {count > 1 && (
