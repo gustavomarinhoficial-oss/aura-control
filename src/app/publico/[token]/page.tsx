@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Check, X, RefreshCw, Loader2, CalendarDays, ChevronDown, ChevronRight,
-  ChevronLeft, List, AlertCircle, Expand,
+  ChevronLeft, List, AlertCircle, Expand, Play,
 } from 'lucide-react'
 
 interface Post {
@@ -171,11 +171,19 @@ function PostCard({ post, onApprove, onReject, acting }: {
           ) : (
             <img src={media[0]} alt={post.title} className="w-full h-full object-cover" />
           )}
-          <div className="absolute inset-0 bg-black/0 group-active:bg-black/20 transition-colors flex items-center justify-center">
-            <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <Expand size={15} className="text-white" />
+          {isVideoUrl(media[0]) ? (
+            <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center">
+                <Play size={20} className="text-white ml-0.5" fill="white" />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="absolute inset-0 bg-black/0 group-active:bg-black/20 transition-colors flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <Expand size={15} className="text-white" />
+              </div>
+            </div>
+          )}
           {media.length > 1 && (
             <span className="absolute bottom-2 right-2 bg-black/70 text-[10px] text-white px-1.5 py-0.5 rounded-full">
               ⊞ {media.length}

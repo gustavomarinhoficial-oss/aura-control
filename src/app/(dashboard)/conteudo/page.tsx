@@ -340,6 +340,16 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   const isMounted = useRef(true)
   useEffect(() => () => { isMounted.current = false }, [])
 
+  // Trava o scroll do fundo enquanto o painel está aberto — sem isso, no
+  // celular, o foco num campo de texto rola a página por trás e o painel
+  // "fixed" fica desalinhado, com o cabeçalho (e o X de fechar) fora da
+  // área visível depois que o teclado fecha.
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prevOverflow }
+  }, [])
+
   const resultFields = RESULT_FIELDS[form.platform] ?? DEFAULT_RESULT_FIELDS
 
   async function save(patch: Partial<ContentPost> = {}) {
@@ -365,14 +375,14 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   const si = sInfo(form.status)
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 h-dvh" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="absolute right-0 top-0 h-full w-full max-w-lg bg-[#111111] border-l border-[#2a2a2a] flex flex-col overflow-hidden"
+        className="absolute right-0 top-0 h-dvh w-full max-w-lg bg-[#111111] border-l border-[#2a2a2a] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#2a2a2a] shrink-0">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#2a2a2a] shrink-0 pt-[max(1.25rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: pColor(form.platform) }} />
             <span className="text-xs font-medium" style={{ color: pColor(form.platform) }}>{pLabel(form.platform)}</span>

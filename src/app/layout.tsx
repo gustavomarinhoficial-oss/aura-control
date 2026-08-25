@@ -26,6 +26,10 @@ export const viewport: Viewport = {
   userScalable: false,
   themeColor: '#111111',
   viewportFit: 'cover',
+  // Faz o teclado do celular encolher a área visível em vez de sobrepor —
+  // sem isso, painéis "fixed" de tela cheia (editar post, etc.) ficam com
+  // o cabeçalho fora da área visível depois de digitar em algum campo.
+  interactiveWidget: 'resizes-content',
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
