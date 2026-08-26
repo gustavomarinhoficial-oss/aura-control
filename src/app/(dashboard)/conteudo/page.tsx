@@ -53,9 +53,10 @@ const STATUSES = [
   { key: 'rascunho',              label: 'Rascunho',              color: '#6b7280' },
   { key: 'em_criacao',            label: 'Em criação',            color: '#f59e0b' },
   { key: 'aguardando_aprovacao',  label: 'Aguardando aprovação',  color: '#3b82f6' },
-  { key: 'aprovado',              label: 'Aprovado',              color: '#8b5cf6' },
+  { key: 'ajustado',              label: 'Ajustado',              color: '#f97316' },
+  { key: 'aprovado',              label: 'Aprovado',              color: '#22c55e' },
   { key: 'agendado',              label: 'Agendado',              color: '#06b6d4' },
-  { key: 'publicado',             label: 'Publicado',             color: '#22c55e' },
+  { key: 'publicado',             label: 'Publicado',             color: '#16a34a' },
   { key: 'reprovado',             label: 'Reprovado',             color: '#ef4444' },
 ]
 
@@ -411,9 +412,11 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
           />
 
           {/* motivo da reprovação (informado pelo cliente no link público) */}
-          {form.status === 'reprovado' && form.rejection_reason && (
-            <div className="bg-[#ef4444]/10 border border-[#ef4444]/25 rounded-lg p-3 space-y-2">
-              <p className="text-[10px] text-[#ef4444] font-medium uppercase tracking-wider">Reprovado pelo cliente — o que alterar</p>
+          {(form.status === 'reprovado' || form.status === 'ajustado') && form.rejection_reason && (
+            <div className={`rounded-lg p-3 space-y-2 border ${form.status === 'ajustado' ? 'bg-[#f97316]/10 border-[#f97316]/25' : 'bg-[#ef4444]/10 border-[#ef4444]/25'}`}>
+              <p className={`text-[10px] font-medium uppercase tracking-wider ${form.status === 'ajustado' ? 'text-[#f97316]' : 'text-[#ef4444]'}`}>
+                {form.status === 'ajustado' ? 'Já ajustado — o que o cliente pediu' : 'Reprovado pelo cliente — o que alterar'}
+              </p>
               <p className="text-sm text-foreground whitespace-pre-wrap">{form.rejection_reason}</p>
               {(form.rejection_images?.length ?? 0) > 0 && (
                 <div className="flex gap-1.5 flex-wrap pt-1">
@@ -862,7 +865,12 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                         onPointerCancel={endDrag}
                         onClick={() => { if (!isDraggingRef.current) onPostClick(post) }}
                         onDragStart={e => e.preventDefault()}
-                        style={{ background: pColor(post.platform) + '22', touchAction: 'none', opacity: activeDrag?.id === post.id ? 0.35 : 1 }}
+                        style={{
+                          background: sInfo(post.status).color + '18',
+                          borderLeft: `3px solid ${sInfo(post.status).color}`,
+                          touchAction: 'none',
+                          opacity: activeDrag?.id === post.id ? 0.35 : 1,
+                        }}
                         className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
                         title={`${post.title} - ${sInfo(post.status).label}`}
                       >
@@ -884,12 +892,15 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           ) : null
                         })()}
                         <div className="flex items-center justify-between px-1.5 py-0.5 gap-1">
-                          <p
-                            className="text-[10px] truncate leading-tight font-medium flex-1"
-                            style={{ color: pColor(post.platform) }}
-                          >
-                            {post.title}
-                          </p>
+                          <div className="flex items-center gap-1 min-w-0 flex-1">
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: sInfo(post.status).color }} />
+                            <p
+                              className="text-[10px] truncate leading-tight font-medium"
+                              style={{ color: pColor(post.platform) }}
+                            >
+                              {post.title}
+                            </p>
+                          </div>
                           {post.responsible && (
                             <span className="text-[8px] text-muted-foreground shrink-0 leading-tight">
                               {post.responsible.slice(0, 2).toUpperCase()}

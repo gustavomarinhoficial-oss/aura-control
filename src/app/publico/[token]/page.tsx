@@ -33,12 +33,13 @@ const PLATFORM_COLOR: Record<string, string> = {
   youtube: '#ff4444', twitter: '#94a3b8', pinterest: '#e60023', google_ads: '#4285f4', email: '#8b5cf6',
 }
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  rascunho:              { label: 'Rascunho',             color: '#6b7280' },
-  em_criacao:            { label: 'Em criação',            color: '#f59e0b' },
-  aguardando_aprovacao:  { label: 'Aguardando aprovação',  color: '#3b82f6' },
-  aprovado:              { label: 'Aprovado',              color: '#8b5cf6' },
-  agendado:              { label: 'Agendado',              color: '#06b6d4' },
-  publicado:             { label: 'Publicado',             color: '#22c55e' },
+  rascunho:              { label: 'Rascunho',              color: '#6b7280' },
+  em_criacao:            { label: 'Em criação',             color: '#f59e0b' },
+  aguardando_aprovacao:  { label: 'Aguardando aprovação',   color: '#3b82f6' },
+  ajustado:              { label: 'Ajustado — revise novamente', color: '#f97316' },
+  aprovado:              { label: 'Aprovado',               color: '#22c55e' },
+  agendado:              { label: 'Agendado',               color: '#06b6d4' },
+  publicado:             { label: 'Publicado',              color: '#16a34a' },
   reprovado:             { label: 'Reprovado',              color: '#ef4444' },
 }
 const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
@@ -268,22 +269,28 @@ function PostCard({ post, onApprove, onReject, acting }: {
           </p>
         )}
 
-        {post.status === 'reprovado' && post.rejection_reason && (
-          <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-lg p-2.5 space-y-2">
-            <p className="text-[10px] text-[#ef4444] font-medium uppercase tracking-wider mb-0.5">Seu motivo</p>
-            <p className="text-xs text-[#e5e5e5] whitespace-pre-wrap">{post.rejection_reason}</p>
-            {(post.rejection_images?.length ?? 0) > 0 && (
-              <div className="flex gap-1.5 flex-wrap pt-0.5">
-                {post.rejection_images!.map((url, i) => (
-                  <button key={i} onClick={() => setRejectionLightboxIndex(i)}
-                    className="w-12 h-12 rounded-lg overflow-hidden border border-[#ef4444]/25 shrink-0 hover:opacity-80 transition-opacity">
-                    <img src={url} alt="" className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {(post.status === 'reprovado' || post.status === 'ajustado') && post.rejection_reason && (() => {
+          const isAdjusted = post.status === 'ajustado'
+          const tone = isAdjusted ? '#f97316' : '#ef4444'
+          return (
+            <div className="rounded-lg p-2.5 space-y-2" style={{ background: tone + '1a', border: `1px solid ${tone}33` }}>
+              <p className="text-[10px] font-medium uppercase tracking-wider mb-0.5" style={{ color: tone }}>
+                {isAdjusted ? 'Já ajustamos — o que você pediu' : 'Seu motivo'}
+              </p>
+              <p className="text-xs text-[#e5e5e5] whitespace-pre-wrap">{post.rejection_reason}</p>
+              {(post.rejection_images?.length ?? 0) > 0 && (
+                <div className="flex gap-1.5 flex-wrap pt-0.5">
+                  {post.rejection_images!.map((url, i) => (
+                    <button key={i} onClick={() => setRejectionLightboxIndex(i)}
+                      className="w-12 h-12 rounded-lg overflow-hidden shrink-0 hover:opacity-80 transition-opacity" style={{ border: `1px solid ${tone}40` }}>
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {canAct && (
           <div className="flex gap-2 pt-1">
