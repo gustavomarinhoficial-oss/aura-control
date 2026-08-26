@@ -43,6 +43,7 @@ export const BLOCKED_FOR_JULIA = [
   '/financeiro',
   '/configuracoes',
   '/relatorios',
+  '/caixa',
 ]
 
 // Membros cujas tarefas a Julia pode ver
@@ -70,4 +71,5 @@ export const BLOCKED_FOR_MARIANA = [
   '/projetos',
   '/metas',
   '/ia',
+  '/caixa',
 ]
