@@ -7,13 +7,14 @@ import {
   Download, Play,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import { effectiveUnlockedMonth, nextMonthStr } from '@/lib/utils/contentUnlock'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
   BarChart, Bar, CartesianGrid,
 } from 'recharts'
 
 // â"€â"€ tipos â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-interface Client { id: string; name: string; status: string }
+interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null }
 
 interface ContentPost {
   id: string
@@ -30,6 +31,7 @@ interface ContentPost {
   media_url: string | null
   media_urls: string[] | null
   rejection_reason: string | null
+  rejection_images: string[] | null
   created_at: string
   clients?: { id: string; name: string } | null
 }
@@ -337,6 +339,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   })
   const [saving, setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [rejectionLightbox, setRejectionLightbox] = useState<number | null>(null)
   const isMounted = useRef(true)
   useEffect(() => () => { isMounted.current = false }, [])
 
@@ -409,10 +412,23 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
 
           {/* motivo da reprovação (informado pelo cliente no link público) */}
           {form.status === 'reprovado' && form.rejection_reason && (
-            <div className="bg-[#ef4444]/10 border border-[#ef4444]/25 rounded-lg p-3 space-y-1">
+            <div className="bg-[#ef4444]/10 border border-[#ef4444]/25 rounded-lg p-3 space-y-2">
               <p className="text-[10px] text-[#ef4444] font-medium uppercase tracking-wider">Reprovado pelo cliente — o que alterar</p>
               <p className="text-sm text-foreground whitespace-pre-wrap">{form.rejection_reason}</p>
+              {(form.rejection_images?.length ?? 0) > 0 && (
+                <div className="flex gap-1.5 flex-wrap pt-1">
+                  {form.rejection_images!.map((url, i) => (
+                    <button key={i} type="button" onClick={() => setRejectionLightbox(i)}
+                      className="w-14 h-14 rounded-lg overflow-hidden border border-[#ef4444]/30 shrink-0 hover:opacity-80 transition-opacity">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+          )}
+          {rejectionLightbox !== null && form.rejection_images && (
+            <MediaLightbox urls={form.rejection_images} index={rejectionLightbox} onIndexChange={setRejectionLightbox} onClose={() => setRejectionLightbox(null)} />
           )}
 
           {/* meta grid */}
@@ -1179,6 +1195,8 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [unlockedMonth, setUnlockedMonth] = useState<string | null>(client.content_unlocked_month ?? null)
+  const [unlocking, setUnlocking] = useState(false)
 
   const loadToken = useCallback(async () => {
     const res = await fetch(`/api/clients/${client.id}/share-link`).catch(() => null)
@@ -1204,6 +1222,25 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
     setRegenerating(false)
   }
 
+  const currentEffective = effectiveUnlockedMonth(unlockedMonth)
+  const nextMonth = nextMonthStr()
+  const nextAlreadyUnlocked = currentEffective >= nextMonth
+  const [nY, nM] = nextMonth.split('-').map(Number)
+  const nextMonthLabel = `${MONTH_NAMES[nM - 1]} de ${nY}`
+  const [cY, cM] = currentEffective.split('-').map(Number)
+  const currentLabel = `${MONTH_NAMES[cM - 1]} de ${cY}`
+
+  async function unlockNextMonth() {
+    setUnlocking(true)
+    const res = await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content_unlocked_month: nextMonth }),
+    })
+    if (res.ok) setUnlockedMonth(nextMonth)
+    setUnlocking(false)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
@@ -1217,6 +1254,20 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
         <p className="text-xs text-muted-foreground">
           Link público, sem login. Mostra só o calendário de conteúdo de <strong>{client.name}</strong> — o cliente pode ver e aprovar/reprovar cada post.
         </p>
+        <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Cliente vê até <strong className="text-foreground">{currentLabel}</strong>. Meses seguintes liberam sozinhos perto do fim do mês.
+          </p>
+          {!nextAlreadyUnlocked && (
+            <button
+              onClick={unlockNextMonth}
+              disabled={unlocking}
+              className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors disabled:opacity-50"
+            >
+              {unlocking ? 'Liberando...' : `Liberar ${nextMonthLabel} agora →`}
+            </button>
+          )}
+        </div>
         {loading ? (
           <div className="h-10 bg-[#111111] rounded-lg animate-pulse" />
         ) : (

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Check, X, RefreshCw, Loader2, CalendarDays, ChevronDown, ChevronRight,
-  ChevronLeft, List, AlertCircle, Expand, Play,
+  ChevronLeft, List, AlertCircle, Expand, Play, Paperclip, Lock,
 } from 'lucide-react'
 
 interface Post {
@@ -18,6 +18,7 @@ interface Post {
   media_url: string | null
   media_urls: string[] | null
   rejection_reason: string | null
+  rejection_images: string[] | null
   created_at: string
 }
 
@@ -111,9 +112,40 @@ function Lightbox({ images, index, onIndexChange, onClose }: { images: string[];
   )
 }
 
+// ── upload de prints (cliente anexa direto do link público) ──────────────────
+async function uploadImage(file: File): Promise<string | null> {
+  try {
+    const contentType = file.type || 'image/jpeg'
+    const presignRes = await fetch('/api/upload', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename: file.name, contentType }),
+    })
+    const presign = await presignRes.json()
+    if (!presignRes.ok) return null
+    const putRes = await fetch(presign.uploadUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: file })
+    return putRes.ok ? presign.publicUrl : null
+  } catch {
+    return null
+  }
+}
+
 // ── RejectModal ──────────────────────────────────────────────────────────────
-function RejectModal({ onConfirm, onClose, saving }: { onConfirm: (reason: string) => void; onClose: () => void; saving: boolean }) {
+function RejectModal({ onConfirm, onClose, saving }: { onConfirm: (reason: string, images: string[]) => void; onClose: () => void; saving: boolean }) {
   const [reason, setReason] = useState('')
+  const [images, setImages] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFiles(files: FileList) {
+    setUploading(true)
+    const uploaded: string[] = []
+    for (const file of Array.from(files).slice(0, 6 - images.length)) {
+      const url = await uploadImage(file)
+      if (url) uploaded.push(url)
+    }
+    if (uploaded.length) setImages(imgs => [...imgs, ...uploaded])
+    setUploading(false)
+  }
+
   return (
     <div className="fixed inset-0 z-[70] bg-black/70 flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="bg-[#161616] border border-[#262626] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm p-5 space-y-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))]" onClick={e => e.stopPropagation()}>
@@ -130,13 +162,36 @@ function RejectModal({ onConfirm, onClose, saving }: { onConfirm: (reason: strin
           placeholder="Ex: trocar a foto, mudar o texto da legenda, cor não combina..."
           className="w-full bg-[#0d0d0d] border border-[#262626] rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-[#5a5a5a] focus:outline-none focus:border-[#ef4444] transition-colors resize-none"
         />
+
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-xs text-[#9ca3af] cursor-pointer w-fit hover:text-white transition-colors">
+            <input type="file" accept="image/*" multiple className="hidden"
+              onChange={e => { if (e.target.files?.length) { handleFiles(e.target.files); e.target.value = '' } }} />
+            <Paperclip size={13} />
+            {uploading ? 'Enviando print...' : 'Anexar print (opcional)'}
+          </label>
+          {images.length > 0 && (
+            <div className="flex gap-1.5 flex-wrap">
+              {images.map((url, i) => (
+                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden border border-[#2a2a2a] shrink-0">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  <button onClick={() => setImages(imgs => imgs.filter((_, idx) => idx !== i))}
+                    className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-[#ef4444]/80 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                    <X size={8} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-2 pt-1">
           <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-white text-sm py-2.5 rounded-xl hover:bg-[#1f1f1f] transition-colors">
             Cancelar
           </button>
           <button
-            onClick={() => reason.trim() && onConfirm(reason.trim())}
-            disabled={!reason.trim() || saving}
+            onClick={() => reason.trim() && onConfirm(reason.trim(), images)}
+            disabled={!reason.trim() || saving || uploading}
             className="flex-1 bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm py-2.5 rounded-xl transition-colors disabled:opacity-40 font-medium"
           >
             {saving ? 'Enviando...' : 'Reprovar'}
@@ -158,6 +213,7 @@ function PostCard({ post, onApprove, onReject, acting }: {
   const st = STATUS_LABEL[post.status] ?? { label: post.status, color: '#6b7280' }
   const canAct = post.status !== 'publicado'
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [rejectionLightboxIndex, setRejectionLightboxIndex] = useState<number | null>(null)
 
   return (
     <div className="bg-[#161616] border border-[#262626] rounded-2xl overflow-hidden">
@@ -213,9 +269,19 @@ function PostCard({ post, onApprove, onReject, acting }: {
         )}
 
         {post.status === 'reprovado' && post.rejection_reason && (
-          <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-lg p-2.5">
+          <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-lg p-2.5 space-y-2">
             <p className="text-[10px] text-[#ef4444] font-medium uppercase tracking-wider mb-0.5">Seu motivo</p>
             <p className="text-xs text-[#e5e5e5] whitespace-pre-wrap">{post.rejection_reason}</p>
+            {(post.rejection_images?.length ?? 0) > 0 && (
+              <div className="flex gap-1.5 flex-wrap pt-0.5">
+                {post.rejection_images!.map((url, i) => (
+                  <button key={i} onClick={() => setRejectionLightboxIndex(i)}
+                    className="w-12 h-12 rounded-lg overflow-hidden border border-[#ef4444]/25 shrink-0 hover:opacity-80 transition-opacity">
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -249,6 +315,9 @@ function PostCard({ post, onApprove, onReject, acting }: {
 
       {lightboxIndex !== null && (
         <Lightbox images={media} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+      {rejectionLightboxIndex !== null && post.rejection_images && (
+        <Lightbox images={post.rejection_images} index={rejectionLightboxIndex} onIndexChange={setRejectionLightboxIndex} onClose={() => setRejectionLightboxIndex(null)} />
       )}
     </div>
   )
@@ -371,6 +440,7 @@ export default function PublicCalendarPage() {
   const [showPast, setShowPast] = useState(false)
   const [viewMode, setViewMode] = useState<'lista' | 'calendario'>('lista')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
+  const [hiddenCount, setHiddenCount] = useState(0)
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
@@ -379,18 +449,19 @@ export default function PublicCalendarPage() {
     const data = await res.json()
     setClient(data.client)
     setPosts(Array.isArray(data.posts) ? data.posts : [])
+    setHiddenCount(typeof data.hiddenCount === 'number' ? data.hiddenCount : 0)
     setLoading(false)
     setRefreshing(false)
   }, [token])
 
   useEffect(() => { load() }, [load])
 
-  async function submitStatus(id: string, status: 'aprovado' | 'reprovado', reason?: string) {
+  async function submitStatus(id: string, status: 'aprovado' | 'reprovado', reason?: string, images?: string[]) {
     setActingId(id)
     const res = await fetch(`/api/public/content/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, status, reason }),
+      body: JSON.stringify({ token, status, reason, images }),
     })
     if (res.ok) {
       const updated = await res.json()
@@ -456,6 +527,13 @@ export default function PublicCalendarPage() {
             <CalendarDays size={13} /> Calendário
           </button>
         </div>
+
+        {hiddenCount > 0 && (
+          <div className="flex items-center gap-2 text-xs text-[#7a7a7a] bg-[#161616] border border-[#262626] rounded-lg px-3 py-2 mb-4">
+            <Lock size={12} className="shrink-0" />
+            {hiddenCount} conteúdo{hiddenCount !== 1 ? 's' : ''} do mês que vem ainda não liberado{hiddenCount !== 1 ? 's' : ''} — aparece{hiddenCount !== 1 ? 'm' : ''} automaticamente perto do fim do mês.
+          </div>
+        )}
 
         {upcoming.length === 0 && past.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -523,7 +601,7 @@ export default function PublicCalendarPage() {
         <RejectModal
           saving={actingId === rejectingId}
           onClose={() => setRejectingId(null)}
-          onConfirm={reason => submitStatus(rejectingId, 'reprovado', reason)}
+          onConfirm={(reason, images) => submitStatus(rejectingId, 'reprovado', reason, images)}
         />
       )}
     </div>
