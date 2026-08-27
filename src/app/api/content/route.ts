@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       platform:       body.platform || 'instagram',
       status:         body.status || 'rascunho',
       scheduled_date: body.scheduled_date || null,
+      scheduled_time: body.scheduled_time || null,
       published_at:   body.published_at || null,
       responsible:    body.responsible || null,
       result:         body.result ?? {},

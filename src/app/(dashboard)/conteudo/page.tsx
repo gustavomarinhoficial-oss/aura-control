@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
   Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
-  Download, Play,
+  Download, Play, ExternalLink, Link2,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { effectiveUnlockedMonth, nextMonthStr } from '@/lib/utils/contentUnlock'
@@ -24,7 +24,9 @@ interface ContentPost {
   platform: string
   status: string
   scheduled_date: string | null
+  scheduled_time: string | null
   published_at: string | null
+  post_link: string | null
   responsible: string | null
   result: Record<string, number>
   notes: string | null
@@ -341,6 +343,8 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
   const [saving, setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [rejectionLightbox, setRejectionLightbox] = useState<number | null>(null)
+  const [showPostLinkModal, setShowPostLinkModal] = useState(false)
+  const [postLinkInput, setPostLinkInput] = useState('')
   const isMounted = useRef(true)
   useEffect(() => () => { isMounted.current = false }, [])
 
@@ -452,7 +456,15 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Status</label>
               <select
                 value={form.status}
-                onChange={e => { setForm(f => ({ ...f, status: e.target.value })); save({ status: e.target.value }) }}
+                onChange={e => {
+                  const newStatus = e.target.value
+                  setForm(f => ({ ...f, status: newStatus }))
+                  save({ status: newStatus })
+                  if (newStatus === 'publicado' && form.status !== 'publicado') {
+                    setPostLinkInput(form.post_link ?? '')
+                    setShowPostLinkModal(true)
+                  }
+                }}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
                 style={{ color: si.color }}
               >
@@ -478,6 +490,17 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 type="date"
                 value={form.scheduled_date ?? ''}
                 onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value || null }))}
+                onBlur={() => save()}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              />
+            </div>
+            {/* horário (opcional) */}
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Horário <span className="normal-case text-muted-foreground/50">(opcional)</span></label>
+              <input
+                type="time"
+                value={form.scheduled_time ?? ''}
+                onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value || null }))}
                 onBlur={() => save()}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               />
@@ -520,6 +543,29 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               }}
             />
           </div>
+
+          {/* link do post (depois de publicado) */}
+          {(form.status === 'publicado' || form.post_link) && (
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Link do post</label>
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={form.post_link ?? ''}
+                  onChange={e => setForm(f => ({ ...f, post_link: e.target.value || null }))}
+                  onBlur={() => save()}
+                  placeholder="https://instagram.com/p/..."
+                  className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+                />
+                {form.post_link && (
+                  <a href={form.post_link} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center px-3 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-[#a78bfa] hover:border-[#7c3aed]/40 transition-colors shrink-0">
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* legenda */}
           <div>
@@ -589,6 +635,38 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
           {!saving && <span className="text-[10px] text-muted-foreground/40">Auto-salvo</span>}
         </div>
       </div>
+
+      {showPostLinkModal && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center gap-2">
+              <Link2 size={16} className="text-[#22c55e]" />
+              <h3 className="text-sm font-semibold">Post publicado — cola o link aqui</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">Guarda o link do post pra ter tudo salvo num lugar só. Pode deixar em branco e preencher depois.</p>
+            <input
+              autoFocus
+              type="url"
+              value={postLinkInput}
+              onChange={e => setPostLinkInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (save({ post_link: postLinkInput.trim() || null }), setShowPostLinkModal(false))}
+              placeholder="https://instagram.com/p/..."
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#22c55e] transition-colors placeholder:text-muted-foreground/40"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setShowPostLinkModal(false)} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">
+                Pular
+              </button>
+              <button
+                onClick={() => { save({ post_link: postLinkInput.trim() || null }); setShowPostLinkModal(false) }}
+                className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-white text-sm py-2.5 rounded-lg transition-colors font-medium"
+              >
+                Salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -606,6 +684,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     platform:       'instagram',
     status:         'rascunho',
     scheduled_date: '',
+    scheduled_time: '',
     caption:        '',
     media_urls:     [] as string[],
     responsible:    '',
@@ -626,6 +705,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
         platform:       form.platform,
         status:         form.status,
         scheduled_date: form.scheduled_date || null,
+        scheduled_time: form.scheduled_time || null,
         caption:        form.caption        || null,
         media_urls:     form.media_urls,
         media_url:      form.media_urls[0]  || null,
@@ -708,14 +788,25 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               </select>
             </div>
           </div>
-          <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data agendada</label>
-            <input
-              type="date"
-              value={form.scheduled_date}
-              onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data agendada</label>
+              <input
+                type="date"
+                value={form.scheduled_date}
+                onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Horário <span className="normal-case text-muted-foreground/50">(opcional)</span></label>
+              <input
+                type="time"
+                value={form.scheduled_time}
+                onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Imagens do post</label>
@@ -1026,8 +1117,8 @@ function ContentList({ posts, showClient, onPostClick }: {
               </span>
 
               {/* data */}
-              <span className="shrink-0 text-xs text-muted-foreground w-[80px] text-right">
-                {date ? formatDate(date) : '—'}
+              <span className="shrink-0 text-xs text-muted-foreground w-[95px] text-right">
+                {date ? formatDate(date) : '—'}{post.scheduled_time && <span className="block text-[10px] opacity-70">{post.scheduled_time.slice(0, 5)}</span>}
               </span>
 
             </button>

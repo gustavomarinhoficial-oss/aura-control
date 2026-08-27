@@ -14,6 +14,7 @@ interface Post {
   platform: string
   status: string
   scheduled_date: string | null
+  scheduled_time: string | null
   published_at: string | null
   media_url: string | null
   media_urls: string[] | null
@@ -265,7 +266,7 @@ function PostCard({ post, onApprove, onReject, acting }: {
         {post.scheduled_date && (
           <p className="text-xs text-[#7a7a7a] flex items-center gap-1.5">
             <CalendarDays size={12} />
-            {formatDateLong(post.scheduled_date)}
+            {formatDateLong(post.scheduled_date)}{post.scheduled_time && ` às ${post.scheduled_time.slice(0, 5)}`}
           </p>
         )}
 
