@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 
 // â"€â"€ tipos â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null }
+interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null }
 
 interface ContentPost {
   id: string
@@ -1392,6 +1392,18 @@ export default function ConteudoPage() {
     aguardando: posts.filter(p => p.status === 'aguardando_aprovacao').length,
   }
 
+  // Meta mensal de conteúdo — conta os posts do cliente ativo dentro do mês
+  // que está sendo visto no calendário (currentMonth), não o total geral
+  const monthQuota = !isAllClients ? (activeClientObj?.monthly_content_quota ?? null) : null
+  const monthPosts = !isAllClients ? posts.filter(p => {
+    const d = postDate(p)
+    if (!d) return false
+    const [y, m] = d.split('-').map(Number)
+    return y === currentMonth.year && m - 1 === currentMonth.month
+  }) : []
+  const monthCreated  = monthPosts.length
+  const monthApproved = monthPosts.filter(p => p.status === 'aprovado' || p.status === 'publicado').length
+
   return (
     <>
 
@@ -1485,6 +1497,35 @@ export default function ConteudoPage() {
               </div>
             ))}
           </div>
+
+          {/* meta mensal de conteúdo */}
+          {monthQuota !== null && monthQuota > 0 && (
+            <div className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-4 mb-6">
+              <p className="text-[11px] text-muted-foreground mb-3">
+                Meta de {MONTH_NAMES[currentMonth.month]} — {monthQuota} posts
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-muted-foreground">Criados</span>
+                    <span className="text-sm font-semibold text-[#a78bfa]">{monthCreated}/{monthQuota}</span>
+                  </div>
+                  <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#a78bfa] rounded-full transition-all" style={{ width: `${Math.min((monthCreated / monthQuota) * 100, 100)}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-muted-foreground">Aprovados</span>
+                    <span className="text-sm font-semibold text-[#22c55e]">{monthApproved}/{monthQuota}</span>
+                  </div>
+                  <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+                    <div className="h-full bg-[#22c55e] rounded-full transition-all" style={{ width: `${Math.min((monthApproved / monthQuota) * 100, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* toolbar */}
           <div className="flex items-center justify-between mb-4">

@@ -14,6 +14,7 @@ export interface Client {
   started_at: string
   notes: string | null
   billing_day: number | null
+  monthly_content_quota: number | null
   created_at: string
 }
 

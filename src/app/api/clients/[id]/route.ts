@@ -43,6 +43,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       name: body.name, email: body.email, phone: body.phone, status: body.status, started_at: body.started_at, notes: body.notes,
       billing_day: body.billing_day !== undefined ? (body.billing_day || null) : undefined,
       content_unlocked_month: body.content_unlocked_month !== undefined ? (body.content_unlocked_month || null) : undefined,
+      monthly_content_quota: body.monthly_content_quota !== undefined ? (body.monthly_content_quota || null) : undefined,
     })
     .eq('id', id)
     .select()

@@ -1605,6 +1605,17 @@ export default function ClientProfilePage() {
                 </select>
               </div>
               <div>
+                <label className="block text-xs text-muted-foreground mb-1">Meta mensal de conteúdo (posts/mês)</label>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Ex: 20"
+                  value={form.monthly_content_quota ?? ''}
+                  onChange={e => setForm(f => ({ ...f, monthly_content_quota: e.target.value ? parseInt(e.target.value) : null }))}
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                />
+              </div>
+              <div>
                 <label className="block text-xs text-muted-foreground mb-1">Status</label>
                 <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as Client['status'] }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors">
                   <option value="ativo">Ativo</option>
