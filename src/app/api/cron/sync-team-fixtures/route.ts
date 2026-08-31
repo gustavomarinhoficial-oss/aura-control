@@ -15,6 +15,7 @@ const HORIZON_DAYS = 14
 interface Fixture {
   externalId: string // prefixado pela fonte, ex: "espn:123" ou "sdb:456"
   dateUtc: string
+  timeKnown: boolean // false quando a fonte ainda não confirmou o horário
   home: string
   away: string
   venue?: string
@@ -51,9 +52,11 @@ async function fetchEspnFixtures(teamId: string): Promise<Fixture[]> {
     const home = competitors.find((c: { homeAway: string }) => c.homeAway === 'home')?.team?.displayName
     const away = competitors.find((c: { homeAway: string }) => c.homeAway === 'away')?.team?.displayName
     if (!home || !away || !e.date) continue
+    const timeKnown = e.timeValid !== false && e.competitions?.[0]?.timeValid !== false
     fixtures.push({
       externalId: `espn:${e.id}`,
       dateUtc: e.date,
+      timeKnown,
       home,
       away,
       venue: e.competitions?.[0]?.venue?.fullName,
@@ -76,10 +79,13 @@ async function fetchSdbFixtures(teamId: string): Promise<Fixture[]> {
   const fixtures: Fixture[] = []
   for (const e of events) {
     if (!e.strHomeTeam || !e.strAwayTeam || !e.dateEvent) continue
-    const time = e.strTime && e.strTime !== '00:00:00' ? e.strTime : '12:00:00'
+    // TheSportsDB usa 00:00:00 como placeholder quando o horário ainda não
+    // foi confirmado — não é o horário real do jogo
+    const timeKnown = !!e.strTime && e.strTime !== '00:00:00'
     fixtures.push({
       externalId: `sdb:${e.idEvent}`,
-      dateUtc: `${e.dateEvent}T${time}Z`,
+      dateUtc: `${e.dateEvent}T${timeKnown ? e.strTime : '12:00:00'}Z`,
+      timeKnown,
       home: e.strHomeTeam,
       away: e.strAwayTeam,
       venue: e.strVenue || undefined,
@@ -91,15 +97,16 @@ async function fetchSdbFixtures(teamId: string): Promise<Fixture[]> {
 }
 
 // Junta as duas fontes: se as duas trouxerem jogo no mesmo dia (mesmo time),
-// é o mesmo jogo — fica só uma vez, preferindo a ESPN (dado mais completo)
+// é o mesmo jogo — fica só uma vez. Prioridade: quem tem horário confirmado
+// vence; entre duas com o mesmo status de horário, prefere a ESPN (dado mais completo)
 function mergeFixtures(espn: Fixture[], sdb: Fixture[]): Fixture[] {
   const byDay = new Map<string, Fixture>()
   for (const f of [...espn, ...sdb]) {
     const day = toBrasilia(f.dateUtc).date
     const existing = byDay.get(day)
-    if (!existing || (existing.source === 'TheSportsDB' && f.source === 'ESPN')) {
-      byDay.set(day, f)
-    }
+    const betterTime = !existing || (f.timeKnown && !existing.timeKnown)
+    const samePreferEspn = existing && f.timeKnown === existing.timeKnown && existing.source === 'TheSportsDB' && f.source === 'ESPN'
+    if (betterTime || samePreferEspn) byDay.set(day, f)
   }
   return Array.from(byDay.values())
 }
@@ -136,7 +143,9 @@ async function run() {
     })
 
     for (const fixture of upcoming) {
-      const { date: scheduled_date, time: scheduled_time } = toBrasilia(fixture.dateUtc)
+      const brasilia = toBrasilia(fixture.dateUtc)
+      const scheduled_date = brasilia.date
+      const scheduled_time = fixture.timeKnown ? brasilia.time : null
       const title = `Jogo: ${fixture.home} x ${fixture.away}`
       const notes = [`Sincronizado automaticamente via ${fixture.source}`, fixture.competition, fixture.venue].filter(Boolean).join(' — ')
 
