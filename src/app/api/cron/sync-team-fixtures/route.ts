@@ -1,24 +1,25 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
-// Times do Rio pra acompanhar (ids no ESPN) e clientes que recebem o rascunho
-const TEAMS: Record<string, string> = {
-  '819':  'Flamengo',
-  '6086': 'Botafogo',
-  '3445': 'Fluminense',
-  '3454': 'Vasco da Gama',
-}
+// Times do Rio pra acompanhar — id de cada um em cada fonte (o mesmo time
+// tem ids diferentes na ESPN e na TheSportsDB)
+const TEAMS = [
+  { label: 'Flamengo',      espnId: '819',  sdbId: '134287' },
+  { label: 'Botafogo',      espnId: '6086', sdbId: '134285' },
+  { label: 'Fluminense',    espnId: '3445', sdbId: '134296' },
+  { label: 'Vasco da Gama', espnId: '3454', sdbId: '134282' },
+]
 const TARGET_CLIENT_NAMES = ['Stadium Steakhouse', 'Brasa Alta']
 const HORIZON_DAYS = 14
 
-interface EspnEvent {
-  id: string
-  date: string
-  competitions: {
-    venue?: { fullName?: string }
-    competitors: { homeAway: string; team: { displayName: string } }[]
-  }[]
-  seasonType?: { name?: string }
+interface Fixture {
+  externalId: string // prefixado pela fonte, ex: "espn:123" ou "sdb:456"
+  dateUtc: string
+  home: string
+  away: string
+  venue?: string
+  competition?: string
+  source: 'ESPN' | 'TheSportsDB'
 }
 
 function checkAuth(request: Request): boolean {
@@ -27,7 +28,7 @@ function checkAuth(request: Request): boolean {
   return request.headers.get('authorization') === `Bearer ${cronSecret}`
 }
 
-// Converte o timestamp UTC do ESPN pra data/hora de Brasília (UTC-3, sem horário de verão)
+// Converte um timestamp UTC pra data/hora de Brasília (UTC-3, sem horário de verão)
 function toBrasilia(dateUtc: string): { date: string; time: string } {
   const d = new Date(dateUtc)
   const br = new Date(d.getTime() - 3 * 60 * 60 * 1000)
@@ -37,11 +38,70 @@ function toBrasilia(dateUtc: string): { date: string; time: string } {
   }
 }
 
-async function fetchTeamFixtures(teamId: string): Promise<EspnEvent[]> {
+// ESPN: sem chave, mas só tem as rodadas que a própria ESPN já catalogou —
+// pode ficar sem os próximos jogos por um tempo até eles liberarem a rodada.
+async function fetchEspnFixtures(teamId: string): Promise<Fixture[]> {
   const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/teams/${teamId}/schedule`)
-  if (!res.ok) throw new Error(`ESPN respondeu ${res.status} pro time ${teamId}`)
+  if (!res.ok) throw new Error(`ESPN respondeu ${res.status}`)
   const data = await res.json()
-  return Array.isArray(data.events) ? data.events : []
+  const events = Array.isArray(data.events) ? data.events : []
+  const fixtures: Fixture[] = []
+  for (const e of events) {
+    const competitors = e.competitions?.[0]?.competitors ?? []
+    const home = competitors.find((c: { homeAway: string }) => c.homeAway === 'home')?.team?.displayName
+    const away = competitors.find((c: { homeAway: string }) => c.homeAway === 'away')?.team?.displayName
+    if (!home || !away || !e.date) continue
+    fixtures.push({
+      externalId: `espn:${e.id}`,
+      dateUtc: e.date,
+      home,
+      away,
+      venue: e.competitions?.[0]?.venue?.fullName,
+      competition: e.seasonType?.name?.trim(),
+      source: 'ESPN',
+    })
+  }
+  return fixtures
+}
+
+// TheSportsDB: base mais completa de jogos futuros, mas a chave gratuita
+// compartilhada ("123") às vezes fica sobrecarregada/fora do ar.
+async function fetchSdbFixtures(teamId: string): Promise<Fixture[]> {
+  const res = await fetch(`https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=${teamId}`, {
+    signal: AbortSignal.timeout(8000),
+  })
+  if (!res.ok) throw new Error(`TheSportsDB respondeu ${res.status}`)
+  const data = await res.json()
+  const events = Array.isArray(data.events) ? data.events : []
+  const fixtures: Fixture[] = []
+  for (const e of events) {
+    if (!e.strHomeTeam || !e.strAwayTeam || !e.dateEvent) continue
+    const time = e.strTime && e.strTime !== '00:00:00' ? e.strTime : '12:00:00'
+    fixtures.push({
+      externalId: `sdb:${e.idEvent}`,
+      dateUtc: `${e.dateEvent}T${time}Z`,
+      home: e.strHomeTeam,
+      away: e.strAwayTeam,
+      venue: e.strVenue || undefined,
+      competition: e.strLeague || undefined,
+      source: 'TheSportsDB',
+    })
+  }
+  return fixtures
+}
+
+// Junta as duas fontes: se as duas trouxerem jogo no mesmo dia (mesmo time),
+// é o mesmo jogo — fica só uma vez, preferindo a ESPN (dado mais completo)
+function mergeFixtures(espn: Fixture[], sdb: Fixture[]): Fixture[] {
+  const byDay = new Map<string, Fixture>()
+  for (const f of [...espn, ...sdb]) {
+    const day = toBrasilia(f.dateUtc).date
+    const existing = byDay.get(day)
+    if (!existing || (existing.source === 'TheSportsDB' && f.source === 'ESPN')) {
+      byDay.set(day, f)
+    }
+  }
+  return Array.from(byDay.values())
 }
 
 async function run() {
@@ -55,40 +115,37 @@ async function run() {
 
   let created = 0
   let updated = 0
-  const teamErrors: Record<string, string> = {}
+  const sourceErrors: Record<string, string> = {}
 
-  for (const [teamId, teamLabel] of Object.entries(TEAMS)) {
-    let events: EspnEvent[]
-    try {
-      events = await fetchTeamFixtures(teamId)
-    } catch (err) {
-      teamErrors[teamLabel] = err instanceof Error ? err.message : 'erro desconhecido'
-      continue
-    }
+  for (const team of TEAMS) {
+    const [espnResult, sdbResult] = await Promise.allSettled([
+      fetchEspnFixtures(team.espnId),
+      fetchSdbFixtures(team.sdbId),
+    ])
 
-    const upcoming = events.filter(e => {
-      const d = new Date(e.date)
+    if (espnResult.status === 'rejected') sourceErrors[`${team.label} (ESPN)`] = String(espnResult.reason?.message ?? espnResult.reason)
+    if (sdbResult.status === 'rejected') sourceErrors[`${team.label} (TheSportsDB)`] = String(sdbResult.reason?.message ?? sdbResult.reason)
+
+    const espnFixtures = espnResult.status === 'fulfilled' ? espnResult.value : []
+    const sdbFixtures = sdbResult.status === 'fulfilled' ? sdbResult.value : []
+    const merged = mergeFixtures(espnFixtures, sdbFixtures)
+
+    const upcoming = merged.filter(f => {
+      const d = new Date(f.dateUtc)
       return d >= today && d <= horizon
     })
 
-    for (const event of upcoming) {
-      const competitors = event.competitions?.[0]?.competitors ?? []
-      const home = competitors.find(c => c.homeAway === 'home')?.team.displayName
-      const away = competitors.find(c => c.homeAway === 'away')?.team.displayName
-      if (!home || !away) continue
-
-      const { date: scheduled_date, time: scheduled_time } = toBrasilia(event.date)
-      const venue = event.competitions?.[0]?.venue?.fullName
-      const competition = event.seasonType?.name?.trim()
-      const title = `Jogo: ${home} x ${away}`
-      const notes = [`Sincronizado automaticamente via ESPN`, competition, venue].filter(Boolean).join(' — ')
+    for (const fixture of upcoming) {
+      const { date: scheduled_date, time: scheduled_time } = toBrasilia(fixture.dateUtc)
+      const title = `Jogo: ${fixture.home} x ${fixture.away}`
+      const notes = [`Sincronizado automaticamente via ${fixture.source}`, fixture.competition, fixture.venue].filter(Boolean).join(' — ')
 
       for (const client of clients) {
         const { data: existing } = await supabase
           .from('content_posts')
           .select('id')
           .eq('client_id', client.id)
-          .eq('external_event_id', event.id)
+          .eq('external_event_id', fixture.externalId)
           .maybeSingle()
 
         if (existing) {
@@ -109,7 +166,7 @@ async function run() {
             scheduled_time,
             notes,
             media_urls: [],
-            external_event_id: event.id,
+            external_event_id: fixture.externalId,
           })
           created++
         }
@@ -117,7 +174,7 @@ async function run() {
     }
   }
 
-  return NextResponse.json({ created, updated, teamErrors })
+  return NextResponse.json({ created, updated, sourceErrors })
 }
 
 // Vercel Cron dispara via GET
