@@ -205,15 +205,16 @@ function RejectModal({ onConfirm, onClose, saving }: { onConfirm: (reason: strin
 }
 
 // ── PostCard ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onApprove, onReject, acting }: {
+function PostCard({ post, onApprove, onReject, acting, canReview }: {
   post: Post
   onApprove: (id: string) => void
   onReject: (id: string) => void
   acting: boolean
+  canReview: boolean
 }) {
   const media = postMedia(post)
   const st = STATUS_LABEL[post.status] ?? { label: post.status, color: '#6b7280' }
-  const canAct = post.status !== 'publicado'
+  const canAct = canReview && post.status !== 'publicado'
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [rejectionLightboxIndex, setRejectionLightboxIndex] = useState<number | null>(null)
 
@@ -332,11 +333,12 @@ function PostCard({ post, onApprove, onReject, acting }: {
 }
 
 // ── CalendarView ─────────────────────────────────────────────────────────────
-function CalendarView({ posts, onApprove, onReject, actingId }: {
+function CalendarView({ posts, onApprove, onReject, actingId, canReview }: {
   posts: Post[]
   onApprove: (id: string) => void
   onReject: (id: string) => void
   actingId: string | null
+  canReview: boolean
 }) {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
@@ -427,7 +429,7 @@ function CalendarView({ posts, onApprove, onReject, actingId }: {
             {selectedPosts.length === 0 ? 'Nenhum post nesse dia' : `${selectedPosts.length} post${selectedPosts.length !== 1 ? 's' : ''} — ${selectedDay} de ${MONTH_NAMES[month]}`}
           </p>
           {selectedPosts.map(post => (
-            <PostCard key={post.id} post={post} onApprove={onApprove} onReject={onReject} acting={actingId === post.id} />
+            <PostCard key={post.id} post={post} onApprove={onApprove} onReject={onReject} acting={actingId === post.id} canReview={canReview} />
           ))}
         </div>
       )}
@@ -449,6 +451,7 @@ export default function PublicCalendarPage() {
   const [viewMode, setViewMode] = useState<'lista' | 'calendario'>('lista')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [hiddenCount, setHiddenCount] = useState(0)
+  const [canReview, setCanReview] = useState(false)
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
@@ -458,6 +461,7 @@ export default function PublicCalendarPage() {
     setClient(data.client)
     setPosts(Array.isArray(data.posts) ? data.posts : [])
     setHiddenCount(typeof data.hiddenCount === 'number' ? data.hiddenCount : 0)
+    setCanReview(data.canReview === true)
     setLoading(false)
     setRefreshing(false)
   }, [token])
@@ -519,7 +523,9 @@ export default function PublicCalendarPage() {
             <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
           </button>
         </div>
-        <p className="text-xs text-[#7a7a7a] mb-4">Acompanhe, aprove ou reprove os posts planejados.</p>
+        <p className="text-xs text-[#7a7a7a] mb-4">
+          {canReview ? 'Acompanhe, aprove ou reprove os posts planejados.' : 'Acompanhe os posts planejados.'}
+        </p>
 
         <div className="flex items-center bg-[#161616] border border-[#262626] rounded-xl p-1 gap-1 mb-5 w-fit">
           <button
@@ -557,6 +563,7 @@ export default function PublicCalendarPage() {
               onApprove={id => submitStatus(id, 'aprovado')}
               onReject={id => setRejectingId(id)}
               actingId={actingId}
+              canReview={canReview}
             />
           )
         ) : (
@@ -570,6 +577,7 @@ export default function PublicCalendarPage() {
                     onApprove={id => submitStatus(id, 'aprovado')}
                     onReject={id => setRejectingId(id)}
                     acting={actingId === post.id}
+                    canReview={canReview}
                   />
                 ))}
               </div>
@@ -593,6 +601,7 @@ export default function PublicCalendarPage() {
                         onApprove={id => submitStatus(id, 'aprovado')}
                         onReject={id => setRejectingId(id)}
                         acting={actingId === post.id}
+                        canReview={canReview}
                       />
                     ))}
                   </div>

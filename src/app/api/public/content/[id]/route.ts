@@ -68,8 +68,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const supabase = createServiceClient()
 
-  const { data: client } = await supabase.from('clients').select('id, name').eq('share_token', token).maybeSingle()
+  const { data: client } = await supabase.from('clients').select('id, name, content_approval_enabled').eq('share_token', token).maybeSingle()
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
+  if (!client.content_approval_enabled) {
+    return NextResponse.json({ error: 'Aprovação/reprovação não está disponível pra esse cliente' }, { status: 403 })
+  }
 
   const { data: post } = await supabase.from('content_posts').select('id, client_id').eq('id', id).maybeSingle()
   if (!post || post.client_id !== client.id) {
