@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
-// Times do Rio pra acompanhar — id de cada um em cada fonte (o mesmo time
-// tem ids diferentes na ESPN e na TheSportsDB)
-const TEAMS = [
-  { label: 'Flamengo',      espnId: '819',  sdbId: '134287' },
-  { label: 'Botafogo',      espnId: '6086', sdbId: '134285' },
-  { label: 'Fluminense',    espnId: '3445', sdbId: '134296' },
-  { label: 'Vasco da Gama', espnId: '3454', sdbId: '134282' },
-]
+// Times do Rio pra acompanhar
+const TEAM_NAMES = ['Flamengo', 'Botafogo', 'Fluminense', 'Vasco da Gama']
+// id de cada um na TheSportsDB (usada como fonte auxiliar, por time)
+const SDB_TEAM_IDS: Record<string, string> = {
+  'Flamengo':      '134287',
+  'Botafogo':      '134285',
+  'Fluminense':    '134296',
+  'Vasco da Gama': '134282',
+}
 const TARGET_CLIENT_NAMES = ['Stadium Steakhouse', 'Brasa Alta']
 const HORIZON_DAYS = 14
 
@@ -39,10 +40,15 @@ function toBrasilia(dateUtc: string): { date: string; time: string } {
   }
 }
 
-// ESPN: sem chave, mas só tem as rodadas que a própria ESPN já catalogou —
-// pode ficar sem os próximos jogos por um tempo até eles liberarem a rodada.
-async function fetchEspnFixtures(teamId: string): Promise<Fixture[]> {
-  const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/teams/${teamId}/schedule`)
+function espnDateStr(d: Date): string {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
+}
+
+// ESPN: sem chave. Usa o placar da liga inteira num intervalo de datas (mais
+// completo e atualizado do que o calendário por time, que fica desatualizado
+// até a rodada ser oficialmente liberada) e filtra só os jogos dos 4 times.
+async function fetchEspnFixtures(from: Date, to: Date): Promise<Fixture[]> {
+  const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${espnDateStr(from)}-${espnDateStr(to)}`)
   if (!res.ok) throw new Error(`ESPN respondeu ${res.status}`)
   const data = await res.json()
   const events = Array.isArray(data.events) ? data.events : []
@@ -52,6 +58,7 @@ async function fetchEspnFixtures(teamId: string): Promise<Fixture[]> {
     const home = competitors.find((c: { homeAway: string }) => c.homeAway === 'home')?.team?.displayName
     const away = competitors.find((c: { homeAway: string }) => c.homeAway === 'away')?.team?.displayName
     if (!home || !away || !e.date) continue
+    if (!TEAM_NAMES.includes(home) && !TEAM_NAMES.includes(away)) continue
     const timeKnown = e.timeValid !== false && e.competitions?.[0]?.timeValid !== false
     fixtures.push({
       externalId: `espn:${e.id}`,
@@ -67,8 +74,8 @@ async function fetchEspnFixtures(teamId: string): Promise<Fixture[]> {
   return fixtures
 }
 
-// TheSportsDB: base mais completa de jogos futuros, mas a chave gratuita
-// compartilhada ("123") às vezes fica sobrecarregada/fora do ar.
+// TheSportsDB: fonte auxiliar, por time — a chave gratuita compartilhada
+// ("123") às vezes fica sobrecarregada/fora do ar.
 async function fetchSdbFixtures(teamId: string): Promise<Fixture[]> {
   const res = await fetch(`https://www.thesportsdb.com/api/v1/json/123/eventsnext.php?id=${teamId}`, {
     signal: AbortSignal.timeout(8000),
@@ -96,19 +103,47 @@ async function fetchSdbFixtures(teamId: string): Promise<Fixture[]> {
   return fixtures
 }
 
-// Junta as duas fontes: se as duas trouxerem jogo no mesmo dia (mesmo time),
-// é o mesmo jogo — fica só uma vez. Prioridade: quem tem horário confirmado
-// vence; entre duas com o mesmo status de horário, prefere a ESPN (dado mais completo)
-function mergeFixtures(espn: Fixture[], sdb: Fixture[]): Fixture[] {
-  const byDay = new Map<string, Fixture>()
-  for (const f of [...espn, ...sdb]) {
-    const day = toBrasilia(f.dateUtc).date
-    const existing = byDay.get(day)
-    const betterTime = !existing || (f.timeKnown && !existing.timeKnown)
-    const samePreferEspn = existing && f.timeKnown === existing.timeKnown && existing.source === 'TheSportsDB' && f.source === 'ESPN'
-    if (betterTime || samePreferEspn) byDay.set(day, f)
+// Junta as duas fontes por confronto (mesmos dois times). Quando o horário
+// não está confirmado, a data que a fonte informa pode estar até um dia
+// errada em relação ao fuso de Brasília — por isso agrupa por proximidade
+// de data (jogos a até 3 dias um do outro pro mesmo confronto são quase
+// certamente o mesmo jogo, só reportado com datas ligeiramente diferentes
+// pelas duas fontes), não por dia exato. Times que se enfrentam de novo
+// bem depois (ida e volta de mata-mata, por exemplo) continuam separados.
+// Dentro de cada grupo, prioriza quem tem horário confirmado, e empatado
+// nisso, prefere a ESPN (dado mais completo).
+function mergeFixtures(fixtures: Fixture[]): Fixture[] {
+  const byPair = new Map<string, Fixture[]>()
+  for (const f of fixtures) {
+    const pair = [f.home, f.away].sort().join('|')
+    if (!byPair.has(pair)) byPair.set(pair, [])
+    byPair.get(pair)!.push(f)
   }
-  return Array.from(byDay.values())
+
+  const CLUSTER_WINDOW_MS = 3 * 86400000
+  const result: Fixture[] = []
+
+  for (const group of byPair.values()) {
+    const sorted = [...group].sort((a, b) => new Date(a.dateUtc).getTime() - new Date(b.dateUtc).getTime())
+    const clusters: Fixture[][] = []
+    for (const f of sorted) {
+      const last = clusters[clusters.length - 1]
+      if (last && new Date(f.dateUtc).getTime() - new Date(last[0].dateUtc).getTime() <= CLUSTER_WINDOW_MS) {
+        last.push(f)
+      } else {
+        clusters.push([f])
+      }
+    }
+    for (const cluster of clusters) {
+      const best = cluster.reduce((a, b) => {
+        if (a.timeKnown !== b.timeKnown) return a.timeKnown ? a : b
+        if (a.source !== b.source) return a.source === 'ESPN' ? a : b
+        return a
+      })
+      result.push(best)
+    }
+  }
+  return result
 }
 
 async function run() {
@@ -120,65 +155,68 @@ async function run() {
   const today = new Date()
   const horizon = new Date(today.getTime() + HORIZON_DAYS * 86400000)
 
+  const sourceErrors: Record<string, string> = {}
+  const allFixtures: Fixture[] = []
+
+  const [espnResult, ...sdbResults] = await Promise.allSettled([
+    fetchEspnFixtures(today, horizon),
+    ...TEAM_NAMES.map(name => fetchSdbFixtures(SDB_TEAM_IDS[name])),
+  ])
+
+  if (espnResult.status === 'fulfilled') allFixtures.push(...espnResult.value)
+  else sourceErrors['ESPN'] = String(espnResult.reason?.message ?? espnResult.reason)
+
+  sdbResults.forEach((r, i) => {
+    const teamName = TEAM_NAMES[i]
+    if (r.status === 'fulfilled') allFixtures.push(...r.value)
+    else sourceErrors[`${teamName} (TheSportsDB)`] = String(r.reason?.message ?? r.reason)
+  })
+
+  const merged = mergeFixtures(allFixtures)
+  const upcoming = merged.filter(f => {
+    const d = new Date(f.dateUtc)
+    return d >= today && d <= horizon
+  })
+
   let created = 0
   let updated = 0
-  const sourceErrors: Record<string, string> = {}
 
-  for (const team of TEAMS) {
-    const [espnResult, sdbResult] = await Promise.allSettled([
-      fetchEspnFixtures(team.espnId),
-      fetchSdbFixtures(team.sdbId),
-    ])
+  for (const fixture of upcoming) {
+    const brasilia = toBrasilia(fixture.dateUtc)
+    const scheduled_date = brasilia.date
+    const scheduled_time = fixture.timeKnown ? brasilia.time : null
+    const title = `Jogo: ${fixture.home} x ${fixture.away}`
+    const notes = [`Sincronizado automaticamente via ${fixture.source}`, fixture.competition, fixture.venue].filter(Boolean).join(' — ')
 
-    if (espnResult.status === 'rejected') sourceErrors[`${team.label} (ESPN)`] = String(espnResult.reason?.message ?? espnResult.reason)
-    if (sdbResult.status === 'rejected') sourceErrors[`${team.label} (TheSportsDB)`] = String(sdbResult.reason?.message ?? sdbResult.reason)
+    for (const client of clients) {
+      const { data: existing } = await supabase
+        .from('content_posts')
+        .select('id')
+        .eq('client_id', client.id)
+        .eq('external_event_id', fixture.externalId)
+        .maybeSingle()
 
-    const espnFixtures = espnResult.status === 'fulfilled' ? espnResult.value : []
-    const sdbFixtures = sdbResult.status === 'fulfilled' ? sdbResult.value : []
-    const merged = mergeFixtures(espnFixtures, sdbFixtures)
-
-    const upcoming = merged.filter(f => {
-      const d = new Date(f.dateUtc)
-      return d >= today && d <= horizon
-    })
-
-    for (const fixture of upcoming) {
-      const brasilia = toBrasilia(fixture.dateUtc)
-      const scheduled_date = brasilia.date
-      const scheduled_time = fixture.timeKnown ? brasilia.time : null
-      const title = `Jogo: ${fixture.home} x ${fixture.away}`
-      const notes = [`Sincronizado automaticamente via ${fixture.source}`, fixture.competition, fixture.venue].filter(Boolean).join(' — ')
-
-      for (const client of clients) {
-        const { data: existing } = await supabase
+      if (existing) {
+        // Só corrige data/hora (ex: jogo adiado) — não mexe em título, legenda
+        // ou status, caso a equipe já tenha avançado esse post no fluxo
+        await supabase
           .from('content_posts')
-          .select('id')
-          .eq('client_id', client.id)
-          .eq('external_event_id', fixture.externalId)
-          .maybeSingle()
-
-        if (existing) {
-          // Só corrige data/hora (ex: jogo adiado) — não mexe em título, legenda
-          // ou status, caso a equipe já tenha avançado esse post no fluxo
-          await supabase
-            .from('content_posts')
-            .update({ scheduled_date, scheduled_time, updated_at: new Date().toISOString() })
-            .eq('id', existing.id)
-          updated++
-        } else {
-          await supabase.from('content_posts').insert({
-            client_id: client.id,
-            title,
-            platform: 'instagram',
-            status: 'rascunho',
-            scheduled_date,
-            scheduled_time,
-            notes,
-            media_urls: [],
-            external_event_id: fixture.externalId,
-          })
-          created++
-        }
+          .update({ scheduled_date, scheduled_time, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+        updated++
+      } else {
+        await supabase.from('content_posts').insert({
+          client_id: client.id,
+          title,
+          platform: 'instagram',
+          status: 'rascunho',
+          scheduled_date,
+          scheduled_time,
+          notes,
+          media_urls: [],
+          external_event_id: fixture.externalId,
+        })
+        created++
       }
     }
   }
