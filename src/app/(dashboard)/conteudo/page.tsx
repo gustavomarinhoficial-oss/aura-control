@@ -972,7 +972,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
 }
 
 // â"€â"€ ContentCalendar â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-const CALENDAR_LONG_PRESS_MS = 1000
+const CALENDAR_LONG_PRESS_MS = 400
 
 function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   posts: ContentPost[]
@@ -993,6 +993,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   const overDayRef     = useRef<number | null>(null)
   const dayRefs         = useRef<Map<number, Element>>(new Map())
   const longPressTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastPos          = useRef({ x: 0, y: 0 })
 
   const byDay: Record<number, ContentPost[]> = {}
   for (const post of posts) {
@@ -1021,20 +1022,22 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
     const p = pendingDrag.current
     if (!p) return
     isDraggingRef.current = true
-    p.el.style.touchAction = 'none'
     p.el.setPointerCapture(p.pointerId)
     setActiveDrag(p.post)
     setDragPos({ x: p.x, y: p.y })
   }
 
-  // No touch/celular precisa segurar um pouco antes de arrastar — senão
-  // qualquer toque de rolagem que passe por cima de um post já disparava
-  // o arraste sem querer. No mouse continua imediato, como antes.
+  // O card fica com touch-action:none o tempo todo (senão o navegador
+  // "rouba" o gesto e o arraste trava/pula no meio do caminho). Por isso,
+  // enquanto espera o toque segurar parado pra armar o arraste, a rolagem
+  // vertical da página é replicada manualmente — senão qualquer toque que
+  // passe por cima de um post pra rolar a tela ficaria travado.
   function startDrag(e: React.PointerEvent, post: ContentPost) {
     const el = e.currentTarget as HTMLElement
     const usesLongPress = e.pointerType !== 'mouse'
     const p = { post, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el, usesLongPress }
     pendingDrag.current = p
+    lastPos.current = { x: e.clientX, y: e.clientY }
     isDraggingRef.current = false
     clearLongPressTimer()
     if (usesLongPress) {
@@ -1049,15 +1052,17 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
     const p = pendingDrag.current
     if (!p) return
     if (!isDraggingRef.current) {
-      const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y)
       if (p.usesLongPress) {
-        // ainda esperando segurar parado — se mexeu, é rolagem, cancela
-        if (moved > 10) { clearLongPressTimer(); pendingDrag.current = null }
+        const dy = e.clientY - lastPos.current.y
+        lastPos.current = { x: e.clientX, y: e.clientY }
+        window.scrollBy(0, -dy)
+        if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 10) clearLongPressTimer()
         return
       }
-      if (moved < 8) return
+      if (Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return
       armDrag()
     }
+    lastPos.current = { x: e.clientX, y: e.clientY }
     setDragPos({ x: e.clientX, y: e.clientY })
     let found: number | null = null
     for (const [day, el] of dayRefs.current.entries()) {
@@ -1075,7 +1080,6 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
       const newDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(overDayRef.current).padStart(2, '0')}`
       if (newDate !== postDate(p.post)) onPostMoved(p.post.id, newDate)
     }
-    if (p) p.el.style.touchAction = ''
     pendingDrag.current = null; isDraggingRef.current = false
     setActiveDrag(null); setOverDay(null); overDayRef.current = null
   }
@@ -1122,6 +1126,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                         style={{
                           background: sInfo(post.status).color + '18',
                           borderLeft: `3px solid ${sInfo(post.status).color}`,
+                          touchAction: 'none',
                           opacity: activeDrag?.id === post.id ? 0.35 : 1,
                         }}
                         className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
