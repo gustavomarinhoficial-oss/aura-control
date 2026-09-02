@@ -177,6 +177,30 @@ function MediaLightbox({ urls, index, onIndexChange, onClose }: {
   const url = urls[index]
   const video = isVideoUrl(url)
 
+  // Arrasta pro lado (touch ou mouse) pra trocar de imagem sem fechar
+  const swipeStart = useRef<{ x: number; y: number } | null>(null)
+  const swipedRef = useRef(false)
+
+  function onSwipeDown(e: React.PointerEvent) {
+    swipeStart.current = { x: e.clientX, y: e.clientY }
+    swipedRef.current = false
+  }
+  function onSwipeUp(e: React.PointerEvent) {
+    const s = swipeStart.current
+    swipeStart.current = null
+    if (!s || urls.length < 2) return
+    const dx = e.clientX - s.x
+    const dy = e.clientY - s.y
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      swipedRef.current = true
+      onIndexChange(dx > 0 ? (index - 1 + urls.length) % urls.length : (index + 1) % urls.length)
+    }
+  }
+  function onBackdropClick() {
+    if (swipedRef.current) { swipedRef.current = false; return }
+    onClose()
+  }
+
   async function download() {
     setDownloading(true)
     try {
@@ -197,7 +221,12 @@ function MediaLightbox({ urls, index, onIndexChange, onClose }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/95 flex items-center justify-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[80] bg-black/95 flex items-center justify-center touch-pan-y"
+      onClick={onBackdropClick}
+      onPointerDown={onSwipeDown}
+      onPointerUp={onSwipeUp}
+    >
       <button onClick={onClose}
         className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center z-10 transition-colors">
         <X size={18} />
@@ -224,7 +253,14 @@ function MediaLightbox({ urls, index, onIndexChange, onClose }: {
       {video ? (
         <video src={url} controls autoPlay className="max-w-full max-h-full" onClick={e => e.stopPropagation()} />
       ) : (
-        <img src={toDirectImageUrl(url)} alt="" className="max-w-full max-h-full object-contain" onClick={e => e.stopPropagation()} />
+        <img
+          src={toDirectImageUrl(url)}
+          alt=""
+          draggable={false}
+          onDragStart={e => e.preventDefault()}
+          className="max-w-full max-h-full object-contain select-none"
+          onClick={e => e.stopPropagation()}
+        />
       )}
     </div>
   )
