@@ -44,34 +44,57 @@ function espnDateStr(d: Date): string {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
 }
 
+// Ligas cobertas na ESPN: Brasileirão (nacional) + Libertadores e
+// Sul-Americana (continentais — é onde jogos como Fluminense x Platense ou
+// Independiente del Valle x Flamengo aparecem; o placar só do bra.1 não
+// pega essas fases de mata-mata internacional).
+const ESPN_LEAGUES = ['bra.1', 'conmebol.libertadores', 'conmebol.sudamericana']
+
 // ESPN: sem chave. Usa o placar da liga inteira num intervalo de datas (mais
 // completo e atualizado do que o calendário por time, que fica desatualizado
 // até a rodada ser oficialmente liberada) e filtra só os jogos dos 4 times.
-async function fetchEspnFixtures(from: Date, to: Date): Promise<Fixture[]> {
-  const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/scoreboard?dates=${espnDateStr(from)}-${espnDateStr(to)}`)
-  if (!res.ok) throw new Error(`ESPN respondeu ${res.status}`)
-  const data = await res.json()
-  const events = Array.isArray(data.events) ? data.events : []
-  const fixtures: Fixture[] = []
-  for (const e of events) {
-    const competitors = e.competitions?.[0]?.competitors ?? []
-    const home = competitors.find((c: { homeAway: string }) => c.homeAway === 'home')?.team?.displayName
-    const away = competitors.find((c: { homeAway: string }) => c.homeAway === 'away')?.team?.displayName
-    if (!home || !away || !e.date) continue
-    if (!TEAM_NAMES.includes(home) && !TEAM_NAMES.includes(away)) continue
-    const timeKnown = e.timeValid !== false && e.competitions?.[0]?.timeValid !== false
-    fixtures.push({
-      externalId: `espn:${e.id}`,
-      dateUtc: e.date,
-      timeKnown,
-      home,
-      away,
-      venue: e.competitions?.[0]?.venue?.fullName,
-      competition: e.seasonType?.name?.trim(),
-      source: 'ESPN',
+// Busca cada competição em paralelo — se uma falhar (ex: fora do ar), as
+// outras continuam valendo em vez de derrubar o sync inteiro.
+async function fetchEspnFixtures(from: Date, to: Date): Promise<{ fixtures: Fixture[]; errors: string[] }> {
+  const dateRange = `${espnDateStr(from)}-${espnDateStr(to)}`
+  const results = await Promise.allSettled(
+    ESPN_LEAGUES.map(async league => {
+      const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/soccer/${league}/scoreboard?dates=${dateRange}`)
+      if (!res.ok) throw new Error(`${league} respondeu ${res.status}`)
+      return res.json()
     })
-  }
-  return fixtures
+  )
+
+  const fixtures: Fixture[] = []
+  const errors: string[] = []
+
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      errors.push(`${ESPN_LEAGUES[i]}: ${String(r.reason?.message ?? r.reason)}`)
+      return
+    }
+    const events = Array.isArray(r.value.events) ? r.value.events : []
+    for (const e of events) {
+      const competitors = e.competitions?.[0]?.competitors ?? []
+      const home = competitors.find((c: { homeAway: string }) => c.homeAway === 'home')?.team?.displayName
+      const away = competitors.find((c: { homeAway: string }) => c.homeAway === 'away')?.team?.displayName
+      if (!home || !away || !e.date) continue
+      if (!TEAM_NAMES.includes(home) && !TEAM_NAMES.includes(away)) continue
+      const timeKnown = e.timeValid !== false && e.competitions?.[0]?.timeValid !== false
+      fixtures.push({
+        externalId: `espn:${e.id}`,
+        dateUtc: e.date,
+        timeKnown,
+        home,
+        away,
+        venue: e.competitions?.[0]?.venue?.fullName,
+        competition: e.seasonType?.name?.trim(),
+        source: 'ESPN',
+      })
+    }
+  })
+
+  return { fixtures, errors }
 }
 
 // TheSportsDB: fonte auxiliar, por time — a chave gratuita compartilhada
@@ -163,8 +186,12 @@ async function run() {
     ...TEAM_NAMES.map(name => fetchSdbFixtures(SDB_TEAM_IDS[name])),
   ])
 
-  if (espnResult.status === 'fulfilled') allFixtures.push(...espnResult.value)
-  else sourceErrors['ESPN'] = String(espnResult.reason?.message ?? espnResult.reason)
+  if (espnResult.status === 'fulfilled') {
+    allFixtures.push(...espnResult.value.fixtures)
+    if (espnResult.value.errors.length) sourceErrors['ESPN'] = espnResult.value.errors.join(' | ')
+  } else {
+    sourceErrors['ESPN'] = String(espnResult.reason?.message ?? espnResult.reason)
+  }
 
   sdbResults.forEach((r, i) => {
     const teamName = TEAM_NAMES[i]
