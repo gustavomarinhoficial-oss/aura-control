@@ -834,7 +834,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     title:          '',
     platform:       'instagram',
     content_type:   '',
-    status:         'rascunho',
+    status:         '',
     scheduled_date: '',
     scheduled_time: '',
     caption:        '',
@@ -849,6 +849,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     title:  !form.title.trim(),
     client: !form.client_id,
     type:   !form.content_type,
+    status: !form.status,
     date:   !form.scheduled_date,
   }
   const hasMissing = Object.values(missing).some(Boolean)
@@ -942,12 +943,13 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Status</label>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Status <span className="text-[#ef4444]">*</span></label>
               <select
                 value={form.status}
                 onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className={`w-full bg-[#1a1a1a] border rounded-lg px-2 py-2.5 text-sm focus:outline-none transition-colors ${errClass(missing.status)}`}
               >
+                <option value="" disabled>Selecione...</option>
                 {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
@@ -1008,6 +1010,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               missing.title && 'título',
               missing.client && 'cliente',
               missing.type && 'tipo de conteúdo',
+              missing.status && 'status',
               missing.date && 'data agendada',
             ].filter(Boolean).join(', ')}
           </p>
