@@ -223,6 +223,57 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  // arrastar pra reordenar as fotos/vídeos do carrossel (funciona em touch também)
+  const [activeDrag, setActiveDrag] = useState<number | null>(null)
+  const [dragPos, setDragPos] = useState({ x: 0, y: 0 })
+  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const pendingDrag = useRef<{ index: number; x: number; y: number; pointerId: number; el: Element } | null>(null)
+  const isDraggingRef = useRef(false)
+  const thumbRefs = useRef<Map<number, Element>>(new Map())
+
+  function startDrag(e: React.PointerEvent, index: number) {
+    pendingDrag.current = { index, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el: e.currentTarget as Element }
+    isDraggingRef.current = false
+  }
+
+  function moveDrag(e: React.PointerEvent) {
+    const p = pendingDrag.current
+    if (!p) return
+    if (!isDraggingRef.current && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return
+    if (!isDraggingRef.current) { isDraggingRef.current = true; p.el.setPointerCapture(p.pointerId) }
+    setActiveDrag(p.index)
+    setDragPos({ x: e.clientX, y: e.clientY })
+
+    let closestIdx: number | null = null
+    let closestDist = Infinity
+    let before = true
+    for (const [idx, el] of thumbRefs.current.entries()) {
+      const r = (el as HTMLElement).getBoundingClientRect()
+      const cx = r.left + r.width / 2
+      const cy = r.top + r.height / 2
+      const dist = Math.hypot(e.clientX - cx, e.clientY - cy)
+      if (dist < closestDist) { closestDist = dist; closestIdx = idx; before = e.clientX < cx }
+    }
+    setOverIndex(closestIdx === null ? null : before ? closestIdx : closestIdx + 1)
+  }
+
+  function endDrag() {
+    const p = pendingDrag.current
+    if (isDraggingRef.current && p && overIndex !== null) {
+      const from = p.index
+      let to = overIndex
+      if (to > from) to -= 1
+      if (to !== from) {
+        const next = [...values]
+        const [moved] = next.splice(from, 1)
+        next.splice(to, 0, moved)
+        onChange(next)
+      }
+    }
+    pendingDrag.current = null; isDraggingRef.current = false
+    setActiveDrag(null); setOverIndex(null)
+  }
+
   async function handleFiles(files: FileList) {
     setUploading(true)
     setUploadErr(null)
@@ -276,15 +327,27 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
           {values.map((url, i) => {
             const video = isVideoUrl(url)
             return (
-              <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-[#2a2a2a] shrink-0">
-                <button type="button" onClick={() => setLightboxIndex(i)} className="w-full h-full block">
-                  {video ? (
-                    <video src={url} className="w-full h-full object-cover" muted playsInline preload="metadata" />
-                  ) : (
-                    <img src={toDirectImageUrl(url)} alt="" className="w-full h-full object-cover"
-                      onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }} />
-                  )}
-                </button>
+              <div key={url + i}
+                ref={el => { if (el) thumbRefs.current.set(i, el); else thumbRefs.current.delete(i) }}
+                role="button"
+                tabIndex={0}
+                onPointerDown={e => startDrag(e, i)}
+                onPointerMove={moveDrag}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+                onDragStart={e => e.preventDefault()}
+                onClick={() => { if (!isDraggingRef.current) setLightboxIndex(i) }}
+                style={{ touchAction: 'none', opacity: activeDrag === i ? 0.35 : 1 }}
+                className={`relative group w-20 h-20 rounded-lg overflow-hidden border shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors ${
+                  overIndex === i ? 'border-[#7c3aed] border-2' : 'border-[#2a2a2a]'
+                }`}
+              >
+                {video ? (
+                  <video src={url} className="w-full h-full object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
+                ) : (
+                  <img src={toDirectImageUrl(url)} alt="" draggable={false} className="w-full h-full object-cover pointer-events-none"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }} />
+                )}
                 {video && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center">
@@ -293,11 +356,13 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
                   </div>
                 )}
                 {i === 0 && values.length > 1 && (
-                  <div className="absolute bottom-0.5 left-0.5 bg-black/70 text-[8px] text-white px-1 rounded">capa</div>
+                  <div className="absolute bottom-0.5 left-0.5 bg-black/70 text-[8px] text-white px-1 rounded pointer-events-none">capa</div>
                 )}
-                <button onClick={() => remove(i)}
-                  className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-[#ef4444]/80 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <X size={8} />
+                <button
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => { e.stopPropagation(); remove(i) }}
+                  className="absolute top-0.5 right-0.5 bg-black/70 hover:bg-[#ef4444]/80 text-white rounded-full w-5 h-5 flex items-center justify-center transition-colors">
+                  <X size={10} />
                 </button>
               </div>
             )
@@ -319,10 +384,24 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
             : <><ImageIcon size={20} /><span className="text-xs">Clique para fazer upload</span><span className="text-[10px] opacity-50">Fotos ou vídeos — até {MAX_IMAGES} arquivos (carrossel)</span></>}
         </button>
       )}
-      {values.length > 1 && <p className="text-[10px] text-[#a78bfa]">⊞ Carrossel · {values.length} arquivos · o primeiro é a capa</p>}
+      {values.length > 1 && <p className="text-[10px] text-[#a78bfa]">⊞ Carrossel · {values.length} arquivos · o primeiro é a capa · arraste pra reordenar</p>}
       {uploadErr && <p className="text-[11px] text-[#ef4444]">{uploadErr}</p>}
       {lightboxIndex !== null && (
         <MediaLightbox urls={values} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+
+      {/* miniatura fantasma seguindo o dedo/cursor durante o arrasto */}
+      {activeDrag !== null && (
+        <div
+          style={{ position: 'fixed', left: dragPos.x - 40, top: dragPos.y - 40, width: 80, height: 80, zIndex: 9999, pointerEvents: 'none', transform: 'rotate(3deg)' }}
+          className="rounded-lg overflow-hidden border-2 border-[#7c3aed] shadow-2xl opacity-90"
+        >
+          {isVideoUrl(values[activeDrag]) ? (
+            <video src={values[activeDrag]} className="w-full h-full object-cover" muted playsInline />
+          ) : (
+            <img src={toDirectImageUrl(values[activeDrag])} alt="" className="w-full h-full object-cover" />
+          )}
+        </div>
       )}
     </div>
   )
