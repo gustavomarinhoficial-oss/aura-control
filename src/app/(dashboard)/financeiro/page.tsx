@@ -53,7 +53,7 @@ const chargeStatusStyle: Record<string, string> = {
 }
 const chargeStatusLabel: Record<string, string> = { pago: 'Pago', pendente: 'Pendente', atrasado: 'Atrasado', encerrado: 'Encerrado' }
 
-const EMPTY_EXPENSE = { description: '', amount: '', category: 'outro', due_date: '', recurrent: false, notes: '' }
+const EMPTY_EXPENSE = { description: '', amount: '', category: 'outro', due_date: '', recurrent: false, recurrence_end_date: '', notes: '' }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 function resolveStatus(c: ChargeWithStatus): string {
@@ -120,6 +120,7 @@ function ExpenseModal({ initial, onClose, onSaved }: {
     category: initial.category,
     due_date: initial.due_date,
     recurrent: initial.recurrent,
+    recurrence_end_date: '',
     notes: initial.notes ?? '',
   } : { ...EMPTY_EXPENSE, due_date: new Date().toISOString().split('T')[0] })
   const [saving, setSaving] = useState(false)
@@ -236,11 +237,22 @@ function ExpenseModal({ initial, onClose, onSaved }: {
               )}
             </div>
           ) : (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))}
-                className="w-4 h-4 accent-[#7c3aed]" />
-              <span className="text-sm">Despesa recorrente (mensal)</span>
-            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))}
+                  className="w-4 h-4 accent-[#7c3aed]" />
+                <span className="text-sm">Despesa recorrente (mensal)</span>
+              </label>
+              {form.recurrent && (
+                <div className="pl-6">
+                  <label className="block text-xs text-muted-foreground mb-1">Repetir até quando? (opcional)</label>
+                  <input type="date" value={form.recurrence_end_date}
+                    onChange={e => setForm(f => ({ ...f, recurrence_end_date: e.target.value }))}
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                  <p className="text-[11px] text-muted-foreground mt-1">Ex: despesa por 6 meses — coloque a data do último mês. Deixe em branco pra repetir sem prazo.</p>
+                </div>
+              )}
+            </div>
           )}
           {isRecurringEdit && amountChanged && (
             <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/20 rounded-lg p-3 space-y-2">

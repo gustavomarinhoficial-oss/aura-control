@@ -32,6 +32,8 @@ export async function POST(request: Request) {
 
   const recurrent = body.recurrent ?? false
   const recurrenceGroup = recurrent ? randomUUID() : null
+  // Opcional: até quando repetir (ex: despesa mensal por 6 meses). Vazio = sem prazo.
+  const recurrenceEndDate = recurrent && body.recurrence_end_date ? body.recurrence_end_date : null
 
   const { data, error } = await supabase.from('expenses').insert({
     description: body.description,
@@ -41,26 +43,30 @@ export async function POST(request: Request) {
     paid_at: body.paid_at || null,
     recurrent,
     recurrence_group: recurrenceGroup,
+    recurrence_end_date: recurrenceEndDate,
     notes: body.notes || null,
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Gera as próximas parcelas mensais automaticamente
+  // Gera as próximas parcelas mensais automaticamente, respeitando o prazo se houver
   if (recurrent && recurrenceGroup) {
     const future = []
     for (let i = 1; i <= HORIZON_MONTHS; i++) {
+      const due_date = addMonths(body.due_date, i)
+      if (recurrenceEndDate && due_date >= recurrenceEndDate) break
       future.push({
         description: body.description,
         amount: Number(body.amount),
         category: body.category || 'outro',
-        due_date: addMonths(body.due_date, i),
+        due_date,
         recurrent: true,
         recurrence_group: recurrenceGroup,
+        recurrence_end_date: recurrenceEndDate,
         notes: body.notes || null,
       })
     }
-    await supabase.from('expenses').insert(future)
+    if (future.length > 0) await supabase.from('expenses').insert(future)
   }
 
   return NextResponse.json(data, { status: 201 })
