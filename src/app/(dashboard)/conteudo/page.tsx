@@ -819,6 +819,10 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
 }
 
 // â"€â"€ NewPostModal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+// Sentinela pro "cliente" Aura MKT.CLUB (posts internos, sem cliente) — precisa
+// ser distinto de "" pra podermos exigir que o campo seja escolhido de propósito.
+const NO_CLIENT_VALUE = '__aura__'
+
 function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
   clients: Client[]
   activeClientId: string | null
@@ -839,21 +843,31 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
   })
   const [saving, setSaving]   = useState(false)
   const [createErr, setCreateErr] = useState<string | null>(null)
+  const [attempted, setAttempted] = useState(false)
+
+  const missing = {
+    title:  !form.title.trim(),
+    client: !form.client_id,
+    type:   !form.content_type,
+    date:   !form.scheduled_date,
+  }
+  const hasMissing = Object.values(missing).some(Boolean)
+  const errClass = (m: boolean) => attempted && m ? 'border-[#ef4444] focus:border-[#ef4444]' : 'border-[#2a2a2a] focus:border-[#7c3aed]'
 
   async function create() {
-    if (!form.title.trim()) return
+    if (hasMissing) { setAttempted(true); return }
     setSaving(true)
     setCreateErr(null)
     const res = await fetch('/api/content', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_id:      form.client_id      || null,
+        client_id:      form.client_id === NO_CLIENT_VALUE ? null : form.client_id,
         title:          form.title,
         platform:       form.platform,
-        content_type:   form.content_type   || null,
+        content_type:   form.content_type,
         status:         form.status,
-        scheduled_date: form.scheduled_date || null,
+        scheduled_date: form.scheduled_date,
         scheduled_time: form.scheduled_time || null,
         caption:        form.caption        || null,
         media_urls:     form.media_urls,
@@ -883,25 +897,26 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Título</label>
+            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Título <span className="text-[#ef4444]">*</span></label>
             <input
               value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && create()}
               autoFocus
               placeholder="Ex: Feed semana 3 - Campanha verao"
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+              className={`w-full bg-[#1a1a1a] border rounded-lg px-3 py-2.5 text-sm focus:outline-none transition-colors placeholder:text-muted-foreground/40 ${errClass(missing.title)}`}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Cliente</label>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Cliente <span className="text-[#ef4444]">*</span></label>
               <select
                 value={form.client_id}
                 onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className={`w-full bg-[#1a1a1a] border rounded-lg px-2 py-2.5 text-sm focus:outline-none transition-colors ${errClass(missing.client)}`}
               >
-                <option value="">Aura MKT.CLUB</option>
+                <option value="" disabled>Selecione...</option>
+                <option value={NO_CLIENT_VALUE}>Aura MKT.CLUB (interno)</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -916,13 +931,13 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               </select>
             </div>
             <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Tipo de conteúdo</label>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Tipo de conteúdo <span className="text-[#ef4444]">*</span></label>
               <select
                 value={form.content_type}
                 onChange={e => setForm(f => ({ ...f, content_type: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className={`w-full bg-[#1a1a1a] border rounded-lg px-2 py-2.5 text-sm focus:outline-none transition-colors ${errClass(missing.type)}`}
               >
-                <option value="">Não definido</option>
+                <option value="" disabled>Selecione...</option>
                 {CONTENT_TYPES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
@@ -950,12 +965,12 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data agendada</label>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Data agendada <span className="text-[#ef4444]">*</span></label>
               <input
                 type="date"
                 value={form.scheduled_date}
                 onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className={`w-full bg-[#1a1a1a] border rounded-lg px-3 py-2.5 text-sm focus:outline-none transition-colors ${errClass(missing.date)}`}
               />
             </div>
             <div>
@@ -987,6 +1002,16 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
           </div>
         </div>
 
+        {attempted && hasMissing && (
+          <p className="mt-4 text-xs text-[#ef4444] bg-[#ef4444]/10 rounded-lg px-3 py-2">
+            Preencha os campos obrigatórios: {[
+              missing.title && 'título',
+              missing.client && 'cliente',
+              missing.type && 'tipo de conteúdo',
+              missing.date && 'data agendada',
+            ].filter(Boolean).join(', ')}
+          </p>
+        )}
         {createErr && (
           <p className="mt-4 text-xs text-[#ef4444] bg-[#ef4444]/10 rounded-lg px-3 py-2">{createErr}</p>
         )}
@@ -996,7 +1021,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
           </button>
           <button
             onClick={create}
-            disabled={saving || !form.title.trim()}
+            disabled={saving}
             className="flex-1 py-2.5 text-sm bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg transition-colors disabled:opacity-40 font-medium"
           >
             {saving ? 'Criando...' : 'Criar Post'}
