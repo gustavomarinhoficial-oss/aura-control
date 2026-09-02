@@ -972,6 +972,8 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
 }
 
 // â"€â"€ ContentCalendar â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
+const CALENDAR_LONG_PRESS_MS = 1000
+
 function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   posts: ContentPost[]
   month: number
@@ -986,10 +988,11 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   const [activeDrag, setActiveDrag] = useState<ContentPost | null>(null)
   const [dragPos, setDragPos]       = useState({ x: 0, y: 0 })
   const [overDay, setOverDay]       = useState<number | null>(null)
-  const pendingDrag = useRef<{ post: ContentPost; x: number; y: number; pointerId: number; el: Element } | null>(null)
+  const pendingDrag = useRef<{ post: ContentPost; x: number; y: number; pointerId: number; el: HTMLElement; usesLongPress: boolean } | null>(null)
   const isDraggingRef = useRef(false)
   const overDayRef     = useRef<number | null>(null)
   const dayRefs         = useRef<Map<number, Element>>(new Map())
+  const longPressTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const byDay: Record<number, ContentPost[]> = {}
   for (const post of posts) {
@@ -1010,17 +1013,51 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   const isToday = (d: number) =>
     d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
 
+  function clearLongPressTimer() {
+    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null }
+  }
+
+  function armDrag() {
+    const p = pendingDrag.current
+    if (!p) return
+    isDraggingRef.current = true
+    p.el.style.touchAction = 'none'
+    p.el.setPointerCapture(p.pointerId)
+    setActiveDrag(p.post)
+    setDragPos({ x: p.x, y: p.y })
+  }
+
+  // No touch/celular precisa segurar um pouco antes de arrastar — senão
+  // qualquer toque de rolagem que passe por cima de um post já disparava
+  // o arraste sem querer. No mouse continua imediato, como antes.
   function startDrag(e: React.PointerEvent, post: ContentPost) {
-    pendingDrag.current = { post, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el: e.currentTarget as Element }
+    const el = e.currentTarget as HTMLElement
+    const usesLongPress = e.pointerType !== 'mouse'
+    const p = { post, x: e.clientX, y: e.clientY, pointerId: e.pointerId, el, usesLongPress }
+    pendingDrag.current = p
     isDraggingRef.current = false
+    clearLongPressTimer()
+    if (usesLongPress) {
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null
+        if (pendingDrag.current === p) armDrag()
+      }, CALENDAR_LONG_PRESS_MS)
+    }
   }
 
   function moveDrag(e: React.PointerEvent) {
     const p = pendingDrag.current
     if (!p) return
-    if (!isDraggingRef.current && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 8) return
-    if (!isDraggingRef.current) { isDraggingRef.current = true; p.el.setPointerCapture(p.pointerId) }
-    setActiveDrag(p.post)
+    if (!isDraggingRef.current) {
+      const moved = Math.hypot(e.clientX - p.x, e.clientY - p.y)
+      if (p.usesLongPress) {
+        // ainda esperando segurar parado — se mexeu, é rolagem, cancela
+        if (moved > 10) { clearLongPressTimer(); pendingDrag.current = null }
+        return
+      }
+      if (moved < 8) return
+      armDrag()
+    }
     setDragPos({ x: e.clientX, y: e.clientY })
     let found: number | null = null
     for (const [day, el] of dayRefs.current.entries()) {
@@ -1032,11 +1069,13 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
   }
 
   function endDrag() {
+    clearLongPressTimer()
     const p = pendingDrag.current
     if (isDraggingRef.current && p && overDayRef.current) {
       const newDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(overDayRef.current).padStart(2, '0')}`
       if (newDate !== postDate(p.post)) onPostMoved(p.post.id, newDate)
     }
+    if (p) p.el.style.touchAction = ''
     pendingDrag.current = null; isDraggingRef.current = false
     setActiveDrag(null); setOverDay(null); overDayRef.current = null
   }
@@ -1083,7 +1122,6 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                         style={{
                           background: sInfo(post.status).color + '18',
                           borderLeft: `3px solid ${sInfo(post.status).color}`,
-                          touchAction: 'none',
                           opacity: activeDrag?.id === post.id ? 0.35 : 1,
                         }}
                         className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
