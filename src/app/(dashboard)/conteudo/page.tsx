@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  Plus, X, ChevronLeft, ChevronRight, List, CalendarDays,
+  Plus, X, ChevronLeft, ChevronRight, ChevronDown, List, CalendarDays,
   Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
   Download, Play, ExternalLink, Link2,
 } from 'lucide-react'
@@ -137,6 +137,11 @@ function displayTitle(title: string, contentType: string | null | undefined) {
 }
 function postDate(post: ContentPost) {
   return post.scheduled_date ?? (post.published_at ? post.published_at.split('T')[0] : null)
+}
+// Data de hoje no fuso local (não UTC), no mesmo formato YYYY-MM-DD usado em scheduled_date
+function localTodayStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 // Converte link de compartilhamento do Google Drive para URL direta de imagem
 function toDirectImageUrl(url: string): string {
@@ -1193,8 +1198,10 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           touchAction: 'none',
                           opacity: activeDrag?.id === post.id ? 0.35 : 1,
                         }}
-                        className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
-                        title={`${displayTitle(post.title, post.content_type)} - ${sInfo(post.status).label}`}
+                        className={`w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none ${
+                          isToday(day) ? 'ring-1 ring-[#7c3aed]' : ''
+                        }`}
+                        title={`${displayTitle(post.title, post.content_type)} - ${sInfo(post.status).label}${isToday(day) ? ' - Hoje' : ''}`}
                       >
                         {(() => {
                           const thumb = post.media_urls?.[0] ?? post.media_url
@@ -1271,6 +1278,8 @@ function ContentList({ posts, showClient, onPostClick }: {
   showClient: boolean
   onPostClick: (p: ContentPost) => void
 }) {
+  const [showPast, setShowPast] = useState(false)
+
   if (posts.length === 0) {
     return (
       <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl flex items-center justify-center h-40">
@@ -1279,83 +1288,111 @@ function ContentList({ posts, showClient, onPostClick }: {
     )
   }
 
-  const sorted = [...posts].sort((a, b) => {
-    const da = postDate(a) ?? a.created_at
-    const db = postDate(b) ?? b.created_at
-    return db.localeCompare(da)
-  })
+  const todayStr = localTodayStr()
+  // Sem data (raro, posts antigos) entra junto com os futuros, no final da fila
+  const withDate = posts.map(p => ({ post: p, date: postDate(p) ?? '9999-99-99' }))
+  const todayPosts  = withDate.filter(x => x.date === todayStr).map(x => x.post)
+  const futurePosts = withDate.filter(x => x.date > todayStr).sort((a, b) => a.date.localeCompare(b.date)).map(x => x.post)
+  const pastPosts   = withDate.filter(x => x.date < todayStr).sort((a, b) => b.date.localeCompare(a.date)).map(x => x.post)
+
+  function renderRow(post: ContentPost, highlightToday: boolean) {
+    const si   = sInfo(post.status)
+    const date = postDate(post)
+    const hasResults = post.result && Object.values(post.result).some(v => v > 0)
+    const topResults = hasResults
+      ? Object.entries(post.result).filter(([, v]) => v > 0).slice(0, 3)
+      : []
+    const rf = RESULT_FIELDS[post.platform] ?? DEFAULT_RESULT_FIELDS
+
+    return (
+      <button
+        key={post.id}
+        onClick={() => onPostClick(post)}
+        className={`w-full px-5 py-4 hover:bg-[#1a1a1a] transition-colors text-left flex items-center gap-4 ${
+          highlightToday ? 'bg-[#7c3aed]/[0.07] border-l-2 border-l-[#7c3aed]' : ''
+        }`}
+      >
+        {/* plataforma */}
+        <span
+          className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
+          style={{ background: pColor(post.platform) + '28', color: pColor(post.platform) }}
+        >
+          {pLabel(post.platform)}
+        </span>
+
+        {/* main */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {highlightToday && (
+              <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#7c3aed] text-white">
+                Hoje
+              </span>
+            )}
+            <p className="text-sm font-medium truncate">{displayTitle(post.title, post.content_type)}</p>
+            {showClient && post.clients && (
+              <span className="text-[10px] text-muted-foreground/60 shrink-0">{post.clients.name}</span>
+            )}
+          </div>
+          {post.caption && (
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{post.caption}</p>
+          )}
+          {topResults.length > 0 && (
+            <p className="text-[10px] text-[#22c55e] mt-0.5">
+              {topResults.map(([k, v]) => {
+                const label = rf.find(f => f.key === k)?.label ?? k
+                return `${v.toLocaleString('pt-BR')} ${label.toLowerCase()}`
+              }).join(' · ')}
+            </p>
+          )}
+        </div>
+
+        {/* responsável */}
+        {post.responsible && (
+          <span className="hidden sm:inline shrink-0 text-[10px] text-muted-foreground bg-[#1a1a1a] px-2 py-0.5 rounded-full whitespace-nowrap">
+            {post.responsible}
+          </span>
+        )}
+
+        {/* status */}
+        <span
+          className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+          style={{ background: si.color + '22', color: si.color }}
+        >
+          {si.label}
+        </span>
+
+        {/* data */}
+        <span className="shrink-0 text-xs text-muted-foreground w-[95px] text-right">
+          {date ? formatDate(date) : '—'}{post.scheduled_time && <span className="block text-[10px] opacity-70">{post.scheduled_time.slice(0, 5)}</span>}
+        </span>
+
+      </button>
+    )
+  }
 
   return (
     <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl overflow-hidden">
       <div className="divide-y divide-[#1a1a1a]">
-        {sorted.map(post => {
-          const si   = sInfo(post.status)
-          const date = postDate(post)
-          const hasResults = post.result && Object.values(post.result).some(v => v > 0)
-          const topResults = hasResults
-            ? Object.entries(post.result).filter(([, v]) => v > 0).slice(0, 3)
-            : []
-          const rf = RESULT_FIELDS[post.platform] ?? DEFAULT_RESULT_FIELDS
-
-          return (
-            <button
-              key={post.id}
-              onClick={() => onPostClick(post)}
-              className="w-full px-5 py-4 hover:bg-[#1a1a1a] transition-colors text-left flex items-center gap-4"
-            >
-              {/* plataforma */}
-              <span
-                className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap"
-                style={{ background: pColor(post.platform) + '28', color: pColor(post.platform) }}
-              >
-                {pLabel(post.platform)}
-              </span>
-
-              {/* main */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{displayTitle(post.title, post.content_type)}</p>
-                  {showClient && post.clients && (
-                    <span className="text-[10px] text-muted-foreground/60 shrink-0">{post.clients.name}</span>
-                  )}
-                </div>
-                {post.caption && (
-                  <p className="text-xs text-muted-foreground truncate mt-0.5">{post.caption}</p>
-                )}
-                {topResults.length > 0 && (
-                  <p className="text-[10px] text-[#22c55e] mt-0.5">
-                    {topResults.map(([k, v]) => {
-                      const label = rf.find(f => f.key === k)?.label ?? k
-                      return `${v.toLocaleString('pt-BR')} ${label.toLowerCase()}`
-                    }).join(' · ')}
-                  </p>
-                )}
-              </div>
-
-              {/* responsável */}
-              {post.responsible && (
-                <span className="hidden sm:inline shrink-0 text-[10px] text-muted-foreground bg-[#1a1a1a] px-2 py-0.5 rounded-full whitespace-nowrap">
-                  {post.responsible}
-                </span>
-              )}
-
-              {/* status */}
-              <span
-                className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
-                style={{ background: si.color + '22', color: si.color }}
-              >
-                {si.label}
-              </span>
-
-              {/* data */}
-              <span className="shrink-0 text-xs text-muted-foreground w-[95px] text-right">
-                {date ? formatDate(date) : '—'}{post.scheduled_time && <span className="block text-[10px] opacity-70">{post.scheduled_time.slice(0, 5)}</span>}
-              </span>
-
-            </button>
-          )
-        })}
+        {todayPosts.map(post => renderRow(post, true))}
+        {futurePosts.map(post => renderRow(post, false))}
       </div>
+
+      {pastPosts.length > 0 && (
+        <div className="border-t border-[#1a1a1a]">
+          <button
+            onClick={() => setShowPast(v => !v)}
+            className="w-full px-5 py-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors flex items-center justify-center gap-1.5"
+          >
+            {showPast ? 'Ocultar anteriores' : `Ver anteriores (${pastPosts.length})`}
+            <ChevronDown size={14} className={`transition-transform ${showPast ? 'rotate-180' : ''}`} />
+          </button>
+          {showPast && (
+            <div className="divide-y divide-[#1a1a1a] border-t border-[#1a1a1a]">
+              {pastPosts.map(post => renderRow(post, false))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
