@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 const ALLOWED_STATUSES = ['aprovado', 'reprovado']
 const ALERT_SETTINGS_ID = '00000000-0000-0000-0000-000000000001'
 
-const PUBLIC_SELECT = 'id, title, caption, platform, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, created_at'
+const PUBLIC_SELECT = 'id, title, caption, platform, content_type, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, created_at'
 
 async function notifyTeam(clientName: string, post: { title: string; platform: string; status: string; rejection_reason: string | null; rejection_images: string[] | null }) {
   try {

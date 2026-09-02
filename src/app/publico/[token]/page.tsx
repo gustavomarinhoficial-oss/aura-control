@@ -12,6 +12,7 @@ interface Post {
   title: string
   caption: string | null
   platform: string
+  content_type: string | null
   status: string
   scheduled_date: string | null
   scheduled_time: string | null
@@ -42,6 +43,13 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   agendado:              { label: 'Agendado',               color: '#06b6d4' },
   publicado:             { label: 'Publicado',              color: '#16a34a' },
   reprovado:             { label: 'Reprovado',              color: '#ef4444' },
+}
+const CONTENT_TYPE_LABEL: Record<string, string> = {
+  feed: 'Feed/Post', stories: 'Stories', reels: 'Reels', carrossel: 'Carrossel', video: 'Vídeo',
+}
+function displayTitle(post: Post) {
+  const label = post.content_type ? (CONTENT_TYPE_LABEL[post.content_type] ?? post.content_type) : null
+  return label ? `${label} — ${post.title}` : post.title
 }
 const MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const DAY_NAMES = ['D','S','T','Q','Q','S','S']
@@ -261,7 +269,7 @@ function PostCard({ post, onApprove, onReject, acting, canReview }: {
           </span>
         </div>
 
-        <p className="text-base font-semibold leading-snug">{post.title}</p>
+        <p className="text-base font-semibold leading-snug">{displayTitle(post)}</p>
         {post.caption && <p className="text-sm text-[#b3b3b3] leading-relaxed whitespace-pre-wrap">{post.caption}</p>}
 
         {post.scheduled_date && (

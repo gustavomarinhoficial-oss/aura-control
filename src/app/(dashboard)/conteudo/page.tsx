@@ -22,6 +22,7 @@ interface ContentPost {
   title: string
   caption: string | null
   platform: string
+  content_type: string | null
   status: string
   scheduled_date: string | null
   scheduled_time: string | null
@@ -49,6 +50,14 @@ const PLATFORMS = [
   { key: 'pinterest',  label: 'Pinterest',   color: '#e60023' },
   { key: 'google_ads', label: 'Google Ads',  color: '#4285f4' },
   { key: 'email',      label: 'E-mail',      color: '#8b5cf6' },
+]
+
+const CONTENT_TYPES = [
+  { key: 'feed',      label: 'Feed/Post' },
+  { key: 'stories',   label: 'Stories' },
+  { key: 'reels',     label: 'Reels' },
+  { key: 'carrossel', label: 'Carrossel' },
+  { key: 'video',     label: 'Vídeo' },
 ]
 
 const STATUSES = [
@@ -120,6 +129,12 @@ const DAY_NAMES   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 function pColor(key: string)  { return PLATFORMS.find(p => p.key === key)?.color ?? '#6b7280' }
 function pLabel(key: string)  { return PLATFORMS.find(p => p.key === key)?.label ?? key }
 function sInfo(key: string)   { return STATUSES.find(s => s.key === key) ?? { key, label: key, color: '#6b7280' } }
+function ctLabel(key: string | null | undefined) { return key ? (CONTENT_TYPES.find(c => c.key === key)?.label ?? key) : null }
+// Embute o tipo de conteúdo no título exibido, ex: "Stories — Promoção de verão"
+function displayTitle(title: string, contentType: string | null | undefined) {
+  const label = ctLabel(contentType)
+  return label ? `${label} — ${title}` : title
+}
 function postDate(post: ContentPost) {
   return post.scheduled_date ?? (post.published_at ? post.published_at.split('T')[0] : null)
 }
@@ -493,6 +508,11 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             placeholder="Titulo do post"
             className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/30"
           />
+          {form.content_type && (
+            <p className="text-[10px] text-muted-foreground -mt-3">
+              Vai aparecer pro cliente como: <span className="text-[#a78bfa]">{displayTitle(form.title || 'Título do post', form.content_type)}</span>
+            </p>
+          )}
 
           {/* motivo da reprovação (informado pelo cliente no link público) */}
           {(form.status === 'reprovado' || form.status === 'ajustado') && form.rejection_reason && (
@@ -528,6 +548,18 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
                 {PLATFORMS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+            </div>
+            {/* tipo de conteúdo */}
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Tipo de conteúdo</label>
+              <select
+                value={form.content_type ?? ''}
+                onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, content_type: v })); save({ content_type: v }) }}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              >
+                <option value="">Não definido</option>
+                {CONTENT_TYPES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
             {/* status */}
@@ -761,6 +793,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     client_id:      activeClientId ?? '',
     title:          '',
     platform:       'instagram',
+    content_type:   '',
     status:         'rascunho',
     scheduled_date: '',
     scheduled_time: '',
@@ -782,6 +815,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
         client_id:      form.client_id      || null,
         title:          form.title,
         platform:       form.platform,
+        content_type:   form.content_type   || null,
         status:         form.status,
         scheduled_date: form.scheduled_date || null,
         scheduled_time: form.scheduled_time || null,
@@ -843,6 +877,17 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
                 {PLATFORMS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Tipo de conteúdo</label>
+              <select
+                value={form.content_type}
+                onChange={e => setForm(f => ({ ...f, content_type: e.target.value }))}
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              >
+                <option value="">Não definido</option>
+                {CONTENT_TYPES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
             </div>
             <div>
@@ -1042,7 +1087,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           opacity: activeDrag?.id === post.id ? 0.35 : 1,
                         }}
                         className="w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none"
-                        title={`${post.title} - ${sInfo(post.status).label}`}
+                        title={`${displayTitle(post.title, post.content_type)} - ${sInfo(post.status).label}`}
                       >
                         {(() => {
                           const thumb = post.media_urls?.[0] ?? post.media_url
@@ -1068,7 +1113,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                               className="text-[10px] truncate leading-tight font-medium"
                               style={{ color: pColor(post.platform) }}
                             >
-                              {post.title}
+                              {displayTitle(post.title, post.content_type)}
                             </p>
                           </div>
                           {post.responsible && (
@@ -1162,7 +1207,7 @@ function ContentList({ posts, showClient, onPostClick }: {
               {/* main */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium truncate">{post.title}</p>
+                  <p className="text-sm font-medium truncate">{displayTitle(post.title, post.content_type)}</p>
                   {showClient && post.clients && (
                     <span className="text-[10px] text-muted-foreground/60 shrink-0">{post.clients.name}</span>
                   )}
@@ -1351,7 +1396,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
                     style={{ background: pColor(post.platform) + '28', color: pColor(post.platform) }}>
                     {pLabel(post.platform)}
                   </span>
-                  <p className="text-sm flex-1 truncate">{post.title}</p>
+                  <p className="text-sm flex-1 truncate">{displayTitle(post.title, post.content_type)}</p>
                   <div className="hidden sm:flex items-center gap-4 text-xs text-muted-foreground shrink-0">
                     {c  > 0 && <span>â™¥ {c.toLocaleString('pt-BR')}</span>}
                     {al > 0 && <span>ðŸ' {al.toLocaleString('pt-BR')}</span>}
