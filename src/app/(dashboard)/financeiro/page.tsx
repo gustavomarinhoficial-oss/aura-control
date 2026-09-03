@@ -345,6 +345,8 @@ export default function FinanceiroPage() {
 
   // ── lucro ────────────────────────────────────────────────────────────────
   const lucro = receita - despesaPaga
+  // Margem de lucro: quanto da receita sobra depois das despesas, em %
+  const margemLucro = receita > 0 ? (lucro / receita) * 100 : 0
 
   // ── próximos vencimentos (14 dias) ───────────────────────────────────────
   const hoje = today.toISOString().split('T')[0]
@@ -416,11 +418,11 @@ export default function FinanceiroPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpCircle size={13} className="text-[#22c55e]" />
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Receita</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Faturamento</p>
           </div>
           <p className="text-xl font-semibold text-[#22c55e]">{formatBRL(receita)}</p>
           <p className="text-[11px] text-muted-foreground mt-1">{formatBRL(aReceber)} a receber</p>
@@ -440,6 +442,14 @@ export default function FinanceiroPage() {
           </div>
           <p className={`text-xl font-semibold ${lucro >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'}`}>{formatBRL(lucro)}</p>
           <p className="text-[11px] text-muted-foreground mt-1">receita − despesas pagas</p>
+        </div>
+        <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${margemLucro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={13} className={margemLucro >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'} />
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Margem de lucro</p>
+          </div>
+          <p className={`text-xl font-semibold ${margemLucro >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'}`}>{margemLucro.toFixed(1)}%</p>
+          <p className="text-[11px] text-muted-foreground mt-1">lucro ÷ faturamento</p>
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${inadimplente > 0 ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'}`}>
           <div className="flex items-center gap-2 mb-3">
