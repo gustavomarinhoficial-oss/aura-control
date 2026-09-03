@@ -1284,8 +1284,8 @@ export default function ClientProfilePage() {
             </div>
           </div>
 
-          {/* Senhas / Acessos */}
-          {!isJulia && (
+          {/* Senhas / Acessos — visível pra todo mundo, inclusive Julia/Mariana
+              (não é dado financeiro, é operacional: login de ferramentas do cliente) */}
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1373,7 +1373,6 @@ export default function ClientProfilePage() {
             </div>
             {extrasSaving && <p className="text-[10px] text-muted-foreground">Salvando...</p>}
           </div>
-          )}
 
         </div>
       )}
