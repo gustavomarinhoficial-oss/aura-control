@@ -293,6 +293,7 @@ export default function FinanceiroPage() {
   const [showNewCharge, setShowNewCharge] = useState(false)
   const [showNewExpense, setShowNewExpense] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [editingCharge, setEditingCharge] = useState<ChargeWithStatus | null>(null)
 
   const [paying, setPaying] = useState<string | null>(null)
   const [payingExp, setPayingExp] = useState<string | null>(null)
@@ -624,6 +625,10 @@ export default function FinanceiroPage() {
                           <MessageCircle size={12} /> Cobrar
                         </button>
                       )}
+                      <button onClick={() => setEditingCharge(c as ChargeWithStatus)}
+                        className="text-muted-foreground/50 hover:text-foreground p-1.5 rounded-lg hover:bg-[#2a2a2a] transition-colors">
+                        <Edit2 size={12} />
+                      </button>
                       <button onClick={() => { if (confirm('Apagar esta cobrança?')) deleteCharge(c.id) }} disabled={deletingCharge === c.id}
                         className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors">
                         <Trash2 size={12} />
@@ -786,6 +791,9 @@ export default function FinanceiroPage() {
       {/* Modals */}
       {showNewCharge && (
         <NewChargeModal onClose={() => setShowNewCharge(false)} onCreated={() => { setShowNewCharge(false); load() }} defaultMonth={monthStr} />
+      )}
+      {editingCharge && (
+        <NewChargeModal initial={editingCharge} onClose={() => setEditingCharge(null)} onCreated={() => { setEditingCharge(null); load() }} />
       )}
       {showNewExpense && (
         <ExpenseModal onClose={() => setShowNewExpense(false)} onSaved={() => { setShowNewExpense(false); load() }} />
