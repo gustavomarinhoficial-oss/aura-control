@@ -70,6 +70,60 @@ function buildWhatsAppMessage(charge: ChargeWithStatus, pixKey: string, agencyNa
   return `Olá, ${clientName}! 👋\n\n${isOverdue ? '⚠️ Identificamos uma cobrança em aberto:' : 'Passando pra lembrar sobre a cobrança:'}\n\n📋 *${charge.description}*\n💰 *${formatBRL(Number(charge.amount))}*\n📅 Vencimento: ${dueFormatted}${isOverdue ? ' _(em atraso)_' : ''}\n\nPara realizar o pagamento via *PIX*:\n🔑 \`${pixKey || 'chave não configurada — acesse Configurações'}\`\n${pixKey ? '\nÉ só copiar a chave acima e realizar o pagamento pelo seu banco. ✅' : ''}\n\nQualquer dúvida, estamos à disposição! 😊\n\n_${agencyName}_`
 }
 
+// ── Delete charge modal ──────────────────────────────────────────────────────
+function DeleteChargeModal({ charge, onClose, onDeleted }: {
+  charge: ChargeWithStatus
+  onClose: () => void
+  onDeleted: () => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function deleteThisOnly() {
+    setBusy(true)
+    const res = await fetch(`/api/charges/${charge.id}`, { method: 'DELETE' })
+    if (!res.ok) { setError('Erro ao apagar'); setBusy(false); return }
+    onDeleted()
+  }
+
+  async function deleteAll() {
+    setBusy(true)
+    const res = await fetch(`/api/charges/${charge.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'stop_recurrence', from_date: charge.due_date }),
+    })
+    if (!res.ok) { const d = await res.json().catch(() => ({})); setError(d.error ?? 'Erro ao apagar'); setBusy(false); return }
+    onDeleted()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Apagar cobrança</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={16} /></button>
+        </div>
+        <p className="text-xs text-muted-foreground">{charge.clients?.name} — {charge.description} — {formatDate(charge.due_date)}</p>
+        <p className="text-xs text-foreground">Essa cobrança é gerada automaticamente todo mês. O que você quer apagar?</p>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        <div className="space-y-2">
+          <button onClick={deleteThisOnly} disabled={busy}
+            className="w-full text-left border border-[#2a2a2a] hover:bg-[#222222] text-sm px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            Apagar só esse mês
+            <span className="block text-[11px] text-muted-foreground mt-0.5">Os próximos meses continuam sendo gerados normalmente.</span>
+          </button>
+          <button onClick={deleteAll} disabled={busy}
+            className="w-full text-left border border-[#ef4444]/30 hover:bg-[#ef4444]/10 text-sm text-[#ef4444] px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            Apagar toda a recorrência
+            <span className="block text-[11px] text-[#ef4444]/70 mt-0.5">Apaga esse mês e os futuros, e nunca mais gera essa cobrança de novo.</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── WhatsApp modal ───────────────────────────────────────────────────────────
 function WhatsAppModal({ charge, onClose }: { charge: ChargeWithStatus; onClose: () => void }) {
   const [pixKey, setPixKey] = useState(localStorage.getItem('aura_pix_key') ?? '')
@@ -294,6 +348,7 @@ export default function FinanceiroPage() {
   const [showNewExpense, setShowNewExpense] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
   const [editingCharge, setEditingCharge] = useState<ChargeWithStatus | null>(null)
+  const [confirmDeleteCharge, setConfirmDeleteCharge] = useState<ChargeWithStatus | null>(null)
 
   const [paying, setPaying] = useState<string | null>(null)
   const [payingExp, setPayingExp] = useState<string | null>(null)
@@ -639,7 +694,7 @@ export default function FinanceiroPage() {
                         className="text-muted-foreground/50 hover:text-foreground p-1.5 rounded-lg hover:bg-[#2a2a2a] transition-colors">
                         <Edit2 size={12} />
                       </button>
-                      <button onClick={() => { if (confirm('Apagar esta cobrança?')) deleteCharge(c.id) }} disabled={deletingCharge === c.id}
+                      <button onClick={() => { if (c.service_id) setConfirmDeleteCharge(c as ChargeWithStatus); else if (confirm('Apagar esta cobrança?')) deleteCharge(c.id) }} disabled={deletingCharge === c.id}
                         className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors">
                         <Trash2 size={12} />
                       </button>
@@ -804,6 +859,9 @@ export default function FinanceiroPage() {
       )}
       {editingCharge && (
         <NewChargeModal initial={editingCharge} onClose={() => setEditingCharge(null)} onCreated={() => { setEditingCharge(null); load() }} />
+      )}
+      {confirmDeleteCharge && (
+        <DeleteChargeModal charge={confirmDeleteCharge} onClose={() => setConfirmDeleteCharge(null)} onDeleted={() => { setConfirmDeleteCharge(null); load() }} />
       )}
       {showNewExpense && (
         <ExpenseModal onClose={() => setShowNewExpense(false)} onSaved={() => { setShowNewExpense(false); load() }} />

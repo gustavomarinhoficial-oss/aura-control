@@ -77,7 +77,10 @@ export async function POST() {
   }
 
   if (newExpenses.length > 0) {
-    await supabase.from('expenses').insert(newExpenses)
+    // upsert com ignoreDuplicates: se essa rota rodar duas vezes quase junto
+    // (mesma causa da BMF/Petnico duplicadas), a segunda chamada não cria de
+    // novo a parcela que a primeira já gerou pro mesmo grupo+vencimento.
+    await supabase.from('expenses').upsert(newExpenses, { onConflict: 'recurrence_group,due_date', ignoreDuplicates: true })
     totalGenerated = newExpenses.length
   }
 

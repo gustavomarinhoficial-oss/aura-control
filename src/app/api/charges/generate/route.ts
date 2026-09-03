@@ -94,7 +94,11 @@ export async function POST() {
     }
 
     if (newCharges.length > 0) {
-      await supabase.from('charges').insert(newCharges)
+      // upsert com ignoreDuplicates em vez de insert: se essa função rodar
+      // duas vezes quase junto (duas abas abertas, F5 no meio do
+      // carregamento), a segunda chamada não duplica a cobrança que a
+      // primeira já criou pro mesmo serviço+vencimento — só ignora.
+      await supabase.from('charges').upsert(newCharges, { onConflict: 'service_id,due_date', ignoreDuplicates: true })
       totalGenerated += newCharges.length
     }
   }
