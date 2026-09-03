@@ -32,3 +32,15 @@ export function createServiceClient() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 }
+
+// Checagem de sessão dentro da própria rota — segunda camada além do proxy
+// (que já bloqueia /api/* sem login). Uso: em rotas sensíveis, `if (!(await requireUser())) return unauthorized()`
+export async function requireUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+export function unauthorized() {
+  return Response.json({ error: 'Não autenticado' }, { status: 401 })
+}

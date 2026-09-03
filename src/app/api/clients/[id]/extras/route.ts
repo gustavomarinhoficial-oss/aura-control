@@ -1,7 +1,10 @@
 ﻿import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient, requireUser, unauthorized } from '@/lib/supabase/server'
 
+// Segunda camada de checagem além do proxy — esta rota carrega senhas/acessos
+// dos clientes, então confere sessão de novo aqui dentro (defesa em profundidade).
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireUser())) return unauthorized()
   const { id } = await params
   const supabase = createServiceClient()
   const { data } = await supabase.from('client_extras').select('*').eq('client_id', id).single()
@@ -9,6 +12,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireUser())) return unauthorized()
   const { id } = await params
   const supabase = createServiceClient()
   const body = await request.json()

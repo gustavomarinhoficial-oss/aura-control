@@ -31,11 +31,27 @@ export async function proxy(request: NextRequest) {
   const isApiRoute    = pathname.startsWith('/api')
   const isPublicRoute = pathname.startsWith('/publico/')
   const isRoot        = pathname === '/'
+  // Rotas de API que precisam continuar acessíveis sem sessão: usadas pela
+  // página pública de aprovação do cliente (token próprio), ou já protegidas
+  // por segredo próprio (crons via CRON_SECRET).
+  const isPublicApiRoute =
+    pathname.startsWith('/api/public/') ||
+    pathname.startsWith('/api/cron/') ||
+    pathname === '/api/upload'
 
-  if (!user && !isLoginRoute && !isApiRoute && !isPublicRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  if (!user) {
+    // API interna sem sessão: nunca redireciona pra tela de login (isso
+    // devolveria HTML pra quem esperava JSON) — responde 401 direto. É essa
+    // checagem que faltava: antes, isApiRoute pulava a autenticação inteira
+    // e qualquer pessoa conseguia ler/editar dados batendo direto em /api/*.
+    if (isApiRoute && !isPublicApiRoute) {
+      return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    }
+    if (!isLoginRoute && !isApiRoute && !isPublicRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
   }
 
   if (user && isLoginRoute) {
