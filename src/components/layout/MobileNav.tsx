@@ -22,7 +22,7 @@ const ALL_PINNED = [
 ]
 
 const ALL_MORE_NAV = [
-  { href: '/projetos',     label: 'Projetos',       icon: Layers,       roles: ['admin', 'julia'] },
+  { href: '/projetos',     label: 'Cronograma',     icon: Layers,       roles: ['admin', 'julia'] },
   { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign,   roles: ['admin'] },
   { href: '/caixa',        label: 'Caixa',          icon: Wallet,       roles: ['admin'] },
   { href: '/relatorios',   label: 'Relatórios',     icon: FileBarChart, roles: ['admin'] },

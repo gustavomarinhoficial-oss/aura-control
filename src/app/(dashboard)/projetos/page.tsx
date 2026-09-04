@@ -30,7 +30,7 @@ interface Project {
 
 interface ClientOption { id: string; name: string }
 
-const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas', 'Julia']
+const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas', 'Julia', 'Mariana']
 
 // ── constantes ────────────────────────────────────────────────────────────────
 const COLUMNS: { key: string; label: string; color: string; dot: string }[] = [
@@ -538,6 +538,7 @@ export default function ProjetosPage() {
   const colRefs       = useRef<Map<string, Element>>(new Map())
   const [filterStatus, setFilterStatus] = useState<string>('todos')
   const [activeOwner, setActiveOwner] = useState<string>('todos')
+  const [activeClient, setActiveClient] = useState<string>('todas')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -612,7 +613,8 @@ export default function ProjetosPage() {
     const colProjects = projects.filter(p =>
       p.status === col.key &&
       (filterStatus === 'todos' || filterStatus === col.key) &&
-      (activeOwner === 'todos' || p.owner === activeOwner)
+      (activeOwner === 'todos' || p.owner === activeOwner) &&
+      (activeClient === 'todas' || p.client_id === activeClient)
     )
     const isDragTarget = overCol === col.key
     return (
@@ -678,15 +680,25 @@ export default function ProjetosPage() {
 
       {/* header */}
       <div className="border-b border-[#2a2a2a] bg-[#0d0d0d] shrink-0">
-        <div className="flex items-center justify-between px-4 md:px-6 pt-5 pb-4">
+        <div className="flex items-center justify-between px-4 md:px-6 pt-5 pb-4 gap-3 flex-wrap">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight">Projetos</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Cronograma</h1>
             <p className="text-xs text-muted-foreground mt-0.5">{total} ativos · {done} concluídos{overdue > 0 ? ` · ${overdue} atrasados` : ''}</p>
           </div>
-          <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-            <Plus size={14} /> Novo projeto
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={activeClient}
+              onChange={e => setActiveClient(e.target.value)}
+              className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+            >
+              <option value="todas">Todas as empresas</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <button onClick={() => setShowNew(true)}
+              className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              <Plus size={14} /> Novo projeto
+            </button>
+          </div>
         </div>
         {/* abas por sócio */}
         <div className="flex px-4 md:px-6 gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>

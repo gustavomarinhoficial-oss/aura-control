@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 
 // â"€â"€ tipos â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null }
+interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null; project_sharing_enabled?: boolean }
 
 interface ContentPost {
   id: string
@@ -1587,6 +1587,8 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
   const [copied, setCopied] = useState(false)
   const [unlockedMonth, setUnlockedMonth] = useState<string | null>(client.content_unlocked_month ?? null)
   const [unlocking, setUnlocking] = useState(false)
+  const [sharingSchedule, setSharingSchedule] = useState(client.project_sharing_enabled === true)
+  const [savingSharing, setSavingSharing] = useState(false)
 
   const loadToken = useCallback(async () => {
     const res = await fetch(`/api/clients/${client.id}/share-link`).catch(() => null)
@@ -1631,6 +1633,18 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
     setUnlocking(false)
   }
 
+  async function toggleSharingSchedule() {
+    const next = !sharingSchedule
+    setSavingSharing(true)
+    const res = await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_sharing_enabled: next }),
+    })
+    if (res.ok) setSharingSchedule(next)
+    setSavingSharing(false)
+  }
+
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
@@ -1658,6 +1672,19 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
             </button>
           )}
         </div>
+        <label className="flex items-center justify-between gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 cursor-pointer">
+          <span className="text-xs">
+            <span className="text-foreground font-medium">Compartilhar cronograma</span>
+            <span className="block text-muted-foreground mt-0.5">Nesse mesmo link, o cliente também vê os projetos em andamento e o checklist de cada um.</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={sharingSchedule}
+            disabled={savingSharing}
+            onChange={toggleSharingSchedule}
+            className="w-4 h-4 accent-[#7c3aed] shrink-0"
+          />
+        </label>
         {loading ? (
           <div className="h-10 bg-[#111111] rounded-lg animate-pulse" />
         ) : (

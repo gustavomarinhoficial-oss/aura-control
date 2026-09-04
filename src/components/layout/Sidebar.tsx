@@ -11,7 +11,7 @@ const ALL_NAV = [
   { href: '/dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
   { href: '/pipeline',       label: 'Pipeline',       icon: Kanban },
   { href: '/clientes',       label: 'Clientes',       icon: Users },
-  { href: '/projetos',       label: 'Projetos',       icon: Layers },
+  { href: '/projetos',       label: 'Cronograma',     icon: Layers },
   { href: '/conteudo',       label: 'Conteúdo',       icon: Newspaper },
   { href: '/influenciadores',label: 'Influenciadores',icon: Handshake },
   { href: '/ia',             label: 'Central IA',     icon: Brain },

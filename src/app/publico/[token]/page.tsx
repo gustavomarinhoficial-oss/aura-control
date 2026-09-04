@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import {
   Check, X, RefreshCw, Loader2, CalendarDays, ChevronDown, ChevronRight,
   ChevronLeft, List, AlertCircle, Expand, Play, Paperclip, Lock, Edit2,
+  CheckSquare, Square, ListTodo, CalendarClock,
 } from 'lucide-react'
 
 interface Post {
@@ -26,6 +27,25 @@ interface Post {
 }
 
 interface ClientInfo { id: string; name: string }
+
+interface CheckItem { id: string; title: string; done: boolean }
+interface ScheduleProject {
+  id: string
+  title: string
+  description: string | null
+  status: string
+  deadline: string | null
+  responsaveis: string[]
+  checklist: CheckItem[]
+  created_at: string
+}
+
+const PROJECT_STATUS_LABEL: Record<string, { label: string; color: string }> = {
+  afazer:     { label: 'A fazer',        color: '#6b7280' },
+  andamento:  { label: 'Em andamento',   color: '#7c3aed' },
+  aprovacao:  { label: 'Em aprovação',   color: '#f59e0b' },
+  concluido:  { label: 'Concluído',      color: '#22c55e' },
+}
 
 const PLATFORM_LABEL: Record<string, string> = {
   instagram: 'Instagram', facebook: 'Facebook', linkedin: 'LinkedIn', tiktok: 'TikTok',
@@ -515,6 +535,89 @@ function CalendarView({ posts, onApprove, onReject, onCaptionSave, actingId, can
   )
 }
 
+// ── ScheduleProjectCard (cronograma) ────────────────────────────────────────
+function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
+  const st = PROJECT_STATUS_LABEL[project.status] ?? { label: project.status, color: '#6b7280' }
+  const done = project.checklist.filter(i => i.done).length
+  const total = project.checklist.length
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+
+  return (
+    <div className="bg-[#161616] border border-[#262626] rounded-2xl p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-semibold leading-snug">{project.title}</p>
+        <span className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: st.color + '20', color: st.color }}>
+          {st.label}
+        </span>
+      </div>
+
+      {project.description && (
+        <p className="text-xs text-[#9ca3af] leading-relaxed whitespace-pre-wrap">{project.description}</p>
+      )}
+
+      {project.deadline && (
+        <p className="text-xs text-[#7a7a7a] flex items-center gap-1.5">
+          <CalendarClock size={12} />
+          Prazo: {formatDateLong(project.deadline)}
+        </p>
+      )}
+
+      {project.responsaveis.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {project.responsaveis.map(r => (
+            <span key={r} className="text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">{r}</span>
+          ))}
+        </div>
+      )}
+
+      {total > 0 && (
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between text-[11px] text-[#7a7a7a]">
+            <span className="flex items-center gap-1.5"><ListTodo size={12} />{done}/{total} concluído{done !== 1 ? 's' : ''}</span>
+            <span>{pct}%</span>
+          </div>
+          <div className="h-1.5 bg-[#262626] rounded-full overflow-hidden">
+            <div className="h-full bg-[#7c3aed] rounded-full transition-all" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="space-y-1.5 pt-1">
+            {project.checklist.map(item => (
+              <div key={item.id} className="flex items-center gap-2">
+                {item.done ? <CheckSquare size={14} className="text-[#22c55e] shrink-0" /> : <Square size={14} className="text-[#4a4a4a] shrink-0" />}
+                <span className={`text-xs ${item.done ? 'text-[#7a7a7a] line-through' : 'text-[#e5e5e5]'}`}>{item.title}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ScheduleView({ projects, loading }: { projects: ScheduleProject[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 size={20} className="animate-spin text-[#7c3aed]" />
+      </div>
+    )
+  }
+  if (projects.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <ListTodo size={26} className="text-[#3a3a3a] mb-3" strokeWidth={1} />
+        <p className="text-sm text-[#7a7a7a]">Nenhum projeto no cronograma ainda.</p>
+      </div>
+    )
+  }
+  const order = ['andamento', 'aprovacao', 'afazer', 'concluido']
+  const sorted = [...projects].sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status))
+  return (
+    <div className="space-y-3">
+      {sorted.map(p => <ScheduleProjectCard key={p.id} project={p} />)}
+    </div>
+  )
+}
+
 export default function PublicCalendarPage() {
   const params = useParams<{ token: string }>()
   const token = params.token
@@ -530,6 +633,10 @@ export default function PublicCalendarPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [hiddenCount, setHiddenCount] = useState(0)
   const [canReview, setCanReview] = useState(false)
+  const [canViewSchedule, setCanViewSchedule] = useState(false)
+  const [activeSection, setActiveSection] = useState<'conteudo' | 'cronograma'>('conteudo')
+  const [projects, setProjects] = useState<ScheduleProject[]>([])
+  const [loadingProjects, setLoadingProjects] = useState(false)
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true)
@@ -540,11 +647,22 @@ export default function PublicCalendarPage() {
     setPosts(Array.isArray(data.posts) ? data.posts : [])
     setHiddenCount(typeof data.hiddenCount === 'number' ? data.hiddenCount : 0)
     setCanReview(data.canReview === true)
+    setCanViewSchedule(data.canViewSchedule === true)
     setLoading(false)
     setRefreshing(false)
   }, [token])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!canViewSchedule) return
+    setLoadingProjects(true)
+    fetch(`/api/public/projects?token=${token}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setProjects(data && Array.isArray(data.projects) ? data.projects : []))
+      .catch(() => {})
+      .finally(() => setLoadingProjects(false))
+  }, [canViewSchedule, token])
 
   async function submitStatus(id: string, status: 'aprovado' | 'reprovado', reason?: string, images?: string[]) {
     setActingId(id)
@@ -614,9 +732,32 @@ export default function PublicCalendarPage() {
           </button>
         </div>
         <p className="text-xs text-[#7a7a7a] mb-4">
-          {canReview ? 'Acompanhe, aprove ou reprove os posts planejados.' : 'Acompanhe os posts planejados.'}
+          {activeSection === 'cronograma'
+            ? 'Acompanhe o andamento dos projetos em produção.'
+            : canReview ? 'Acompanhe, aprove ou reprove os posts planejados.' : 'Acompanhe os posts planejados.'}
         </p>
 
+        {canViewSchedule && (
+          <div className="flex items-center bg-[#161616] border border-[#262626] rounded-xl p-1 gap-1 mb-5 w-fit">
+            <button
+              onClick={() => setActiveSection('conteudo')}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'conteudo' ? 'bg-[#7c3aed] text-white' : 'text-[#8a8a8a] hover:text-white'}`}
+            >
+              Conteúdo
+            </button>
+            <button
+              onClick={() => setActiveSection('cronograma')}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'cronograma' ? 'bg-[#7c3aed] text-white' : 'text-[#8a8a8a] hover:text-white'}`}
+            >
+              <ListTodo size={13} /> Cronograma
+            </button>
+          </div>
+        )}
+
+        {activeSection === 'cronograma' ? (
+          <ScheduleView projects={projects} loading={loadingProjects} />
+        ) : (
+        <>
         <div className="flex items-center bg-[#161616] border border-[#262626] rounded-xl p-1 gap-1 mb-5 w-fit">
           <button
             onClick={() => setViewMode('lista')}
@@ -702,6 +843,8 @@ export default function PublicCalendarPage() {
               </div>
             )}
           </>
+        )}
+        </>
         )}
 
         <p className="text-center text-[10px] text-[#4a4a4a] mt-10">Aura Control</p>

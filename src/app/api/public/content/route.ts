@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const supabase = createServiceClient()
 
-  const { data: client } = await supabase.from('clients').select('id, name, content_unlocked_month, content_approval_enabled').eq('share_token', token).maybeSingle()
+  const { data: client } = await supabase.from('clients').select('id, name, content_unlocked_month, content_approval_enabled, project_sharing_enabled').eq('share_token', token).maybeSingle()
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
 
   const { data: allPosts, error } = await supabase
@@ -34,5 +34,6 @@ export async function GET(request: Request) {
     unlockedMonth,
     hiddenCount,
     canReview: client.content_approval_enabled === true,
+    canViewSchedule: client.project_sharing_enabled === true,
   })
 }
