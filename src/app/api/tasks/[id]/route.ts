@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAssignees } from '@/lib/utils/tasks'
 
-const SELECT_WITH_ASSIGNEES = '*, clients(id, name), task_assignees(members(id, name, initials, color))'
+const SELECT_WITH_ASSIGNEES = '*, clients(id, name), leads(id, company_name), task_assignees(members(id, name, initials, color))'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,6 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.priority !== undefined) update.priority = body.priority
   if (body.due_date !== undefined) update.due_date = body.due_date || null
   if (body.client_id !== undefined) update.client_id = body.client_id || null
+  if (body.lead_id !== undefined) update.lead_id = body.lead_id || null
   if (body.is_global !== undefined) update.is_global = body.is_global
 
   if (Object.keys(update).length > 0) {
@@ -38,7 +39,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { data, error } = await supabase.from('tasks').select(SELECT_WITH_ASSIGNEES).eq('id', id).single()
   if (error) {
     if (error.message?.includes('task_assignees')) {
-      const { data: d2, error: e2 } = await supabase.from('tasks').select('*, clients(id, name)').eq('id', id).single()
+      const { data: d2, error: e2 } = await supabase.from('tasks').select('*, clients(id, name), leads(id, company_name)').eq('id', id).single()
       if (e2) return NextResponse.json({ error: e2.message }, { status: 500 })
       return NextResponse.json({ ...d2, assignees: [] })
     }

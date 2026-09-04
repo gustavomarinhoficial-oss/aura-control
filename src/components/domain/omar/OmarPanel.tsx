@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Loader2, Search, Zap, Check, Send, History, Plus, ArrowRight, ClipboardCheck, Mic, MicOff } from 'lucide-react'
+import { Loader2, Search, Zap, Check, Send, History, Plus, ArrowRight, ClipboardCheck, CalendarClock, Mic, MicOff } from 'lucide-react'
 import { useOmarChat, type OmarUIMessage } from './useOmarChat'
 import { useSpeechToText } from './useSpeechToText'
 import { formatDate } from '@/lib/utils/format'
@@ -73,6 +73,31 @@ function TaskCardView({ task }: { task: OmarUIMessage['taskCards'][number] }) {
   )
 }
 
+function MeetingCardView({ meeting }: { meeting: OmarUIMessage['meetingCards'][number] }) {
+  return (
+    <div className="mt-2 bg-[#141414] border border-[#2a2a2a] rounded-lg p-3 flex items-center gap-3">
+      <div className="w-8 h-8 rounded-full bg-[#f59e0b]/10 flex items-center justify-center shrink-0">
+        <CalendarClock size={15} className="text-[#f59e0b]" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{meeting.title}</p>
+        <p className="text-[11px] text-muted-foreground">
+          {meeting.meeting_date && formatDate(meeting.meeting_date)}
+          {meeting.meeting_date && meeting.start_time && ' · '}
+          {meeting.start_time && meeting.start_time.slice(0, 5)}
+        </p>
+      </div>
+      <Link
+        href={`/reunioes?meeting=${meeting.id}`}
+        className="flex items-center gap-1 text-xs font-medium text-[#a78bfa] hover:text-white bg-[#7c3aed]/10 hover:bg-[#7c3aed] px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
+      >
+        Ver reunião
+        <ArrowRight size={12} />
+      </Link>
+    </div>
+  )
+}
+
 function MessageBubble({ msg }: { msg: OmarUIMessage }) {
   const isUser = msg.role === 'user'
   return (
@@ -89,6 +114,7 @@ function MessageBubble({ msg }: { msg: OmarUIMessage }) {
           ? <div className="space-y-1 leading-relaxed"><FormattedText text={msg.content} /></div>
           : msg.streaming && <Loader2 size={13} className="animate-spin text-muted-foreground" />}
         {msg.taskCards.map(task => <TaskCardView key={task.id} task={task} />)}
+        {msg.meetingCards.map(meeting => <MeetingCardView key={meeting.id} meeting={meeting} />)}
       </div>
     </div>
   )

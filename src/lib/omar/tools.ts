@@ -159,6 +159,153 @@ const listTasks: OmarTool = {
   },
 }
 
+const listMeetings: OmarTool = {
+  name: 'list_meetings',
+  description:
+    'Lista reuniões agendadas (não tarefas), com filtros opcionais por cliente, período ou status. Use pra responder sobre a agenda de reuniões/calls, ou pra achar o meeting_id antes de atualizar ou cancelar uma reunião.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      client_name: { type: 'string', description: 'Nome do cliente (ou lead) para filtrar' },
+      date_from: { type: 'string', description: 'YYYY-MM-DD' },
+      date_to: { type: 'string', description: 'YYYY-MM-DD' },
+      status: { type: 'string', enum: ['agendada', 'realizada', 'cancelada'] },
+    },
+  },
+  async execute(input, ctx) {
+    const supabase = createServiceClient()
+    let query = supabase
+      .from('meetings')
+      .select('id, title, meeting_date, start_time, location, notes, status, clients(name), leads(company_name), meeting_attendees(members(name))')
+      .order('meeting_date', { ascending: true })
+      .limit(50)
+
+    if (input.date_from) query = query.gte('meeting_date', input.date_from as string)
+    if (input.date_to) query = query.lte('meeting_date', input.date_to as string)
+    if (input.status) query = query.eq('status', input.status as string)
+
+    const { data, error } = await query
+    if (error) return { error: error.message }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let results = (data as any[]).map(m => {
+      const { meeting_attendees, ...rest } = m
+      return {
+        ...rest,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        attendees: (meeting_attendees ?? []).map((ma: any) => ma.members?.name).filter(Boolean),
+      }
+    })
+    if (ctx.role === 'julia') {
+      results = results.filter(m => m.attendees.some((n: string) => JULIA_TASK_MEMBERS.includes(n)))
+    }
+    if (input.client_name) {
+      const name = (input.client_name as string).toLowerCase()
+      results = results.filter(m => m.clients?.name?.toLowerCase().includes(name) || m.leads?.company_name?.toLowerCase().includes(name))
+    }
+    return results
+  },
+}
+
+const createMeeting: OmarTool = {
+  name: 'create_meeting',
+  description:
+    'Agenda uma nova reunião — aparece na aba Reuniões, separada de Tarefas. Use esta ferramenta (não create_task) sempre que o usuário pedir pra "marcar", "agendar" ou "criar" uma reunião, call ou encontro. Pode ter zero, um ou vários participantes.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'Título da reunião' },
+      client_id: { type: 'string', description: 'ID do cliente relacionado, se houver' },
+      meeting_date: { type: 'string', description: 'Data no formato YYYY-MM-DD' },
+      start_time: { type: 'string', description: 'Horário no formato HH:MM, se houver' },
+      location: { type: 'string', description: 'Local ou link da reunião, se houver' },
+      notes: { type: 'string', description: 'Pauta ou observações, se houver' },
+      attendee_ids: { type: 'array', items: { type: 'string' }, description: 'IDs dos membros participantes, se houver (pode ser mais de um)' },
+    },
+    required: ['title', 'meeting_date'],
+  },
+  async execute(input) {
+    const supabase = createServiceClient()
+    const { data, error } = await supabase
+      .from('meetings')
+      .insert({
+        title: input.title,
+        client_id: input.client_id ?? null,
+        meeting_date: input.meeting_date,
+        start_time: input.start_time ?? null,
+        location: input.location ?? null,
+        notes: input.notes ?? null,
+        status: 'agendada',
+      })
+      .select('id, title, meeting_date, start_time')
+      .single()
+    if (error) return { error: error.message }
+
+    const attendeeIds = Array.isArray(input.attendee_ids) ? (input.attendee_ids as string[]).filter(Boolean) : []
+    if (attendeeIds.length > 0) {
+      const { error: aErr } = await supabase
+        .from('meeting_attendees')
+        .insert(attendeeIds.map(member_id => ({ meeting_id: data.id, member_id })))
+      if (aErr) return { error: aErr.message }
+    }
+    return { success: true, meeting: data }
+  },
+}
+
+const updateMeeting: OmarTool = {
+  name: 'update_meeting',
+  description:
+    'Atualiza uma reunião existente (status, data, horário, local, pauta ou participantes). Use list_meetings antes para encontrar o meeting_id correto. Ao passar attendee_ids, isso substitui a lista de participantes inteira.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      meeting_id: { type: 'string', description: 'ID da reunião a atualizar' },
+      title: { type: 'string' },
+      status: { type: 'string', enum: ['agendada', 'realizada', 'cancelada'] },
+      meeting_date: { type: 'string', description: 'YYYY-MM-DD' },
+      start_time: { type: 'string', description: 'HH:MM' },
+      location: { type: 'string' },
+      notes: { type: 'string' },
+      attendee_ids: { type: 'array', items: { type: 'string' }, description: 'Lista completa de IDs de participantes (substitui a atual)' },
+    },
+    required: ['meeting_id'],
+  },
+  async execute(input) {
+    const supabase = createServiceClient()
+    const update: Record<string, unknown> = {}
+    if (input.title !== undefined) update.title = input.title
+    if (input.status !== undefined) update.status = input.status
+    if (input.meeting_date !== undefined) update.meeting_date = input.meeting_date
+    if (input.start_time !== undefined) update.start_time = input.start_time
+    if (input.location !== undefined) update.location = input.location
+    if (input.notes !== undefined) update.notes = input.notes
+
+    if (Object.keys(update).length > 0) {
+      const { error } = await supabase.from('meetings').update(update).eq('id', input.meeting_id)
+      if (error) return { error: error.message }
+    }
+
+    if (input.attendee_ids !== undefined) {
+      const attendeeIds = Array.isArray(input.attendee_ids) ? (input.attendee_ids as string[]).filter(Boolean) : []
+      const { error: delErr } = await supabase.from('meeting_attendees').delete().eq('meeting_id', input.meeting_id)
+      if (delErr) return { error: delErr.message }
+      if (attendeeIds.length > 0) {
+        const { error: insErr } = await supabase
+          .from('meeting_attendees')
+          .insert(attendeeIds.map(member_id => ({ meeting_id: input.meeting_id, member_id })))
+        if (insErr) return { error: insErr.message }
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('meetings')
+      .select('id, title, status, meeting_date, start_time')
+      .eq('id', input.meeting_id)
+      .single()
+    if (error) return { error: error.message }
+    return { success: true, meeting: data }
+  },
+}
+
 const listProjects: OmarTool = {
   name: 'list_projects',
   description: 'Lista projetos da agência, opcionalmente filtrando por status.',
@@ -225,7 +372,7 @@ const listMembers: OmarTool = {
 const createTask: OmarTool = {
   name: 'create_task',
   description:
-    'Cria uma nova tarefa. Pode ter zero, um ou vários responsáveis ao mesmo tempo (uma tarefa às vezes precisa de mais de uma pessoa). Use list_members antes para resolver nomes em IDs. Se o usuário não especificar cliente ou responsável, deixe em branco.',
+    'Cria uma nova tarefa (aba Tarefas). Não use pra reunião/call/encontro — nesse caso use create_meeting, que cria na aba Reuniões. Pode ter zero, um ou vários responsáveis ao mesmo tempo (uma tarefa às vezes precisa de mais de uma pessoa). Use list_members antes para resolver nomes em IDs. Se o usuário não especificar cliente ou responsável, deixe em branco.',
   input_schema: {
     type: 'object',
     properties: {
@@ -410,9 +557,10 @@ const getWeekOverview: OmarTool = {
     const from = (input.date_from as string) || bounds.from
     const to = (input.date_to as string) || bounds.to
 
-    const [tasksRes, contentRes] = await Promise.all([
+    const [tasksRes, contentRes, meetingsRes] = await Promise.all([
       supabase.from('tasks').select('id, title, status, priority, due_date, clients(name), task_assignees(members(name))').gte('due_date', from).lte('due_date', to),
       supabase.from('content_posts').select('id, title, platform, status, scheduled_date, clients(name)').gte('scheduled_date', from).lte('scheduled_date', to),
+      supabase.from('meetings').select('id, title, meeting_date, start_time, status, clients(name), leads(company_name), meeting_attendees(members(name))').gte('meeting_date', from).lte('meeting_date', to),
     ])
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -431,13 +579,27 @@ const getWeekOverview: OmarTool = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let content = (contentRes.data ?? []) as any[]
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let meetings = (meetingsRes.data ?? []).map((m: any) => {
+      const { meeting_attendees, ...rest } = m
+      return {
+        ...rest,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        attendees: (meeting_attendees ?? []).map((ma: any) => ma.members?.name).filter(Boolean),
+      }
+    })
+    if (ctx.role === 'julia') {
+      meetings = meetings.filter(m => m.attendees.some((n: string) => JULIA_TASK_MEMBERS.includes(n)))
+    }
+
     if (input.client_name) {
       const name = (input.client_name as string).toLowerCase()
       tasks = tasks.filter(t => t.clients?.name?.toLowerCase().includes(name))
       content = content.filter(c => c.clients?.name?.toLowerCase().includes(name))
+      meetings = meetings.filter(m => m.clients?.name?.toLowerCase().includes(name) || m.leads?.company_name?.toLowerCase().includes(name))
     }
 
-    return { periodo: { de: from, ate: to }, tarefas: tasks, conteudos: content }
+    return { periodo: { de: from, ate: to }, tarefas: tasks, reunioes: meetings, conteudos: content }
   },
 }
 
@@ -612,11 +774,14 @@ const ALL_TOOLS: OmarTool[] = [
   getDashboardSummary,
   listClients,
   listTasks,
+  listMeetings,
   listProjects,
   getFinanceiroSummary,
   listMembers,
   createTask,
   updateTask,
+  createMeeting,
+  updateMeeting,
   createClientTool,
   getClientScope,
   getWeekOverview,

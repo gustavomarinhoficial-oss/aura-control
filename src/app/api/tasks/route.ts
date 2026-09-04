@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAssignees } from '@/lib/utils/tasks'
 
-const SELECT_WITH_ASSIGNEES = '*, clients(id, name), task_assignees(members(id, name, initials, color))'
+const SELECT_WITH_ASSIGNEES = '*, clients(id, name), leads(id, company_name), task_assignees(members(id, name, initials, color))'
 
 export async function GET(request: Request) {
   const supabase = createServiceClient()
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     if (error.message?.includes('task_assignees')) {
       let q2 = supabase
         .from('tasks')
-        .select('*, clients(id, name)')
+        .select('*, clients(id, name), leads(id, company_name)')
         .order('due_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false })
       if (clientId) q2 = q2.eq('client_id', clientId)
@@ -44,13 +44,14 @@ export async function POST(request: Request) {
     title: body.title,
     description: body.description || null,
     client_id: body.client_id || null,
+    lead_id: body.lead_id || null,
     is_global: body.is_global ?? false,
     status: body.status || 'pendente',
     priority: body.priority || 'media',
     due_date: body.due_date || null,
   }
 
-  const { data: task, error } = await supabase.from('tasks').insert(insert).select('*, clients(id, name)').single()
+  const { data: task, error } = await supabase.from('tasks').insert(insert).select('*, clients(id, name), leads(id, company_name)').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const assigneeIds: string[] = Array.isArray(body.assignee_ids) ? body.assignee_ids.filter(Boolean) : []

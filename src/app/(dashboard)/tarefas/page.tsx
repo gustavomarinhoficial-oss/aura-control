@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Circle, Loader2, CheckCircle2, Trash2, AlertCircle, Calendar, ChevronDown, ChevronRight, Check, Edit2, Upload, Download, X, FileSpreadsheet } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import { leadOptionValue, decodeEntitySelect } from '@/lib/utils/entitySelect'
 import { useRole } from '@/lib/hooks/useRole'
 import { JULIA_TASK_MEMBERS } from '@/lib/roles'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
@@ -22,6 +23,7 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string }> = {
 }
 
 interface Client { id: string; name: string }
+interface Lead { id: string; company_name: string }
 
 function MemberAvatar({ member, size = 20 }: { member: { initials: string; color: string; name: string }; size?: number }) {
   return (
@@ -169,6 +171,7 @@ export default function TarefasPage() {
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
@@ -181,13 +184,15 @@ export default function TarefasPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [tasksRes, clientsRes, membersRes] = await Promise.all([
+    const [tasksRes, clientsRes, leadsRes, membersRes] = await Promise.all([
       fetch('/api/tasks').then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
+      fetch('/api/leads').then(r => r.json()).catch(() => []),
       fetch('/api/members').then(r => r.json()).catch(() => []),
     ])
     setTasks(Array.isArray(tasksRes) ? tasksRes : [])
     setClients(Array.isArray(clientsRes) ? clientsRes : [])
+    setLeads(Array.isArray(leadsRes) ? leadsRes : [])
     setMembers(Array.isArray(membersRes) ? membersRes : [])
     setLoading(false)
   }, [])
@@ -402,9 +407,13 @@ export default function TarefasPage() {
                         <span className="text-[11px] text-[#60a5fa] bg-[#60a5fa]/10 px-2 py-0.5 rounded-full">
                           🌐 Todos os clientes
                         </span>
-                      ) : task.clients && (
+                      ) : task.clients ? (
                         <span className="text-[11px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">
                           {task.clients.name}
+                        </span>
+                      ) : task.leads && (
+                        <span className="text-[11px] text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">
+                          (Lead) {task.leads.company_name}
                         </span>
                       )}
                       <span className={`text-[11px] font-medium ${pc.color}`}>{pc.label}</span>
@@ -447,6 +456,7 @@ export default function TarefasPage() {
       {showNew && (
         <NewTaskModal
           clients={clients}
+          leads={leads}
           members={members}
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); load() }}
@@ -457,6 +467,7 @@ export default function TarefasPage() {
         <EditTaskModal
           task={editingTask}
           clients={clients}
+          leads={leads}
           members={members}
           onClose={() => setEditingTask(null)}
           onSaved={() => { setEditingTask(null); load() }}
@@ -473,8 +484,9 @@ export default function TarefasPage() {
   )
 }
 
-function NewTaskModal({ clients, members, onClose, onCreated }: {
+function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
   clients: Client[]
+  leads: Lead[]
   members: Member[]
   onClose: () => void
   onCreated: () => void
@@ -490,7 +502,7 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
     const description = (data.get('description') as string ?? '').trim()
     const clientRaw = (data.get('client_id') as string ?? '')
     const is_global = clientRaw === 'todos'
-    const client_id = is_global ? null : clientRaw || null
+    const { client_id, lead_id } = is_global ? { client_id: null, lead_id: null } : decodeEntitySelect(clientRaw)
     const priority = (data.get('priority') as string ?? 'media')
     const due_date = (data.get('due_date') as string ?? '') || null
 
@@ -499,7 +511,7 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: description || null, client_id, is_global, assignee_ids: assigneeIds, priority, due_date }),
+      body: JSON.stringify({ title, description: description || null, client_id, lead_id, is_global, assignee_ids: assigneeIds, priority, due_date }),
     })
     if (!res.ok) { setError('Erro ao criar tarefa'); setSaving(false); return }
     onCreated()
@@ -538,6 +550,11 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
               <option value="">— Nenhum cliente —</option>
               <option value="todos">🌐 Todos os clientes</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {leads.length > 0 && (
+                <optgroup label="Leads">
+                  {leads.map(l => <option key={l.id} value={leadOptionValue(l.id)}>(Lead) {l.company_name}</option>)}
+                </optgroup>
+              )}
             </select>
           </div>
           <div>
@@ -585,9 +602,10 @@ function NewTaskModal({ clients, members, onClose, onCreated }: {
   )
 }
 
-function EditTaskModal({ task, clients, members, onClose, onSaved }: {
+function EditTaskModal({ task, clients, leads, members, onClose, onSaved }: {
   task: Task
   clients: Client[]
+  leads: Lead[]
   members: Member[]
   onClose: () => void
   onSaved: () => void
@@ -598,7 +616,7 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
   const [form, setForm] = useState({
     title: task.title,
     description: task.description ?? '',
-    client_id: task.is_global ? 'todos' : (task.client_id ?? ''),
+    client_id: task.is_global ? 'todos' : (task.lead_id ? leadOptionValue(task.lead_id) : (task.client_id ?? '')),
     priority: task.priority,
     due_date: task.due_date ?? '',
     status: task.status,
@@ -613,14 +631,17 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
     const title = form.title.trim()
     if (!title) { setError('Informe o título'); return }
     setSaving(true)
+    const is_global = form.client_id === 'todos'
+    const { client_id, lead_id } = is_global ? { client_id: null, lead_id: null } : decodeEntitySelect(form.client_id)
     const res = await fetch(`/api/tasks/${task.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title,
         description: form.description.trim() || null,
-        client_id: form.client_id === 'todos' ? null : form.client_id || null,
-        is_global: form.client_id === 'todos',
+        client_id,
+        lead_id,
+        is_global,
         assignee_ids: assigneeIds,
         priority: form.priority,
         due_date: form.due_date || null,
@@ -656,6 +677,11 @@ function EditTaskModal({ task, clients, members, onClose, onSaved }: {
               <option value="">— Nenhum cliente —</option>
               <option value="todos">🌐 Todos os clientes</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {leads.length > 0 && (
+                <optgroup label="Leads">
+                  {leads.map(l => <option key={l.id} value={leadOptionValue(l.id)}>(Lead) {l.company_name}</option>)}
+                </optgroup>
+              )}
             </select>
           </div>
           <div>

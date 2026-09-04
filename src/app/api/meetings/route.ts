@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAttendees } from '@/lib/utils/meetings'
 
-const SELECT_WITH_ATTENDEES = '*, clients(id, name), meeting_attendees(members(id, name, initials, color))'
+const SELECT_WITH_ATTENDEES = '*, clients(id, name), leads(id, company_name), meeting_attendees(members(id, name, initials, color))'
 
 function todayBR(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
   const insert: Record<string, unknown> = {
     title: body.title,
     client_id: body.client_id || null,
+    lead_id: body.lead_id || null,
     meeting_date: body.meeting_date,
     start_time: body.start_time || null,
     location: body.location || null,
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     status: body.status || 'agendada',
   }
 
-  const { data: meeting, error } = await supabase.from('meetings').insert(insert).select('*, clients(id, name)').single()
+  const { data: meeting, error } = await supabase.from('meetings').insert(insert).select('*, clients(id, name), leads(id, company_name)').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const attendeeIds: string[] = Array.isArray(body.attendee_ids) ? body.attendee_ids.filter(Boolean) : []

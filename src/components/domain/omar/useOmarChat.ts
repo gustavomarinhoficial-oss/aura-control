@@ -16,12 +16,20 @@ export interface OmarTaskCard {
   due_date?: string | null
 }
 
+export interface OmarMeetingCard {
+  id: string
+  title: string
+  meeting_date?: string | null
+  start_time?: string | null
+}
+
 export interface OmarUIMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
   toolEvents: OmarToolEvent[]
   taskCards: OmarTaskCard[]
+  meetingCards: OmarMeetingCard[]
   streaming?: boolean
 }
 
@@ -50,6 +58,7 @@ export function useOmarChat() {
         tool: t.name, kind: 'consulting', label: t.name, status: 'done',
       })),
       taskCards: [],
+      meetingCards: [],
     })))
   }, [])
 
@@ -63,8 +72,8 @@ export function useOmarChat() {
     const trimmed = text.trim()
     if (!trimmed || sending) return
 
-    const userMsg: OmarUIMessage = { id: uid(), role: 'user', content: trimmed, toolEvents: [], taskCards: [] }
-    const assistantMsg: OmarUIMessage = { id: uid(), role: 'assistant', content: '', toolEvents: [], taskCards: [], streaming: true }
+    const userMsg: OmarUIMessage = { id: uid(), role: 'user', content: trimmed, toolEvents: [], taskCards: [], meetingCards: [] }
+    const assistantMsg: OmarUIMessage = { id: uid(), role: 'assistant', content: '', toolEvents: [], taskCards: [], meetingCards: [], streaming: true }
     setMessages(prev => [...prev, userMsg, assistantMsg])
     setSending(true)
     setStatus('thinking')
@@ -117,6 +126,11 @@ export function useOmarChat() {
             const task = evt.task as OmarTaskCard
             setMessages(prev => prev.map(m => m.id === assistantMsg.id
               ? { ...m, taskCards: [...m.taskCards, task] }
+              : m))
+          } else if (evt.type === 'meeting_card') {
+            const meeting = evt.meeting as OmarMeetingCard
+            setMessages(prev => prev.map(m => m.id === assistantMsg.id
+              ? { ...m, meetingCards: [...m.meetingCards, meeting] }
               : m))
           } else if (evt.type === 'tool_done') {
             setMessages(prev => prev.map(m => m.id === assistantMsg.id

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { formatDate } from '@/lib/utils/format'
+import { leadOptionValue, decodeEntitySelect, type LeadOption } from '@/lib/utils/entitySelect'
 import {
   Plus, X, Check, Trash2, ChevronRight, Calendar, User2,
   AlertCircle, CheckSquare, Square, GripVertical, ExternalLink
@@ -14,6 +15,7 @@ interface CheckItem { id: string; title: string; done: boolean }
 interface Project {
   id: string
   client_id: string | null
+  lead_id: string | null
   title: string
   description: string | null
   status: string
@@ -23,6 +25,7 @@ interface Project {
   checklist: CheckItem[]
   created_at: string
   clients?: { id: string; name: string } | null
+  leads?: { id: string; company_name: string } | null
 }
 
 interface ClientOption { id: string; name: string }
@@ -81,6 +84,8 @@ function ProjectCard({
         <div className="w-2 h-2 rounded-full shrink-0" style={{ background: accent }} />
         {project.clients ? (
           <span className="text-[10px] text-muted-foreground truncate">{project.clients.name}</span>
+        ) : project.leads ? (
+          <span className="text-[10px] text-[#f59e0b] truncate">(Lead) {project.leads.company_name}</span>
         ) : (
           <span className="text-[10px] text-muted-foreground/40 italic">Sem cliente</span>
         )}
@@ -130,10 +135,11 @@ function ProjectCard({
 
 // ── painel de detalhe ─────────────────────────────────────────────────────────
 function DetailPanel({
-  project, clients, onClose, onSaved, onDeleted,
+  project, clients, leads, onClose, onSaved, onDeleted,
 }: {
   project: Project
   clients: ClientOption[]
+  leads: LeadOption[]
   onClose: () => void
   onSaved: (p: Project) => void
   onDeleted: () => void
@@ -274,12 +280,21 @@ function DetailPanel({
             <div>
               <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Cliente</label>
               <select
-                value={form.client_id ?? ''}
-                onChange={e => { setForm(f => ({ ...f, client_id: e.target.value || null })); save({ client_id: e.target.value || null }) }}
+                value={form.lead_id ? leadOptionValue(form.lead_id) : (form.client_id ?? '')}
+                onChange={e => {
+                  const { client_id, lead_id } = decodeEntitySelect(e.target.value)
+                  setForm(f => ({ ...f, client_id, lead_id }))
+                  save({ client_id, lead_id })
+                }}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
                 <option value="">Sem cliente</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {leads.length > 0 && (
+                  <optgroup label="Leads">
+                    {leads.map(l => <option key={l.id} value={leadOptionValue(l.id)}>(Lead) {l.company_name}</option>)}
+                  </optgroup>
+                )}
               </select>
             </div>
             <div>
@@ -398,8 +413,9 @@ function DetailPanel({
 }
 
 // ── modal novo projeto ────────────────────────────────────────────────────────
-function NewProjectModal({ clients, onClose, onCreated }: {
+function NewProjectModal({ clients, leads, onClose, onCreated }: {
   clients: ClientOption[]
+  leads: LeadOption[]
   onClose: () => void
   onCreated: (p: Project) => void
 }) {
@@ -410,10 +426,11 @@ function NewProjectModal({ clients, onClose, onCreated }: {
   async function create() {
     if (!form.title.trim()) return setError('Informe o título do projeto')
     setSaving(true)
+    const { client_id, lead_id } = decodeEntitySelect(form.client_id)
     const res = await fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, client_id: form.client_id || null, deadline: form.deadline || null }),
+      body: JSON.stringify({ ...form, client_id, lead_id, deadline: form.deadline || null }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setSaving(false); return }
     const project = await res.json()
@@ -471,6 +488,11 @@ function NewProjectModal({ clients, onClose, onCreated }: {
               >
                 <option value="">Sem cliente</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                {leads.length > 0 && (
+                  <optgroup label="Leads">
+                    {leads.map(l => <option key={l.id} value={leadOptionValue(l.id)}>(Lead) {l.company_name}</option>)}
+                  </optgroup>
+                )}
               </select>
             </div>
           </div>
@@ -503,6 +525,7 @@ function NewProjectModal({ clients, onClose, onCreated }: {
 export default function ProjetosPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [clients, setClients] = useState<ClientOption[]>([])
+  const [leads, setLeads] = useState<LeadOption[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Project | null>(null)
   const [showNew, setShowNew] = useState(false)
@@ -518,12 +541,14 @@ export default function ProjetosPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [pRes, cRes] = await Promise.all([
+    const [pRes, cRes, lRes] = await Promise.all([
       fetch('/api/projects').then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
+      fetch('/api/leads').then(r => r.json()).catch(() => []),
     ])
     setProjects(Array.isArray(pRes) ? pRes : [])
     setClients(Array.isArray(cRes) ? cRes.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })) : [])
+    setLeads(Array.isArray(lRes) ? lRes.map((l: { id: string; company_name: string }) => ({ id: l.id, company_name: l.company_name })) : [])
     setLoading(false)
   }, [])
 
@@ -731,6 +756,7 @@ export default function ProjetosPage() {
         <DetailPanel
           project={selected}
           clients={clients}
+          leads={leads}
           onClose={() => setSelected(null)}
           onSaved={onSaved}
           onDeleted={onDeleted}
@@ -741,6 +767,7 @@ export default function ProjetosPage() {
       {showNew && (
         <NewProjectModal
           clients={clients}
+          leads={leads}
           onClose={() => setShowNew(false)}
           onCreated={onCreated}
         />

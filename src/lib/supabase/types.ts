@@ -111,12 +111,14 @@ export interface Task {
   title: string
   description: string | null
   client_id: string | null
+  lead_id: string | null
   status: TaskStatus
   priority: TaskPriority
   due_date: string | null
   is_global: boolean
   created_at: string
   clients?: { id: string; name: string } | null
+  leads?: { id: string; company_name: string } | null
   assignees?: Array<{ id: string; name: string; initials: string; color: string }>
 }
 
@@ -126,6 +128,7 @@ export interface Meeting {
   id: string
   title: string
   client_id: string | null
+  lead_id: string | null
   meeting_date: string
   start_time: string | null
   location: string | null
@@ -133,6 +136,7 @@ export interface Meeting {
   status: MeetingStatus
   created_at: string
   clients?: { id: string; name: string } | null
+  leads?: { id: string; company_name: string } | null
   attendees?: Array<{ id: string; name: string; initials: string; color: string }>
 }
 

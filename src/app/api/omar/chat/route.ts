@@ -39,6 +39,12 @@ function isTaskResult(result: unknown): result is { success: true; task: { id: s
   return r.success === true && typeof r.task === 'object' && r.task !== null && 'id' in (r.task as object)
 }
 
+function isMeetingResult(result: unknown): result is { success: true; meeting: { id: string; title: string } } {
+  if (!result || typeof result !== 'object') return false
+  const r = result as Record<string, unknown>
+  return r.success === true && typeof r.meeting === 'object' && r.meeting !== null && 'id' in (r.meeting as object)
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -175,6 +181,9 @@ export async function POST(request: Request) {
 
             if ((tc.name === 'create_task' || tc.name === 'update_task') && isTaskResult(result)) {
               push({ type: 'task_card', task: result.task })
+            }
+            if ((tc.name === 'create_meeting' || tc.name === 'update_meeting') && isMeetingResult(result)) {
+              push({ type: 'meeting_card', meeting: result.meeting })
             }
 
             messages.push({ role: 'tool', tool_call_id: tc.id!, content: JSON.stringify(result) })

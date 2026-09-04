@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAttendees } from '@/lib/utils/meetings'
 
-const SELECT_WITH_ATTENDEES = '*, clients(id, name), meeting_attendees(members(id, name, initials, color))'
+const SELECT_WITH_ATTENDEES = '*, clients(id, name), leads(id, company_name), meeting_attendees(members(id, name, initials, color))'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -12,6 +12,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const update: Record<string, unknown> = {}
   if (body.title !== undefined) update.title = body.title
   if (body.client_id !== undefined) update.client_id = body.client_id || null
+  if (body.lead_id !== undefined) update.lead_id = body.lead_id || null
   if (body.meeting_date !== undefined) update.meeting_date = body.meeting_date
   if (body.start_time !== undefined) update.start_time = body.start_time || null
   if (body.location !== undefined) update.location = body.location || null

@@ -6,7 +6,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const supabase = createServiceClient()
   const body = await request.json()
 
-  const allowed = ['title', 'description', 'status', 'deadline', 'owner', 'responsaveis', 'checklist', 'client_id']
+  const allowed = ['title', 'description', 'status', 'deadline', 'owner', 'responsaveis', 'checklist', 'client_id', 'lead_id']
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
   for (const key of allowed) {
     if (key in body) update[key] = body[key] === '' ? null : body[key]
@@ -14,7 +14,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { data, error } = await supabase
     .from('projects').update(update).eq('id', id)
-    .select('*, clients(id, name)').single()
+    .select('*, clients(id, name), leads(id, company_name)').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }

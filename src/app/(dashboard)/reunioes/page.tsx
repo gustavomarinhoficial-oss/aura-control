@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
   AlertCircle, ChevronDown, ChevronRight, CalendarClock,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import { leadOptionValue, decodeEntitySelect } from '@/lib/utils/entitySelect'
 import { useRole } from '@/lib/hooks/useRole'
 import { JULIA_TASK_MEMBERS } from '@/lib/roles'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
@@ -18,6 +20,7 @@ const statusConfig: Record<MeetingStatus, { label: string; icon: React.ElementTy
 }
 
 interface Client { id: string; name: string }
+interface Lead { id: string; company_name: string }
 
 // Data local (não UTC) — evita virar o dia errado perto da meia-noite UTC
 function localDateStr(d: Date): string {
@@ -77,6 +80,7 @@ function AttendeeMultiSelect({ members, value, onChange }: { members: Member[]; 
 interface MeetingFormData {
   title: string
   client_id: string | null
+  lead_id: string | null
   meeting_date: string
   start_time: string | null
   location: string | null
@@ -84,9 +88,10 @@ interface MeetingFormData {
   attendee_ids: string[]
 }
 
-function MeetingForm({ initial, clients, members, onSubmit, submitLabel, saving, error }: {
+function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, saving, error }: {
   initial?: Partial<Meeting>
   clients: Client[]
+  leads: Lead[]
   members: Member[]
   onSubmit: (data: MeetingFormData) => void
   submitLabel: string
@@ -94,7 +99,7 @@ function MeetingForm({ initial, clients, members, onSubmit, submitLabel, saving,
   error: string
 }) {
   const [title, setTitle] = useState(initial?.title ?? '')
-  const [clientId, setClientId] = useState(initial?.client_id ?? '')
+  const [entityValue, setEntityValue] = useState(initial?.lead_id ? leadOptionValue(initial.lead_id) : (initial?.client_id ?? ''))
   const [date, setDate] = useState(initial?.meeting_date ?? localDateStr(new Date()))
   const [time, setTime] = useState(initial?.start_time?.slice(0, 5) ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
@@ -104,9 +109,11 @@ function MeetingForm({ initial, clients, members, onSubmit, submitLabel, saving,
   function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
+    const { client_id, lead_id } = decodeEntitySelect(entityValue)
     onSubmit({
       title: title.trim(),
-      client_id: clientId || null,
+      client_id,
+      lead_id,
       meeting_date: date,
       start_time: time || null,
       location: location.trim() || null,
@@ -128,11 +135,16 @@ function MeetingForm({ initial, clients, members, onSubmit, submitLabel, saving,
       <div>
         <label className="block text-xs text-muted-foreground mb-1">Cliente (opcional)</label>
         <select
-          value={clientId} onChange={e => setClientId(e.target.value)}
+          value={entityValue} onChange={e => setEntityValue(e.target.value)}
           className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
         >
           <option value="">— Nenhum cliente —</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {leads.length > 0 && (
+            <optgroup label="Leads">
+              {leads.map(l => <option key={l.id} value={leadOptionValue(l.id)}>(Lead) {l.company_name}</option>)}
+            </optgroup>
+          )}
         </select>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -181,9 +193,12 @@ function MeetingForm({ initial, clients, members, onSubmit, submitLabel, saving,
 export default function ReunioesPage() {
   const role = useRole()
   const isJulia = role === 'julia'
+  const searchParams = useSearchParams()
+  const highlightId = searchParams.get('meeting')
 
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [clients, setClients] = useState<Client[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
@@ -191,16 +206,19 @@ export default function ReunioesPage() {
   const [showPast, setShowPast] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [pulseMeeting, setPulseMeeting] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [meetingsRes, clientsRes, membersRes] = await Promise.all([
+    const [meetingsRes, clientsRes, leadsRes, membersRes] = await Promise.all([
       fetch('/api/meetings').then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
+      fetch('/api/leads').then(r => r.json()).catch(() => []),
       fetch('/api/members').then(r => r.json()).catch(() => []),
     ])
     setMeetings(Array.isArray(meetingsRes) ? meetingsRes : [])
     setClients(Array.isArray(clientsRes) ? clientsRes : [])
+    setLeads(Array.isArray(leadsRes) ? leadsRes : [])
     setMembers(Array.isArray(membersRes) ? membersRes : [])
     setLoading(false)
   }, [])
@@ -216,6 +234,21 @@ export default function ReunioesPage() {
     a.meeting_date === b.meeting_date ? (a.start_time ?? '').localeCompare(b.start_time ?? '') : a.meeting_date.localeCompare(b.meeting_date)
   )
   const past = visibleMeetings.filter(m => m.meeting_date < todayStr).sort((a, b) => b.meeting_date.localeCompare(a.meeting_date))
+
+  // Veio de um link "Ver reunião" (ex: do Omar) — acha a reunião, abre "anteriores" se precisar e destaca
+  useEffect(() => {
+    if (!highlightId || loading || meetings.length === 0) return
+    const target = meetings.find(m => m.id === highlightId)
+    if (!target) return
+    if (target.meeting_date < todayStr) setShowPast(true)
+    setPulseMeeting(highlightId)
+    const timer = setTimeout(() => {
+      document.getElementById(`meeting-${highlightId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+    const clear = setTimeout(() => setPulseMeeting(null), 2500)
+    return () => { clearTimeout(timer); clearTimeout(clear) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [highlightId, loading, meetings.length])
 
   async function createMeeting(data: MeetingFormData) {
     setSaving(true); setError('')
@@ -245,7 +278,12 @@ export default function ReunioesPage() {
   function MeetingRow({ meeting }: { meeting: Meeting }) {
     const sc = statusConfig[meeting.status]
     return (
-      <div className="group bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-xl px-5 py-4 transition-colors">
+      <div
+        id={`meeting-${meeting.id}`}
+        className={`group bg-[#1a1a1a] border rounded-xl px-5 py-4 transition-all duration-500 ${
+          pulseMeeting === meeting.id ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/40' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
+        }`}
+      >
         <div className="flex items-start gap-4">
           <Select value={meeting.status} onValueChange={v => updateStatus(meeting.id, v as MeetingStatus)}>
             <SelectTrigger
@@ -285,8 +323,10 @@ export default function ReunioesPage() {
                 <CalendarClock size={10} />
                 {formatDate(meeting.meeting_date)}{meeting.start_time && ` · ${meeting.start_time.slice(0, 5)}`}
               </span>
-              {meeting.clients && (
+              {meeting.clients ? (
                 <span className="text-[11px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">{meeting.clients.name}</span>
+              ) : meeting.leads && (
+                <span className="text-[11px] text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">(Lead) {meeting.leads.company_name}</span>
               )}
               {meeting.location && (
                 <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -366,7 +406,7 @@ export default function ReunioesPage() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
             <h2 className="text-base font-semibold mb-5">Nova reunião</h2>
-            <MeetingForm clients={clients} members={members} onSubmit={createMeeting} submitLabel="Criar reunião" saving={saving} error={error} />
+            <MeetingForm clients={clients} leads={leads} members={members} onSubmit={createMeeting} submitLabel="Criar reunião" saving={saving} error={error} />
             <button onClick={() => { setShowNew(false); setError('') }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-3 py-1">Cancelar</button>
           </div>
         </div>
@@ -376,7 +416,7 @@ export default function ReunioesPage() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
             <h2 className="text-base font-semibold mb-5">Editar reunião</h2>
-            <MeetingForm initial={editing} clients={clients} members={members} onSubmit={d => updateMeeting(editing.id, d)} submitLabel="Salvar" saving={saving} error={error} />
+            <MeetingForm initial={editing} clients={clients} leads={leads} members={members} onSubmit={d => updateMeeting(editing.id, d)} submitLabel="Salvar" saving={saving} error={error} />
             <button onClick={() => { setEditing(null); setError('') }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-3 py-1">Cancelar</button>
           </div>
         </div>
