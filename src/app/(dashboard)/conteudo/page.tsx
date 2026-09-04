@@ -35,6 +35,7 @@ interface ContentPost {
   media_urls: string[] | null
   rejection_reason: string | null
   rejection_images: string[] | null
+  caption_edited_by_client: boolean
   created_at: string
   clients?: { id: string; name: string } | null
 }
@@ -154,6 +155,11 @@ const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv']
 function isVideoUrl(url: string): boolean {
   const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
   return !!ext && VIDEO_EXTS.includes(ext)
+}
+// Fragmento de mídia (#t=0.1) faz o navegador desenhar o frame de 0.1s como
+// still — sem isso a miniatura do vídeo fica com tela preta antes de tocar.
+function videoPosterSrc(url: string): string {
+  return `${url}#t=0.1`
 }
 
 // Mapa de extensão → MIME pra quando o navegador não identifica o file.type
@@ -399,7 +405,7 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
                 }`}
               >
                 {video ? (
-                  <video src={url} className="w-full h-full object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
+                  <video src={videoPosterSrc(url)} className="w-full h-full object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
                 ) : (
                   <img src={toDirectImageUrl(url)} alt="" draggable={false} className="w-full h-full object-cover pointer-events-none"
                     onError={e => { (e.currentTarget as HTMLImageElement).style.opacity = '0.3' }} />
@@ -721,7 +727,14 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
 
           {/* legenda */}
           <div>
-            <label className="block text-[10px] text-muted-foreground mb-1.5 uppercase tracking-wider">Legenda</label>
+            <div className="flex items-center gap-2 mb-1.5">
+              <label className="block text-[10px] text-muted-foreground uppercase tracking-wider">Legenda</label>
+              {post.caption_edited_by_client && (
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap bg-[#a78bfa]/15 text-[#a78bfa]">
+                  Ajustada pelo cliente
+                </span>
+              )}
+            </div>
             <textarea
               value={form.caption ?? ''}
               onChange={e => setForm(f => ({ ...f, caption: e.target.value }))}
@@ -1209,7 +1222,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           return thumb ? (
                             <div className="relative">
                               {isVideoUrl(thumb) ? (
-                                <video src={thumb} className="w-full h-14 object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
+                                <video src={videoPosterSrc(thumb)} className="w-full h-14 object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
                               ) : (
                                 <img src={toDirectImageUrl(thumb)} alt="" draggable={false} className="w-full h-14 object-cover pointer-events-none"
                                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
@@ -1354,12 +1367,19 @@ function ContentList({ posts, showClient, onPostClick }: {
         )}
 
         {/* status */}
-        <span
-          className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
-          style={{ background: si.color + '22', color: si.color }}
-        >
-          {si.label}
-        </span>
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <span
+            className="text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+            style={{ background: si.color + '22', color: si.color }}
+          >
+            {si.label}
+          </span>
+          {post.caption_edited_by_client && (
+            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap bg-[#a78bfa]/15 text-[#a78bfa]">
+              Legenda ajustada
+            </span>
+          )}
+        </div>
 
         {/* data */}
         <span className="shrink-0 text-xs text-muted-foreground w-[95px] text-right">
