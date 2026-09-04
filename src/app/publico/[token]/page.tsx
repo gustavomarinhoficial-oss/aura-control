@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import {
   Check, X, RefreshCw, Loader2, CalendarDays, ChevronDown, ChevronRight,
-  ChevronLeft, List, AlertCircle, Expand, Play, Paperclip, Lock,
+  ChevronLeft, List, AlertCircle, Expand, Play, Paperclip, Lock, Edit2,
 } from 'lucide-react'
 
 interface Post {
@@ -21,6 +21,7 @@ interface Post {
   media_urls: string[] | null
   rejection_reason: string | null
   rejection_images: string[] | null
+  caption_edited_by_client: boolean
   created_at: string
 }
 
@@ -69,6 +70,12 @@ const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv']
 function isVideoUrl(url: string): boolean {
   const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
   return !!ext && VIDEO_EXTS.includes(ext)
+}
+// Fragmento de mídia (#t=0.1) faz o navegador buscar e desenhar o frame de
+// 0.1s como still — sem isso o <video> fica com tela preta antes de tocar,
+// já que preload="metadata" nem sempre baixa/renderiza o primeiro frame.
+function videoPosterSrc(url: string): string {
+  return `${url}#t=0.1`
 }
 
 // ── Lightbox ─────────────────────────────────────────────────────────────────
@@ -213,10 +220,11 @@ function RejectModal({ onConfirm, onClose, saving }: { onConfirm: (reason: strin
 }
 
 // ── PostCard ─────────────────────────────────────────────────────────────────
-function PostCard({ post, onApprove, onReject, acting, canReview }: {
+function PostCard({ post, onApprove, onReject, onCaptionSave, acting, canReview }: {
   post: Post
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onCaptionSave: (id: string, caption: string) => Promise<void>
   acting: boolean
   canReview: boolean
 }) {
@@ -225,6 +233,21 @@ function PostCard({ post, onApprove, onReject, acting, canReview }: {
   const canAct = canReview && post.status !== 'publicado'
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [rejectionLightboxIndex, setRejectionLightboxIndex] = useState<number | null>(null)
+  const [editingCaption, setEditingCaption] = useState(false)
+  const [captionDraft, setCaptionDraft] = useState(post.caption ?? '')
+  const [savingCaption, setSavingCaption] = useState(false)
+
+  function startEditingCaption() {
+    setCaptionDraft(post.caption ?? '')
+    setEditingCaption(true)
+  }
+
+  async function saveCaption() {
+    setSavingCaption(true)
+    await onCaptionSave(post.id, captionDraft.trim())
+    setSavingCaption(false)
+    setEditingCaption(false)
+  }
 
   return (
     <div className="bg-[#161616] border border-[#262626] rounded-2xl overflow-hidden">
@@ -234,7 +257,7 @@ function PostCard({ post, onApprove, onReject, acting, canReview }: {
           className="relative w-full aspect-[4/3] bg-[#0d0d0d] block group"
         >
           {isVideoUrl(media[0]) ? (
-            <video src={media[0]} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+            <video src={videoPosterSrc(media[0])} className="w-full h-full object-cover" muted playsInline preload="metadata" />
           ) : (
             <img src={media[0]} alt={post.title} className="w-full h-full object-cover" />
           )}
@@ -270,7 +293,53 @@ function PostCard({ post, onApprove, onReject, acting, canReview }: {
         </div>
 
         <p className="text-base font-semibold leading-snug">{displayTitle(post)}</p>
-        {post.caption && <p className="text-sm text-[#b3b3b3] leading-relaxed whitespace-pre-wrap">{post.caption}</p>}
+
+        {editingCaption ? (
+          <div className="space-y-2">
+            <textarea
+              value={captionDraft}
+              onChange={e => setCaptionDraft(e.target.value)}
+              rows={4}
+              autoFocus
+              className="w-full bg-[#0d0d0d] border border-[#7c3aed] rounded-lg px-3 py-2.5 text-sm text-[#e5e5e5] focus:outline-none resize-none"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setCaptionDraft(post.caption ?? ''); setEditingCaption(false) }}
+                disabled={savingCaption}
+                className="flex-1 border border-[#2a2a2a] text-white text-xs py-2 rounded-lg hover:bg-[#1f1f1f] transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveCaption}
+                disabled={savingCaption || !captionDraft.trim()}
+                className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs py-2 rounded-lg transition-colors disabled:opacity-50 font-medium"
+              >
+                {savingCaption ? 'Salvando...' : 'Salvar legenda'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          post.caption && (
+            <div>
+              <p className="text-sm text-[#b3b3b3] leading-relaxed whitespace-pre-wrap">{post.caption}</p>
+              {canAct && (
+                <button
+                  onClick={startEditingCaption}
+                  className="mt-1.5 flex items-center gap-1 text-[11px] text-[#7c3aed] hover:text-[#a78bfa] transition-colors"
+                >
+                  <Edit2 size={11} /> Editar legenda
+                </button>
+              )}
+              {post.caption_edited_by_client && (
+                <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#a78bfa]">
+                  <Check size={11} /> Legenda ajustada por você
+                </p>
+              )}
+            </div>
+          )
+        )}
 
         {post.scheduled_date && (
           <p className="text-xs text-[#7a7a7a] flex items-center gap-1.5">
@@ -341,10 +410,11 @@ function PostCard({ post, onApprove, onReject, acting, canReview }: {
 }
 
 // ── CalendarView ─────────────────────────────────────────────────────────────
-function CalendarView({ posts, onApprove, onReject, actingId, canReview }: {
+function CalendarView({ posts, onApprove, onReject, onCaptionSave, actingId, canReview }: {
   posts: Post[]
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onCaptionSave: (id: string, caption: string) => Promise<void>
   actingId: string | null
   canReview: boolean
 }) {
@@ -437,7 +507,7 @@ function CalendarView({ posts, onApprove, onReject, actingId, canReview }: {
             {selectedPosts.length === 0 ? 'Nenhum post nesse dia' : `${selectedPosts.length} post${selectedPosts.length !== 1 ? 's' : ''} — ${selectedDay} de ${MONTH_NAMES[month]}`}
           </p>
           {selectedPosts.map(post => (
-            <PostCard key={post.id} post={post} onApprove={onApprove} onReject={onReject} acting={actingId === post.id} canReview={canReview} />
+            <PostCard key={post.id} post={post} onApprove={onApprove} onReject={onReject} onCaptionSave={onCaptionSave} acting={actingId === post.id} canReview={canReview} />
           ))}
         </div>
       )}
@@ -489,6 +559,18 @@ export default function PublicCalendarPage() {
     }
     setActingId(null)
     setRejectingId(null)
+  }
+
+  async function saveCaption(id: string, caption: string) {
+    const res = await fetch(`/api/public/content/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, caption }),
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      setPosts(ps => ps.map(p => p.id === id ? updated : p))
+    }
   }
 
   if (loading) {
@@ -570,6 +652,7 @@ export default function PublicCalendarPage() {
               posts={posts}
               onApprove={id => submitStatus(id, 'aprovado')}
               onReject={id => setRejectingId(id)}
+              onCaptionSave={saveCaption}
               actingId={actingId}
               canReview={canReview}
             />
@@ -584,6 +667,7 @@ export default function PublicCalendarPage() {
                     post={post}
                     onApprove={id => submitStatus(id, 'aprovado')}
                     onReject={id => setRejectingId(id)}
+                    onCaptionSave={saveCaption}
                     acting={actingId === post.id}
                     canReview={canReview}
                   />
@@ -608,6 +692,7 @@ export default function PublicCalendarPage() {
                         post={post}
                         onApprove={id => submitStatus(id, 'aprovado')}
                         onReject={id => setRejectingId(id)}
+                        onCaptionSave={saveCaption}
                         acting={actingId === post.id}
                         canReview={canReview}
                       />

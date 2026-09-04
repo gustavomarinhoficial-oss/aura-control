@@ -5,7 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 const ALLOWED_STATUSES = ['aprovado', 'reprovado']
 const ALERT_SETTINGS_ID = '00000000-0000-0000-0000-000000000001'
 
-const PUBLIC_SELECT = 'id, title, caption, platform, content_type, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, created_at'
+const PUBLIC_SELECT = 'id, title, caption, platform, content_type, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, caption_edited_by_client, created_at'
 
 async function notifyTeam(clientName: string, post: { title: string; platform: string; status: string; rejection_reason: string | null; rejection_images: string[] | null }) {
   try {
@@ -45,11 +45,13 @@ async function notifyTeam(clientName: string, post: { title: string; platform: s
   }
 }
 
-// PATCH /api/public/content/[id]  { token, status, reason?, images? }
-// Só permite aprovar/reprovar, e só o post pertencer mesmo ao cliente do token.
-// Reprovar exige motivo (não vazio) — fica salvo pra equipe ver no interno,
-// junto com os prints (images) que o cliente quiser anexar.
-// Nenhum outro campo (título, legenda, cliente etc) pode ser alterado por aqui.
+// PATCH /api/public/content/[id]  { token, status?, reason?, images?, caption? }
+// Aprova/reprova e/ou edita a legenda — só se o post pertencer mesmo ao
+// cliente do token. Reprovar exige motivo (não vazio) — fica salvo pra
+// equipe ver no interno, junto com os prints (images) que o cliente quiser
+// anexar. Editar a legenda marca caption_edited_by_client, pra equipe saber
+// que precisa copiar a versão ajustada (não a original) na hora de postar.
+// Nenhum outro campo (título, cliente etc) pode ser alterado por aqui.
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
@@ -57,10 +59,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const status = body.status as string | undefined
   const reason = (body.reason as string | undefined)?.trim()
   const images = Array.isArray(body.images) ? body.images.filter((u: unknown) => typeof u === 'string') : []
+  const caption = typeof body.caption === 'string' ? body.caption : undefined
 
   if (!token) return NextResponse.json({ error: 'Token obrigatório' }, { status: 400 })
-  if (!status || !ALLOWED_STATUSES.includes(status)) {
+  if (status !== undefined && !ALLOWED_STATUSES.includes(status)) {
     return NextResponse.json({ error: 'Status inválido' }, { status: 400 })
+  }
+  if (status === undefined && caption === undefined) {
+    return NextResponse.json({ error: 'Nada para atualizar' }, { status: 400 })
   }
   if (status === 'reprovado' && !reason) {
     return NextResponse.json({ error: 'Informe o motivo da reprovação' }, { status: 400 })
@@ -79,14 +85,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Post não encontrado' }, { status: 404 })
   }
 
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (status !== undefined) {
+    update.status = status
+    update.rejection_reason = status === 'reprovado' ? reason : null
+    update.rejection_images = status === 'reprovado' && images.length > 0 ? images : null
+  }
+  if (caption !== undefined) {
+    update.caption = caption
+    update.caption_edited_by_client = true
+  }
+
   const { data: updated, error } = await supabase
     .from('content_posts')
-    .update({
-      status,
-      rejection_reason: status === 'reprovado' ? reason : null,
-      rejection_images: status === 'reprovado' && images.length > 0 ? images : null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(update)
     .eq('id', id)
     .select(PUBLIC_SELECT)
     .single()
@@ -94,8 +106,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Vercel pode congelar a função assim que a resposta é enviada, então
-  // espera o e-mail (best-effort, com try/catch próprio) antes de responder
-  await notifyTeam(client.name, updated)
+  // espera o e-mail (best-effort, com try/catch próprio) antes de responder.
+  // Só notifica em aprovação/reprovação — editar legenda sozinho não dispara e-mail.
+  if (status !== undefined) await notifyTeam(client.name, updated)
 
   return NextResponse.json(updated)
 }

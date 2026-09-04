@@ -11,6 +11,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   for (const key of allowed) {
     if (key in body) update[key] = body[key] === '' ? null : body[key]
   }
+  // Time editou a legenda aqui dentro (rota interna) — já "viu" o ajuste do
+  // cliente, então some com o aviso "Legenda ajustada"
+  if ('caption' in body) update.caption_edited_by_client = false
 
   const { data, error } = await supabase
     .from('content_posts')
