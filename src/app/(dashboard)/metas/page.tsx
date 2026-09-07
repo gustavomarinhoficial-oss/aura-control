@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Target, Trash2, Check, X, TrendingUp, Zap } from 'lucide-react'
 import { formatBRL, currentPeriod, getPeriodLabel } from '@/lib/utils/format'
 import { useRole } from '@/lib/hooks/useRole'
+import { isFinanceRestricted } from '@/lib/roles'
 import type { Goal } from '@/lib/supabase/types'
 
 interface Client { id: string; name: string }
@@ -34,7 +35,9 @@ interface GoalWithProgress extends Goal {
 
 export default function MetasPage() {
   const role = useRole()
-  const isJulia = role === 'julia'
+  // Nome mantido por consistência com o resto do app, mas cobre Julia E Mariana
+  // (ambas sem acesso a dados financeiros — metas automáticas de MRR/clientes ficam ocultas)
+  const isJulia = isFinanceRestricted(role)
 
   const [goals, setGoals] = useState<GoalWithProgress[]>([])
   const [clients, setClients] = useState<Client[]>([])
