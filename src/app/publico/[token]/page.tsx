@@ -28,7 +28,7 @@ interface Post {
 
 interface ClientInfo { id: string; name: string }
 
-interface CheckItem { id: string; title: string; done: boolean }
+interface CheckItem { id: string; title: string; done: boolean; date?: string | null }
 interface ScheduleProject {
   id: string
   title: string
@@ -38,6 +38,12 @@ interface ScheduleProject {
   responsaveis: string[]
   checklist: CheckItem[]
   created_at: string
+  updated_at: string
+}
+
+function formatDateShort(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00')
+  return d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
 }
 
 const PROJECT_STATUS_LABEL: Record<string, { label: string; color: string }> = {
@@ -551,6 +557,8 @@ function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
         </span>
       </div>
 
+      <p className="text-[10px] text-[#5a5a5a]">Atualizado em {formatDateShort(project.updated_at.split('T')[0])}</p>
+
       {project.description && (
         <p className="text-xs text-[#9ca3af] leading-relaxed whitespace-pre-wrap">{project.description}</p>
       )}
@@ -580,12 +588,17 @@ function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
             <div className="h-full bg-[#7c3aed] rounded-full transition-all" style={{ width: `${pct}%` }} />
           </div>
           <div className="space-y-1.5 pt-1">
-            {project.checklist.map(item => (
-              <div key={item.id} className="flex items-center gap-2">
-                {item.done ? <CheckSquare size={14} className="text-[#22c55e] shrink-0" /> : <Square size={14} className="text-[#4a4a4a] shrink-0" />}
-                <span className={`text-xs ${item.done ? 'text-[#7a7a7a] line-through' : 'text-[#e5e5e5]'}`}>{item.title}</span>
-              </div>
-            ))}
+            {[...project.checklist]
+              .sort((a, b) => (a.date && b.date) ? a.date.localeCompare(b.date) : a.date ? -1 : b.date ? 1 : 0)
+              .map(item => (
+                <div key={item.id} className="flex items-center gap-2">
+                  {item.done ? <CheckSquare size={14} className="text-[#22c55e] shrink-0" /> : <Square size={14} className="text-[#4a4a4a] shrink-0" />}
+                  <span className={`flex-1 text-xs ${item.done ? 'text-[#7a7a7a] line-through' : 'text-[#e5e5e5]'}`}>{item.title}</span>
+                  {item.date && (
+                    <span className="shrink-0 text-[10px] text-[#7a7a7a]">{formatDateShort(item.date)}</span>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
       )}

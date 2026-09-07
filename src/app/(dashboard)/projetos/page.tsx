@@ -10,7 +10,7 @@ import {
 import Link from 'next/link'
 
 // ── tipos ────────────────────────────────────────────────────────────────────
-interface CheckItem { id: string; title: string; done: boolean }
+interface CheckItem { id: string; title: string; done: boolean; date?: string | null }
 
 interface Project {
   id: string
@@ -190,7 +190,7 @@ function DetailPanel({
 
   function addTask() {
     if (!newTask.trim()) return
-    const updated = [...form.checklist, { id: genId(), title: newTask.trim(), done: false }]
+    const updated = [...form.checklist, { id: genId(), title: newTask.trim(), done: false, date: null }]
     setForm(f => ({ ...f, checklist: updated }))
     setNewTask('')
     save({ checklist: updated })
@@ -198,6 +198,12 @@ function DetailPanel({
 
   function toggleTask(id: string) {
     const updated = form.checklist.map(t => t.id === id ? { ...t, done: !t.done } : t)
+    setForm(f => ({ ...f, checklist: updated }))
+    save({ checklist: updated })
+  }
+
+  function setTaskDate(id: string, date: string) {
+    const updated = form.checklist.map(t => t.id === id ? { ...t, date: date || null } : t)
     setForm(f => ({ ...f, checklist: updated }))
     save({ checklist: updated })
   }
@@ -374,7 +380,16 @@ function DetailPanel({
                     {task.done ? <CheckSquare size={15} className="text-[#22c55e]" /> : <Square size={15} />}
                   </button>
                   <span className={`flex-1 text-sm ${task.done ? 'line-through text-muted-foreground' : ''}`}>{task.title}</span>
-                  <button onClick={() => removeTask(task.id)} className="opacity-0 group-hover/task:opacity-100 text-muted-foreground/50 hover:text-[#ef4444] transition-all">
+                  <input
+                    type="date"
+                    value={task.date ?? ''}
+                    onChange={e => setTaskDate(task.id, e.target.value)}
+                    title="Data prevista dessa etapa"
+                    className={`shrink-0 bg-transparent border-0 rounded px-1 py-0.5 text-[11px] focus:outline-none focus:bg-[#1a1a1a] transition-colors ${
+                      task.date ? 'text-muted-foreground' : 'text-muted-foreground/30'
+                    }`}
+                  />
+                  <button onClick={() => removeTask(task.id)} className="opacity-0 group-hover/task:opacity-100 text-muted-foreground/50 hover:text-[#ef4444] transition-all shrink-0">
                     <X size={12} />
                   </button>
                 </div>
