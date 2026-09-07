@@ -59,6 +59,9 @@ export const MARIANA_NAV = [
   '/clientes',
   '/influenciadores',
   '/conteudo',
+  '/projetos',
+  '/metas',
+  '/ia',
 ]
 
 // Rotas bloqueadas pra Mariana (middleware redireciona) — sem acesso a
@@ -68,8 +71,5 @@ export const BLOCKED_FOR_MARIANA = [
   '/financeiro',
   '/configuracoes',
   '/relatorios',
-  '/projetos',
-  '/metas',
-  '/ia',
   '/caixa',
 ]

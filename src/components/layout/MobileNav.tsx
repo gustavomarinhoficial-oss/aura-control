@@ -22,14 +22,14 @@ const ALL_PINNED = [
 ]
 
 const ALL_MORE_NAV = [
-  { href: '/projetos',     label: 'Cronograma',     icon: Layers,       roles: ['admin', 'julia'] },
+  { href: '/projetos',     label: 'Cronograma',     icon: Layers,       roles: ['admin', 'julia', 'mariana'] },
   { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign,   roles: ['admin'] },
   { href: '/caixa',        label: 'Caixa',          icon: Wallet,       roles: ['admin'] },
   { href: '/relatorios',   label: 'Relatórios',     icon: FileBarChart, roles: ['admin'] },
-  { href: '/metas',        label: 'Metas',          icon: Target,       roles: ['admin'] },
+  { href: '/metas',        label: 'Metas',          icon: Target,       roles: ['admin', 'mariana'] },
   { href: '/tarefas',      label: 'Tarefas',        icon: CheckSquare,  roles: ['admin'] },
   { href: '/influenciadores', label: 'Influenciadores', icon: Handshake, roles: ['admin', 'mariana'] },
-  { href: '/ia',           label: 'Central IA',     icon: Brain,        roles: ['admin', 'julia'] },
+  { href: '/ia',           label: 'Central IA',     icon: Brain,        roles: ['admin', 'julia', 'mariana'] },
   { href: '/reunioes',     label: 'Reuniões',       icon: CalendarClock,roles: ['all'] },
   { href: '/calendario',   label: 'Calendário',     icon: CalendarDays, roles: ['all'] },
   { href: '/configuracoes',label: 'Config.',        icon: Settings,     roles: ['admin'] },
