@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, X, Check, Trash2, Phone, Mail, DollarSign, FileText, Pencil, AtSign, User, Tag, Building2 } from 'lucide-react'
+import { Plus, X, Check, Trash2, Phone, Mail, DollarSign, FileText, Pencil, AtSign, User, Tag, Building2, Copy } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
 
 interface Client { id: string; name: string }
@@ -23,11 +23,14 @@ interface InfluencerRow {
 }
 
 const STATUSES: { key: string; label: string; color: string; bg: string }[] = [
-  { key: 'a_contatar', label: 'A contatar', color: '#6b7280', bg: '#6b728015' },
-  { key: 'em_contato', label: 'Em contato', color: '#3b82f6', bg: '#3b82f615' },
-  { key: 'negociando', label: 'Negociando', color: '#f59e0b', bg: '#f59e0b15' },
-  { key: 'fechado',    label: 'Fechado',    color: '#22c55e', bg: '#22c55e15' },
-  { key: 'recusado',   label: 'Recusado',   color: '#ef4444', bg: '#ef444415' },
+  { key: 'a_contatar',           label: 'A contatar',            color: '#6b7280', bg: '#6b728015' },
+  { key: 'em_contato',           label: 'Em contato',            color: '#3b82f6', bg: '#3b82f615' },
+  { key: 'negociando',           label: 'Negociando',            color: '#f59e0b', bg: '#f59e0b15' },
+  { key: 'fechado',              label: 'Fechado',               color: '#22c55e', bg: '#22c55e15' },
+  { key: 'video_gravado',        label: 'Vídeo gravado',         color: '#8b5cf6', bg: '#8b5cf615' },
+  { key: 'aguardando_aprovacao', label: 'Esperando aprovação',   color: '#06b6d4', bg: '#06b6d415' },
+  { key: 'publicado',            label: 'Publicado',             color: '#16a34a', bg: '#16a34a15' },
+  { key: 'recusado',             label: 'Recusado',              color: '#ef4444', bg: '#ef444415' },
 ]
 
 const EMPTY_FORM = {
@@ -94,6 +97,31 @@ export default function InfluenciadoresPage() {
       setSelected(updated)
     }
     setSaving(false)
+  }
+
+  async function duplicateInfluencer(row: InfluencerRow, e?: React.MouseEvent) {
+    e?.stopPropagation()
+    const res = await fetch('/api/influencers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: row.name,
+        niche: row.niche,
+        instagram: row.instagram,
+        phone: row.phone,
+        email: row.email,
+        value: row.value,
+        responsible: row.responsible,
+        notes: row.notes,
+        client_id: null,
+        status: 'a_contatar',
+      }),
+    })
+    if (res.ok) {
+      const created = await res.json()
+      setInfluencers(rs => [created, ...rs])
+      openEdit(created)
+    }
   }
 
   async function deleteInfluencer() {
@@ -192,7 +220,7 @@ export default function InfluenciadoresPage() {
         </div>
       ) : (
         <div className="pb-4">
-        <div className="flex flex-col gap-3 md:grid md:grid-cols-5">
+        <div className="flex flex-col gap-3 md:flex-row md:gap-4 md:overflow-x-auto">
           {STATUSES.map(s => {
             const cards = rowsFor(s.key)
             const val = totalValue(s.key)
@@ -202,7 +230,7 @@ export default function InfluenciadoresPage() {
               <div
                 key={s.key}
                 ref={el => { if (el) colRefs.current.set(s.key, el); else colRefs.current.delete(s.key) }}
-                className="flex flex-col rounded-xl min-h-[60px] w-full transition-all"
+                className="flex flex-col rounded-xl min-h-[60px] w-full md:w-[250px] md:shrink-0 transition-all"
                 style={{
                   background: s.bg,
                   border: `1px solid ${overStatus === s.key ? s.color + '88' : s.color + '22'}`,
@@ -267,7 +295,16 @@ export default function InfluenciadoresPage() {
                       className="bg-[#111111] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all group select-none">
                       <div className="flex items-start justify-between gap-1 mb-1">
                         <p className="text-xs font-semibold leading-snug line-clamp-2">{row.name}</p>
-                        <Pencil size={10} className="shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-0.5" />
+                        <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={e => duplicateInfluencer(row, e)}
+                            title="Duplicar (ex: pra outra empresa)"
+                            className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
+                          >
+                            <Copy size={10} />
+                          </button>
+                          <Pencil size={10} className="text-muted-foreground mt-0.5" />
+                        </div>
                       </div>
                       {row.clients?.name && <p className="text-[10px] text-muted-foreground truncate mb-1">Pra {row.clients.name}</p>}
                       <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -430,6 +467,11 @@ export default function InfluenciadoresPage() {
               <button onClick={deleteInfluencer} disabled={deleting}
                 className="flex items-center gap-1.5 text-xs border border-[#ef4444]/30 text-[#ef4444]/70 hover:text-[#ef4444] hover:bg-[#ef4444]/10 px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
                 <Trash2 size={12} /> {deleting ? 'Apagando...' : 'Apagar'}
+              </button>
+              <button onClick={() => duplicateInfluencer(selected)}
+                title="Duplicar (ex: pra outra empresa)"
+                className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] px-3 py-2 rounded-lg transition-colors">
+                <Copy size={12} /> Duplicar
               </button>
               <button onClick={saveEdit} disabled={saving || !editForm.name.trim()}
                 className="flex-1 flex items-center justify-center gap-1.5 text-sm bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-2 rounded-lg transition-colors disabled:opacity-50">
