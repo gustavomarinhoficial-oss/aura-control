@@ -196,6 +196,116 @@ export default function InfluenciadoresPage() {
 
   const statusInfo = selected ? STATUSES.find(s => s.key === selected.status) : null
 
+  function renderColumn(s: typeof STATUSES[number]) {
+    const cards = rowsFor(s.key)
+    const val = totalValue(s.key)
+    const isAdding = addingStatus === s.key
+
+    return (
+      <div
+        key={s.key}
+        ref={el => { if (el) colRefs.current.set(s.key, el); else colRefs.current.delete(s.key) }}
+        className="flex flex-col rounded-xl min-h-[60px] w-full transition-all"
+        style={{
+          background: s.bg,
+          border: `1px solid ${overStatus === s.key ? s.color + '88' : s.color + '22'}`,
+          boxShadow: overStatus === s.key ? `0 0 0 2px ${s.color}33` : 'none',
+        }}
+      >
+        {/* Cabeçalho */}
+        <div className="px-3 pt-3 pb-2">
+          <div className="flex items-center justify-between mb-0.5">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+              <span className="text-xs font-semibold">{s.label}</span>
+              <span className="text-[10px] text-muted-foreground bg-[#111] px-1.5 py-0.5 rounded-full">{cards.length}</span>
+            </div>
+            <button onClick={() => { setAddingStatus(s.key); setNewForm({ ...EMPTY_FORM }) }}
+              className="text-muted-foreground hover:text-foreground transition-colors">
+              <Plus size={13} />
+            </button>
+          </div>
+          {val > 0 && <p className="text-[10px] font-medium pl-4" style={{ color: s.color }}>{formatBRL(val)}</p>}
+        </div>
+
+        {/* Form rápido de adição */}
+        {isAdding && (
+          <div className="mx-2 mb-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 space-y-2">
+            <input autoFocus placeholder="Nome do influenciador *"
+              value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))}
+              onKeyDown={e => { if (e.key === 'Enter') addInfluencer(s.key); if (e.key === 'Escape') setAddingStatus(null) }}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+            <input placeholder="Nicho (ex: restaurantes)"
+              value={newForm.niche} onChange={e => setNewForm(f => ({ ...f, niche: e.target.value }))}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+            <select value={newForm.client_id} onChange={e => setNewForm(f => ({ ...f, client_id: e.target.value }))}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] text-foreground">
+              <option value="">Sem cliente vinculado</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <input placeholder="Valor negociado (R$)" type="number"
+              value={newForm.value} onChange={e => setNewForm(f => ({ ...f, value: e.target.value }))}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+            <div className="flex gap-1.5">
+              <button onClick={() => setAddingStatus(null)}
+                className="flex-1 text-[10px] border border-[#2a2a2a] py-1.5 rounded-lg hover:bg-[#222] transition-colors">Cancelar</button>
+              <button onClick={() => addInfluencer(s.key)} disabled={addSaving || !newForm.name.trim()}
+                className="flex-1 text-[10px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-1.5 rounded-lg transition-colors disabled:opacity-40">
+                {addSaving ? '...' : 'Adicionar'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Cards */}
+        <div className="px-2 pb-3 space-y-2 flex-1">
+          {cards.map(row => (
+            <div key={row.id}
+              onPointerDown={e => startDrag(e, row)}
+              onPointerMove={moveDrag}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              onClick={() => { if (!isDraggingRef.current) openEdit(row) }}
+              style={{ touchAction: 'none', opacity: activeDrag?.id === row.id ? 0.35 : 1 }}
+              className="bg-[#111111] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all group select-none">
+              <div className="flex items-start justify-between gap-1 mb-1">
+                <p className="text-xs font-semibold leading-snug line-clamp-2">{row.name}</p>
+                <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={e => duplicateInfluencer(row, e)}
+                    title="Duplicar (ex: pra outra empresa)"
+                    className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
+                  >
+                    <Copy size={10} />
+                  </button>
+                  <Pencil size={10} className="text-muted-foreground mt-0.5" />
+                </div>
+              </div>
+              {row.clients?.name && <p className="text-[10px] text-muted-foreground truncate mb-1">Pra {row.clients.name}</p>}
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                {row.value && (
+                  <p className="text-[11px] font-semibold" style={{ color: s.color }}>{formatBRL(row.value)}</p>
+                )}
+                {row.niche && (
+                  <span className="text-[9px] bg-[#1a1a1a] border border-[#2a2a2a] px-1.5 py-0.5 rounded-full text-muted-foreground">{row.niche}</span>
+                )}
+              </div>
+              {row.responsible && (
+                <p className="text-[9px] text-muted-foreground truncate mb-1">👤 {row.responsible}</p>
+              )}
+              {row.notes && <p className="text-[9px] text-muted-foreground line-clamp-2 leading-relaxed">{row.notes}</p>}
+            </div>
+          ))}
+          {cards.length === 0 && !isAdding && (
+            <div className="text-center py-6">
+              <p className="text-[10px] text-muted-foreground">Nenhum influenciador</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -219,118 +329,13 @@ export default function InfluenciadoresPage() {
           <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="pb-4">
-        <div className="flex flex-col gap-3 md:flex-row md:gap-4 md:overflow-x-auto">
-          {STATUSES.map(s => {
-            const cards = rowsFor(s.key)
-            const val = totalValue(s.key)
-            const isAdding = addingStatus === s.key
-
-            return (
-              <div
-                key={s.key}
-                ref={el => { if (el) colRefs.current.set(s.key, el); else colRefs.current.delete(s.key) }}
-                className="flex flex-col rounded-xl min-h-[60px] w-full md:w-[250px] md:shrink-0 transition-all"
-                style={{
-                  background: s.bg,
-                  border: `1px solid ${overStatus === s.key ? s.color + '88' : s.color + '22'}`,
-                  boxShadow: overStatus === s.key ? `0 0 0 2px ${s.color}33` : 'none',
-                }}
-              >
-                {/* Cabeçalho */}
-                <div className="px-3 pt-3 pb-2">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="text-xs font-semibold">{s.label}</span>
-                      <span className="text-[10px] text-muted-foreground bg-[#111] px-1.5 py-0.5 rounded-full">{cards.length}</span>
-                    </div>
-                    <button onClick={() => { setAddingStatus(s.key); setNewForm({ ...EMPTY_FORM }) }}
-                      className="text-muted-foreground hover:text-foreground transition-colors">
-                      <Plus size={13} />
-                    </button>
-                  </div>
-                  {val > 0 && <p className="text-[10px] font-medium pl-4" style={{ color: s.color }}>{formatBRL(val)}</p>}
-                </div>
-
-                {/* Form rápido de adição */}
-                {isAdding && (
-                  <div className="mx-2 mb-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 space-y-2">
-                    <input autoFocus placeholder="Nome do influenciador *"
-                      value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))}
-                      onKeyDown={e => { if (e.key === 'Enter') addInfluencer(s.key); if (e.key === 'Escape') setAddingStatus(null) }}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
-                    <input placeholder="Nicho (ex: restaurantes)"
-                      value={newForm.niche} onChange={e => setNewForm(f => ({ ...f, niche: e.target.value }))}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
-                    <select value={newForm.client_id} onChange={e => setNewForm(f => ({ ...f, client_id: e.target.value }))}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] text-foreground">
-                      <option value="">Sem cliente vinculado</option>
-                      {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                    <input placeholder="Valor negociado (R$)" type="number"
-                      value={newForm.value} onChange={e => setNewForm(f => ({ ...f, value: e.target.value }))}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
-                    <div className="flex gap-1.5">
-                      <button onClick={() => setAddingStatus(null)}
-                        className="flex-1 text-[10px] border border-[#2a2a2a] py-1.5 rounded-lg hover:bg-[#222] transition-colors">Cancelar</button>
-                      <button onClick={() => addInfluencer(s.key)} disabled={addSaving || !newForm.name.trim()}
-                        className="flex-1 text-[10px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-1.5 rounded-lg transition-colors disabled:opacity-40">
-                        {addSaving ? '...' : 'Adicionar'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cards */}
-                <div className="px-2 pb-3 space-y-2 flex-1">
-                  {cards.map(row => (
-                    <div key={row.id}
-                      onPointerDown={e => startDrag(e, row)}
-                      onPointerMove={moveDrag}
-                      onPointerUp={endDrag}
-                      onPointerCancel={endDrag}
-                      onClick={() => { if (!isDraggingRef.current) openEdit(row) }}
-                      style={{ touchAction: 'none', opacity: activeDrag?.id === row.id ? 0.35 : 1 }}
-                      className="bg-[#111111] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all group select-none">
-                      <div className="flex items-start justify-between gap-1 mb-1">
-                        <p className="text-xs font-semibold leading-snug line-clamp-2">{row.name}</p>
-                        <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={e => duplicateInfluencer(row, e)}
-                            title="Duplicar (ex: pra outra empresa)"
-                            className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
-                          >
-                            <Copy size={10} />
-                          </button>
-                          <Pencil size={10} className="text-muted-foreground mt-0.5" />
-                        </div>
-                      </div>
-                      {row.clients?.name && <p className="text-[10px] text-muted-foreground truncate mb-1">Pra {row.clients.name}</p>}
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        {row.value && (
-                          <p className="text-[11px] font-semibold" style={{ color: s.color }}>{formatBRL(row.value)}</p>
-                        )}
-                        {row.niche && (
-                          <span className="text-[9px] bg-[#1a1a1a] border border-[#2a2a2a] px-1.5 py-0.5 rounded-full text-muted-foreground">{row.niche}</span>
-                        )}
-                      </div>
-                      {row.responsible && (
-                        <p className="text-[9px] text-muted-foreground truncate mb-1">👤 {row.responsible}</p>
-                      )}
-                      {row.notes && <p className="text-[9px] text-muted-foreground line-clamp-2 leading-relaxed">{row.notes}</p>}
-                    </div>
-                  ))}
-                  {cards.length === 0 && !isAdding && (
-                    <div className="text-center py-6">
-                      <p className="text-[10px] text-muted-foreground">Nenhum influenciador</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <div className="pb-4 space-y-3 md:space-y-4">
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-4 md:gap-4">
+            {STATUSES.slice(0, 4).map(renderColumn)}
+          </div>
+          <div className="flex flex-col gap-3 md:grid md:grid-cols-4 md:gap-4">
+            {STATUSES.slice(4).map(renderColumn)}
+          </div>
         </div>
       )}
 
