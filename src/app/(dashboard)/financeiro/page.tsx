@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { getAgencyName } from '@/lib/utils/agencyName'
 import {
   Plus, ChevronLeft, ChevronRight, Check, TrendingUp, MessageCircle,
   Copy, X, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet,
@@ -127,7 +128,7 @@ function DeleteChargeModal({ charge, onClose, onDeleted }: {
 // ── WhatsApp modal ───────────────────────────────────────────────────────────
 function WhatsAppModal({ charge, onClose }: { charge: ChargeWithStatus; onClose: () => void }) {
   const [pixKey, setPixKey] = useState(localStorage.getItem('aura_pix_key') ?? '')
-  const [agencyName] = useState(localStorage.getItem('aura_agency_name') ?? 'OWL Creative Club')
+  const [agencyName] = useState(getAgencyName)
   const [copied, setCopied] = useState(false)
   const msg = buildWhatsAppMessage(charge, pixKey, agencyName)
   const phone = charge.clients?.phone

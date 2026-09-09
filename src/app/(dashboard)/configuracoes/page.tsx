@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Trash2, Users, Key, Check, AlertTriangle, Bell, Mail, MessageCircle, Send, ChevronDown, Save, AlertCircle } from 'lucide-react'
 import type { Member } from '@/lib/supabase/types'
+import { getAgencyName, DEFAULT_AGENCY_NAME, AGENCY_NAME_KEY } from '@/lib/utils/agencyName'
 
 interface WhatsappNumber { name: string; phone: string; apikey: string }
 interface AlertSettings {
@@ -39,7 +40,6 @@ function getInitials(name: string) {
 }
 
 const PIX_KEY = 'aura_pix_key'
-const AGENCY_NAME_KEY = 'aura_agency_name'
 
 export default function ConfiguracoesPage() {
   const [members, setMembers] = useState<Member[]>([])
@@ -69,7 +69,7 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     setPixKey(localStorage.getItem(PIX_KEY) ?? '')
-    setAgencyName(localStorage.getItem(AGENCY_NAME_KEY) ?? 'OWL Creative Club')
+    setAgencyName(getAgencyName())
     fetch('/api/alerts/settings').then(r => r.json()).then(setAlertSettings).catch(() => {})
   }, [])
 
@@ -85,7 +85,7 @@ export default function ConfiguracoesPage() {
 
   function savePixSettings() {
     localStorage.setItem(PIX_KEY, pixKey.trim())
-    localStorage.setItem(AGENCY_NAME_KEY, agencyName.trim() || 'OWL Creative Club')
+    localStorage.setItem(AGENCY_NAME_KEY, agencyName.trim() || DEFAULT_AGENCY_NAME)
     setPixSaved(true)
     setTimeout(() => setPixSaved(false), 2000)
   }

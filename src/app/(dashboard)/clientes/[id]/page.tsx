@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { getAgencyName } from '@/lib/utils/agencyName'
 import { useRole } from '@/lib/hooks/useRole'
 import { isFinanceRestricted } from '@/lib/roles'
 import { createClient } from '@/lib/supabase/client'
@@ -1647,7 +1648,7 @@ function WhatsAppMiniModal({ charge, clientName, clientPhone, onClose }: {
   onClose: () => void
 }) {
   const [pixKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('aura_pix_key') ?? '' : ''))
-  const [agencyName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('aura_agency_name') ?? 'OWL Creative Club' : 'OWL Creative Club'))
+  const [agencyName] = useState(getAgencyName)
   const [copied, setCopied] = useState(false)
 
   const isOverdue = new Date(charge.due_date) < new Date(new Date().toDateString())
