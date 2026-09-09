@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, type Role } from '@/lib/roles'
+import { OwlMark } from '@/components/ui/OwlMark'
 import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet } from 'lucide-react'
 
 const ALL_NAV = [
@@ -85,9 +86,12 @@ export function Sidebar() {
     <aside className="fixed left-0 top-0 h-full w-[200px] bg-[#0d0d0d] border-r border-[#1f1f1f] hidden md:flex flex-col z-40">
       {/* Logo */}
       <div className="px-6 py-6">
-        <div>
-          <span className="text-3xl font-black tracking-tighter text-foreground leading-none">a.</span>
-          <p className="text-[8px] tracking-[0.3em] text-muted-foreground uppercase mt-0.5">mkt.club</p>
+        <div className="flex items-center gap-2">
+          <OwlMark size={26} />
+          <div>
+            <span className="text-sm font-black tracking-tight text-foreground leading-none">OWL Hub</span>
+            <p className="text-[8px] tracking-[0.25em] text-muted-foreground uppercase mt-0.5">creative club</p>
+          </div>
         </div>
 
         {/* Saudação */}

@@ -637,7 +637,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, client_id: v })); save({ client_id: v }) }}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
               >
-                <option value="">Aura MKT.CLUB</option>
+                <option value="">OWL Creative Club</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -837,7 +837,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
 }
 
 // â"€â"€ NewPostModal â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-// Sentinela pro "cliente" Aura MKT.CLUB (posts internos, sem cliente) — precisa
+// Sentinela pro "cliente" OWL Creative Club (posts internos, sem cliente) — precisa
 // ser distinto de "" pra podermos exigir que o campo seja escolhido de propósito.
 const NO_CLIENT_VALUE = '__aura__'
 
@@ -935,7 +935,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
                 className={`w-full bg-[#1a1a1a] border rounded-lg px-2 py-2.5 text-sm focus:outline-none transition-colors ${errClass(missing.client)}`}
               >
                 <option value="" disabled>Selecione...</option>
-                <option value={NO_CLIENT_VALUE}>Aura MKT.CLUB (interno)</option>
+                <option value={NO_CLIENT_VALUE}>OWL Creative Club (interno)</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>

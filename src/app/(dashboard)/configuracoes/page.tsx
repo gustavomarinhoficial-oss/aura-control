@@ -69,7 +69,7 @@ export default function ConfiguracoesPage() {
 
   useEffect(() => {
     setPixKey(localStorage.getItem(PIX_KEY) ?? '')
-    setAgencyName(localStorage.getItem(AGENCY_NAME_KEY) ?? 'Aura MKT.CLUB')
+    setAgencyName(localStorage.getItem(AGENCY_NAME_KEY) ?? 'OWL Creative Club')
     fetch('/api/alerts/settings').then(r => r.json()).then(setAlertSettings).catch(() => {})
   }, [])
 
@@ -85,7 +85,7 @@ export default function ConfiguracoesPage() {
 
   function savePixSettings() {
     localStorage.setItem(PIX_KEY, pixKey.trim())
-    localStorage.setItem(AGENCY_NAME_KEY, agencyName.trim() || 'Aura MKT.CLUB')
+    localStorage.setItem(AGENCY_NAME_KEY, agencyName.trim() || 'OWL Creative Club')
     setPixSaved(true)
     setTimeout(() => setPixSaved(false), 2000)
   }
@@ -180,7 +180,7 @@ export default function ConfiguracoesPage() {
               type="text"
               value={agencyName}
               onChange={e => setAgencyName(e.target.value)}
-              placeholder="Aura MKT.CLUB"
+              placeholder="OWL Creative Club"
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
             />
           </div>

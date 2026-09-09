@@ -30,7 +30,7 @@ async function notifyTeam(clientName: string, post: { title: string; platform: s
         <p style="margin:6px 0;font-size:14px;"><strong>Plataforma:</strong> ${post.platform}</p>
         ${!approved && post.rejection_reason ? `<p style="margin:16px 0 6px;font-size:14px;"><strong>Motivo:</strong> ${post.rejection_reason}</p>` : ''}
         ${!approved && imagesCount > 0 ? `<p style="margin:6px 0;font-size:13px;color:#aaa;">${imagesCount} imagem${imagesCount !== 1 ? 'ns' : ''} anexada${imagesCount !== 1 ? 's' : ''} pelo cliente — ver na Central de Conteúdo.</p>` : ''}
-        <p style="margin-top:24px;font-size:12px;color:#666;">Enviado automaticamente pelo Aura Control</p>
+        <p style="margin-top:24px;font-size:12px;color:#666;">Enviado automaticamente pelo OWL Hub</p>
       </div>`
 
     const resend = new Resend(process.env.RESEND_API_KEY)

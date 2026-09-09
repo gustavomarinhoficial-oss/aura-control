@@ -43,9 +43,9 @@ export async function GET() {
   const { data, error } = await resend.emails.send({
     from: fromEmail,
     to: addresses,
-    subject: '✅ Aura Control — Teste de email',
+    subject: '✅ OWL Hub — Teste de email',
     html: `<div style="font-family:sans-serif;padding:24px;background:#111;color:#f0f0f0;border-radius:12px;max-width:500px;">
-      <h2 style="color:#a78bfa;">Aura Control</h2>
+      <h2 style="color:#a78bfa;">OWL Hub</h2>
       <p>✅ Email funcionando! Este é um teste de diagnóstico.</p>
       <p style="color:#888;font-size:12px;">Remetente: ${fromEmail}<br/>Destinatário(s): ${addresses.join(', ')}</p>
     </div>`,

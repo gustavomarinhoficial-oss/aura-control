@@ -151,7 +151,7 @@ export function OmarPanel({ open, onOpenChange }: { open: boolean; onOpenChange:
           <div className="flex items-center justify-between">
             <div>
               <SheetTitle>Omar</SheetTitle>
-              <p className="text-xs text-muted-foreground">Agente de IA do Aura Control</p>
+              <p className="text-xs text-muted-foreground">Agente de IA do OWL Hub</p>
             </div>
             <div className="flex gap-1">
               <button

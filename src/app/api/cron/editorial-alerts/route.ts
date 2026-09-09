@@ -87,10 +87,10 @@ export async function POST(request: Request) {
       const emoji = days === 5 ? '🚨' : days === 15 ? '⚠️' : '📅'
       const urgency = days === 5 ? 'URGENTE — ' : days === 15 ? 'Atenção — ' : ''
       const message =
-        `*Aura Control — ${urgency}Linha Editorial*\n\n` +
+        `*OWL Hub — ${urgency}Linha Editorial*\n\n` +
         `${emoji} A linha editorial do cliente *${clientName}* vence em *${days} dias* (${expiryFormatted}).\n\n` +
         `📄 Arquivo: ${line.pdf_name}\n\n` +
-        `Acesse o Aura Control para renovar a linha editorial deste cliente.`
+        `Acesse o OWL Hub para renovar a linha editorial deste cliente.`
 
       let waSent = false
       if (canSendWhatsApp) {

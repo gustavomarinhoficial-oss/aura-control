@@ -9,13 +9,13 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'Aura Control',
-  description: 'Gestão interna da Aura MKT.CLUB',
+  title: 'OWL Hub',
+  description: 'Gestão interna da OWL Creative Club',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Aura',
+    title: 'OWL Hub',
   },
 }
 

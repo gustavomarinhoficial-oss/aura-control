@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { OwlMark } from '@/components/ui/OwlMark'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -32,9 +33,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#111111]">
       <div className="w-full max-w-sm px-6">
-        <div className="mb-12 text-center">
-          <span className="text-7xl font-black tracking-tighter text-foreground leading-none">a.</span>
-          <p className="text-[10px] tracking-[0.3em] text-muted-foreground mt-1 uppercase">mkt.club</p>
+        <div className="mb-12 flex flex-col items-center text-center">
+          <OwlMark size={56} />
+          <span className="text-2xl font-black tracking-tight text-foreground leading-none mt-3">OWL Hub</span>
+          <p className="text-[10px] tracking-[0.3em] text-muted-foreground mt-1 uppercase">creative club</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

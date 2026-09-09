@@ -2,9 +2,9 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Aura Control',
-    short_name: 'Aura',
-    description: 'Gestão interna da Aura MKT.CLUB',
+    name: 'OWL Hub',
+    short_name: 'OWL Hub',
+    description: 'Gestão interna da OWL Creative Club',
     start_url: '/dashboard',
     display: 'standalone',
     orientation: 'portrait',

@@ -127,7 +127,7 @@ function DeleteChargeModal({ charge, onClose, onDeleted }: {
 // ── WhatsApp modal ───────────────────────────────────────────────────────────
 function WhatsAppModal({ charge, onClose }: { charge: ChargeWithStatus; onClose: () => void }) {
   const [pixKey, setPixKey] = useState(localStorage.getItem('aura_pix_key') ?? '')
-  const [agencyName] = useState(localStorage.getItem('aura_agency_name') ?? 'Aura MKT.CLUB')
+  const [agencyName] = useState(localStorage.getItem('aura_agency_name') ?? 'OWL Creative Club')
   const [copied, setCopied] = useState(false)
   const msg = buildWhatsAppMessage(charge, pixKey, agencyName)
   const phone = charge.clients?.phone

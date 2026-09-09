@@ -1647,7 +1647,7 @@ function WhatsAppMiniModal({ charge, clientName, clientPhone, onClose }: {
   onClose: () => void
 }) {
   const [pixKey] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('aura_pix_key') ?? '' : ''))
-  const [agencyName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('aura_agency_name') ?? 'Aura MKT.CLUB' : 'Aura MKT.CLUB'))
+  const [agencyName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('aura_agency_name') ?? 'OWL Creative Club' : 'OWL Creative Club'))
   const [copied, setCopied] = useState(false)
 
   const isOverdue = new Date(charge.due_date) < new Date(new Date().toDateString())

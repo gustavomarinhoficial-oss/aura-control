@@ -158,15 +158,15 @@ export async function POST(request: Request) {
 
     const html = `
       <div style="font-family:Inter,sans-serif;background:#111;color:#f0f0f0;padding:24px;border-radius:12px;max-width:600px;">
-        <h2 style="color:#a78bfa;margin-bottom:16px;">Aura Control</h2>
+        <h2 style="color:#a78bfa;margin-bottom:16px;">OWL Hub</h2>
         ${htmlLines}
-        <p style="margin-top:24px;font-size:12px;color:#666;">Enviado automaticamente pelo Aura Control</p>
+        <p style="margin-top:24px;font-size:12px;color:#666;">Enviado automaticamente pelo OWL Hub</p>
       </div>`
 
     const { error: emailError } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL ?? 'alertas@aura.com.br',
       to: s.email_addresses,
-      subject: `${subjectEmoji} Aura Control — ${subjectLabel}`,
+      subject: `${subjectEmoji} OWL Hub — ${subjectLabel}`,
       html,
     })
     results.email = emailError ? { error: emailError.message } : { sent: true, to: s.email_addresses }
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
   if (s.whatsapp_enabled && s.whatsapp_numbers.length > 0 && process.env.WHAPI_TOKEN) {
     const waResults = await Promise.all(
       (s.whatsapp_numbers as WhatsappNumber[]).map(async (n) => {
-        const result = await sendWhapi(n.phone, `*Aura Control*\n\n${messageText}`)
+        const result = await sendWhapi(n.phone, `*OWL Hub*\n\n${messageText}`)
         return { name: n.name, phone: n.phone, ...result }
       })
     )

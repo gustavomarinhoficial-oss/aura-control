@@ -860,7 +860,7 @@ export default function PublicCalendarPage() {
         </>
         )}
 
-        <p className="text-center text-[10px] text-[#4a4a4a] mt-10">Aura Control</p>
+        <p className="text-center text-[10px] text-[#4a4a4a] mt-10">OWL Hub</p>
       </div>
 
       {rejectingId && (
