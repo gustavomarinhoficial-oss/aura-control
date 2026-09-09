@@ -543,19 +543,13 @@ function CalendarView({ posts, onApprove, onReject, onCaptionSave, actingId, can
 
 // ── ScheduleProjectCard (cronograma) ────────────────────────────────────────
 function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
-  const st = PROJECT_STATUS_LABEL[project.status] ?? { label: project.status, color: '#6b7280' }
   const done = project.checklist.filter(i => i.done).length
   const total = project.checklist.length
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
 
   return (
     <div className="bg-[#161616] border border-[#262626] rounded-2xl p-4 space-y-3">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold leading-snug">{project.title}</p>
-        <span className="shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: st.color + '20', color: st.color }}>
-          {st.label}
-        </span>
-      </div>
+      <p className="text-sm font-semibold leading-snug">{project.title}</p>
 
       <p className="text-[10px] text-[#5a5a5a]">Atualizado em {formatDateShort(project.updated_at.split('T')[0])}</p>
 
@@ -606,6 +600,8 @@ function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
   )
 }
 
+const SCHEDULE_COLUMNS = ['afazer', 'andamento', 'aprovacao', 'concluido']
+
 function ScheduleView({ projects, loading }: { projects: ScheduleProject[]; loading: boolean }) {
   if (loading) {
     return (
@@ -622,11 +618,27 @@ function ScheduleView({ projects, loading }: { projects: ScheduleProject[]; load
       </div>
     )
   }
-  const order = ['andamento', 'aprovacao', 'afazer', 'concluido']
-  const sorted = [...projects].sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status))
   return (
-    <div className="space-y-3">
-      {sorted.map(p => <ScheduleProjectCard key={p.id} project={p} />)}
+    <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 sm:gap-3">
+      {SCHEDULE_COLUMNS.map(statusKey => {
+        const st = PROJECT_STATUS_LABEL[statusKey]
+        const colProjects = projects.filter(p => p.status === statusKey)
+        return (
+          <div key={statusKey} className="bg-[#111111] border border-[#262626] rounded-2xl p-3">
+            <div className="flex items-center gap-2 px-1 pb-3">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: st.color }} />
+              <span className="text-xs font-semibold">{st.label}</span>
+              <span className="text-[10px] text-[#7a7a7a] bg-[#1a1a1a] px-1.5 py-0.5 rounded-full">{colProjects.length}</span>
+            </div>
+            <div className="space-y-3">
+              {colProjects.map(p => <ScheduleProjectCard key={p.id} project={p} />)}
+              {colProjects.length === 0 && (
+                <div className="flex items-center justify-center h-14 text-[11px] text-[#4a4a4a]">Vazio</div>
+              )}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
