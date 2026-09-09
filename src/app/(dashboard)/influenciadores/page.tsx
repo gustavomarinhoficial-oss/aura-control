@@ -48,6 +48,7 @@ export default function InfluenciadoresPage() {
   const [addingStatus, setAddingStatus] = useState<string | null>(null)
   const [newForm, setNewForm] = useState({ ...EMPTY_FORM })
   const [addSaving, setAddSaving] = useState(false)
+  const [activeClient, setActiveClient] = useState<string>('todas')
   const [activeDrag, setActiveDrag] = useState<InfluencerRow | null>(null)
   const [dragPos, setDragPos]       = useState({ x: 0, y: 0 })
   const [overStatus, setOverStatus] = useState<string | null>(null)
@@ -190,9 +191,10 @@ export default function InfluenciadoresPage() {
     setActiveDrag(null); setOverStatus(null); overStatusRef.current = null
   }
 
-  const rowsFor = (status: string) => influencers.filter(r => r.status === status)
+  const filteredInfluencers = influencers.filter(r => activeClient === 'todas' || r.client_id === activeClient)
+  const rowsFor = (status: string) => filteredInfluencers.filter(r => r.status === status)
   const totalValue = (status: string) => rowsFor(status).reduce((s, r) => s + (r.value ?? 0), 0)
-  const fechadoTotal = influencers.filter(r => r.status === 'fechado').reduce((s, r) => s + (r.value ?? 0), 0)
+  const fechadoTotal = filteredInfluencers.filter(r => r.status === 'fechado').reduce((s, r) => s + (r.value ?? 0), 0)
 
   const statusInfo = selected ? STATUSES.find(s => s.key === selected.status) : null
 
@@ -220,7 +222,7 @@ export default function InfluenciadoresPage() {
               <span className="text-xs font-semibold">{s.label}</span>
               <span className="text-[10px] text-muted-foreground bg-[#111] px-1.5 py-0.5 rounded-full">{cards.length}</span>
             </div>
-            <button onClick={() => { setAddingStatus(s.key); setNewForm({ ...EMPTY_FORM }) }}
+            <button onClick={() => { setAddingStatus(s.key); setNewForm({ ...EMPTY_FORM, client_id: activeClient !== 'todas' ? activeClient : '' }) }}
               className="text-muted-foreground hover:text-foreground transition-colors">
               <Plus size={13} />
             </button>
@@ -313,15 +315,25 @@ export default function InfluenciadoresPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Influenciadores</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {influencers.length} no radar · fechado {formatBRL(fechadoTotal)}
+            {filteredInfluencers.length} no radar · fechado {formatBRL(fechadoTotal)}
           </p>
         </div>
-        <button
-          onClick={() => { setAddingStatus('a_contatar'); setNewForm({ ...EMPTY_FORM }) }}
-          className="flex items-center gap-2 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm rounded-lg transition-colors"
-        >
-          <Plus size={14} /> Novo influenciador
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={activeClient}
+            onChange={e => setActiveClient(e.target.value)}
+            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+          >
+            <option value="todas">Todas as empresas</option>
+            {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <button
+            onClick={() => { setAddingStatus('a_contatar'); setNewForm({ ...EMPTY_FORM, client_id: activeClient !== 'todas' ? activeClient : '' }) }}
+            className="flex items-center gap-2 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm rounded-lg transition-colors"
+          >
+            <Plus size={14} /> Novo influenciador
+          </button>
+        </div>
       </div>
 
       {loading ? (
