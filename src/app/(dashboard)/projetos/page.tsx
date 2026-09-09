@@ -5,7 +5,8 @@ import { formatDate } from '@/lib/utils/format'
 import { leadOptionValue, decodeEntitySelect, type LeadOption } from '@/lib/utils/entitySelect'
 import {
   Plus, X, Check, Trash2, ChevronRight, Calendar, User2,
-  AlertCircle, CheckSquare, Square, GripVertical, ExternalLink
+  AlertCircle, CheckSquare, Square, GripVertical, ExternalLink,
+  Share2, Copy, RefreshCw,
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -28,7 +29,7 @@ interface Project {
   leads?: { id: string; company_name: string } | null
 }
 
-interface ClientOption { id: string; name: string }
+interface ClientOption { id: string; name: string; project_sharing_enabled?: boolean }
 
 const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas', 'Julia', 'Mariana']
 
@@ -427,6 +428,110 @@ function DetailPanel({
   )
 }
 
+// ── modal de compartilhamento do cronograma ─────────────────────────────────
+function ScheduleShareModal({ client, onClose, onToggled }: {
+  client: ClientOption
+  onClose: () => void
+  onToggled: (enabled: boolean) => void
+}) {
+  const [token, setToken] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [regenerating, setRegenerating] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [sharing, setSharing] = useState(client.project_sharing_enabled === true)
+  const [saving, setSaving] = useState(false)
+
+  const loadToken = useCallback(async () => {
+    const res = await fetch(`/api/clients/${client.id}/share-link`).catch(() => null)
+    if (res?.ok) { const d = await res.json(); setToken(d.token) }
+    setLoading(false)
+  }, [client.id])
+
+  useEffect(() => { loadToken() }, [loadToken])
+
+  const url = token ? `${window.location.origin}/publico/${token}` : ''
+
+  function copyLink() {
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function regenerate() {
+    if (!confirm('Isso invalida o link atual — quem tiver o link antigo perde o acesso. Continuar?')) return
+    setRegenerating(true)
+    const res = await fetch(`/api/clients/${client.id}/share-link`, { method: 'POST' })
+    if (res.ok) { const d = await res.json(); setToken(d.token) }
+    setRegenerating(false)
+  }
+
+  async function toggleSharing() {
+    const next = !sharing
+    setSaving(true)
+    const res = await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ project_sharing_enabled: next }),
+    })
+    if (res.ok) { setSharing(next); onToggled(next) }
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Share2 size={15} className="text-[#a78bfa]" />
+            <h2 className="text-sm font-semibold">Compartilhar cronograma — {client.name}</h2>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={15} /></button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Link público, sem login. Mostra os projetos e o checklist de <strong>{client.name}</strong> — dá pra acompanhar o andamento em tempo real.
+        </p>
+        <label className="flex items-center justify-between gap-3 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 cursor-pointer">
+          <span className="text-xs">
+            <span className="text-foreground font-medium">Compartilhar com o cliente</span>
+            <span className="block text-muted-foreground mt-0.5">Sem isso, o link abre mas a aba de cronograma fica escondida pro cliente.</span>
+          </span>
+          <input
+            type="checkbox"
+            checked={sharing}
+            disabled={saving}
+            onChange={toggleSharing}
+            className="w-4 h-4 accent-[#7c3aed] shrink-0"
+          />
+        </label>
+        {loading ? (
+          <div className="h-10 bg-[#111111] rounded-lg animate-pulse" />
+        ) : (
+          <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-xs text-foreground break-all">{url}</div>
+        )}
+        <div className="flex gap-2">
+          <button
+            onClick={copyLink}
+            disabled={loading}
+            className={`flex-1 flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg border transition-all disabled:opacity-50 ${
+              copied ? 'border-[#22c55e]/40 text-[#22c55e] bg-[#22c55e]/5' : 'border-[#2a2a2a] hover:bg-[#222222]'
+            }`}
+          >
+            {copied ? <><Check size={13} /> Copiado!</> : <><Copy size={13} /> Copiar link</>}
+          </button>
+          <button
+            onClick={regenerate}
+            disabled={loading || regenerating}
+            title="Gerar novo link (invalida o atual)"
+            className="flex items-center justify-center gap-2 text-sm px-3 py-2.5 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-foreground hover:bg-[#222222] transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={regenerating ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── modal novo projeto ────────────────────────────────────────────────────────
 function NewProjectModal({ clients, leads, onClose, onCreated }: {
   clients: ClientOption[]
@@ -544,6 +649,7 @@ export default function ProjetosPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Project | null>(null)
   const [showNew, setShowNew] = useState(false)
+  const [showShare, setShowShare] = useState(false)
   const [activeDrag, setActiveDrag]  = useState<Project | null>(null)
   const [dragPos, setDragPos]        = useState({ x: 0, y: 0 })
   const [overCol, setOverCol]        = useState<string | null>(null)
@@ -563,7 +669,7 @@ export default function ProjetosPage() {
       fetch('/api/leads').then(r => r.json()).catch(() => []),
     ])
     setProjects(Array.isArray(pRes) ? pRes : [])
-    setClients(Array.isArray(cRes) ? cRes.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })) : [])
+    setClients(Array.isArray(cRes) ? cRes.map((c: { id: string; name: string; project_sharing_enabled?: boolean }) => ({ id: c.id, name: c.name, project_sharing_enabled: c.project_sharing_enabled })) : [])
     setLeads(Array.isArray(lRes) ? lRes.map((l: { id: string; company_name: string }) => ({ id: l.id, company_name: l.company_name })) : [])
     setLoading(false)
   }, [])
@@ -623,6 +729,12 @@ export default function ProjetosPage() {
     setShowNew(false)
     setSelected(p)
   }
+
+  function onSharingToggled(enabled: boolean) {
+    setClients(cs => cs.map(c => c.id === activeClient ? { ...c, project_sharing_enabled: enabled } : c))
+  }
+
+  const activeClientObj = clients.find(c => c.id === activeClient) ?? null
 
   function renderColumn(col: typeof COLUMNS[number]) {
     const colProjects = projects.filter(p =>
@@ -709,6 +821,20 @@ export default function ProjetosPage() {
               <option value="todas">Todas as empresas</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+            {activeClientObj && (
+              <button
+                onClick={() => setShowShare(true)}
+                className={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg border transition-colors ${
+                  activeClientObj.project_sharing_enabled
+                    ? 'border-[#22c55e]/40 text-[#22c55e] bg-[#22c55e]/5 hover:bg-[#22c55e]/10'
+                    : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+                }`}
+                title={activeClientObj.project_sharing_enabled ? 'Cronograma compartilhado com o cliente' : 'Compartilhar cronograma com o cliente'}
+              >
+                <Share2 size={14} />
+                {activeClientObj.project_sharing_enabled ? 'Compartilhado' : 'Compartilhar'}
+              </button>
+            )}
             <button onClick={() => setShowNew(true)}
               className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               <Plus size={14} /> Novo projeto
@@ -797,6 +923,15 @@ export default function ProjetosPage() {
           leads={leads}
           onClose={() => setShowNew(false)}
           onCreated={onCreated}
+        />
+      )}
+
+      {/* share modal */}
+      {showShare && activeClientObj && (
+        <ScheduleShareModal
+          client={activeClientObj}
+          onClose={() => setShowShare(false)}
+          onToggled={onSharingToggled}
         />
       )}
     </div>
