@@ -97,5 +97,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Além do _next e favicon, exclui qualquer arquivo estático servido direto
+  // de /public (logo, ícones, fontes...) — sem isso, pedir esses arquivos sem
+  // sessão (ex: logo na tela de login) caía no redirect pra /login e quebrava.
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|css|js)$).*)'],
 }
