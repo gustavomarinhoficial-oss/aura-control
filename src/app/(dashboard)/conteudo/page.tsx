@@ -401,7 +401,7 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
                 onClick={() => { if (!isDraggingRef.current) setLightboxIndex(i) }}
                 style={{ touchAction: 'none', opacity: activeDrag === i ? 0.35 : 1 }}
                 className={`relative group w-20 h-20 rounded-lg overflow-hidden border shrink-0 cursor-grab active:cursor-grabbing select-none transition-colors ${
-                  overIndex === i ? 'border-[#7c3aed] border-2' : 'border-[#2a2a2a]'
+                  overIndex === i ? 'border-[#efefef] border-2' : 'border-[#2a2a2a]'
                 }`}
               >
                 {video ? (
@@ -431,22 +431,22 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
           })}
           {values.length < MAX_IMAGES && (
             <button onClick={() => inputRef.current?.click()} disabled={uploading}
-              className="w-20 h-20 border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-[#a78bfa] transition-colors shrink-0">
+              className="w-20 h-20 border border-dashed border-[#2a2a2a] hover:border-[#efefef] rounded-lg flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-[#efefef] transition-colors shrink-0">
               {uploading
-                ? <div className="w-4 h-4 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+                ? <div className="w-4 h-4 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
                 : <><Plus size={16} /><span className="text-[9px]">Adicionar</span></>}
             </button>
           )}
         </div>
       ) : (
         <button onClick={() => inputRef.current?.click()} disabled={uploading}
-          className="w-full border border-dashed border-[#2a2a2a] hover:border-[#7c3aed] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#a78bfa] transition-colors">
+          className="w-full border border-dashed border-[#2a2a2a] hover:border-[#efefef] rounded-lg py-6 flex flex-col items-center gap-2 text-muted-foreground hover:text-[#efefef] transition-colors">
           {uploading
-            ? <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            ? <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             : <><ImageIcon size={20} /><span className="text-xs">Clique para fazer upload</span><span className="text-[10px] opacity-50">Fotos ou vídeos — até {MAX_IMAGES} arquivos (carrossel)</span></>}
         </button>
       )}
-      {values.length > 1 && <p className="text-[10px] text-[#a78bfa]">⊞ Carrossel · {values.length} arquivos · o primeiro é a capa · arraste pra reordenar</p>}
+      {values.length > 1 && <p className="text-[10px] text-[#efefef]">⊞ Carrossel · {values.length} arquivos · o primeiro é a capa · arraste pra reordenar</p>}
       {uploadErr && <p className="text-[11px] text-[#ef4444]">{uploadErr}</p>}
       {lightboxIndex !== null && (
         <MediaLightbox urls={values} index={lightboxIndex} onIndexChange={setLightboxIndex} onClose={() => setLightboxIndex(null)} />
@@ -456,7 +456,7 @@ function CarouselUpload({ values, onChange }: { values: string[]; onChange: (url
       {activeDrag !== null && (
         <div
           style={{ position: 'fixed', left: dragPos.x - 40, top: dragPos.y - 40, width: 80, height: 80, zIndex: 9999, pointerEvents: 'none', transform: 'rotate(3deg)' }}
-          className="rounded-lg overflow-hidden border-2 border-[#7c3aed] shadow-2xl opacity-90"
+          className="rounded-lg overflow-hidden border-2 border-[#efefef] shadow-2xl opacity-90"
         >
           {isVideoUrl(values[activeDrag]) ? (
             <video src={values[activeDrag]} className="w-full h-full object-cover" muted playsInline />
@@ -538,7 +538,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             <span className="text-xs px-2 py-0.5 rounded-full ml-2 font-medium" style={{ background: si.color + '22', color: si.color }}>
               {si.label}
             </span>
-            {saving && <div className="w-3 h-3 border border-[#7c3aed] border-t-transparent rounded-full animate-spin ml-2" />}
+            {saving && <div className="w-3 h-3 border border-[#efefef] border-t-transparent rounded-full animate-spin ml-2" />}
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-[#1a1a1a] transition-colors">
             <X size={16} />
@@ -553,11 +553,11 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             onBlur={() => save()}
             placeholder="Titulo do post"
-            className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/30"
+            className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/30"
           />
           {form.content_type && (
             <p className="text-[10px] text-muted-foreground -mt-3">
-              Vai aparecer pro cliente como: <span className="text-[#a78bfa]">{displayTitle(form.title || 'Título do post', form.content_type)}</span>
+              Vai aparecer pro cliente como: <span className="text-[#efefef]">{displayTitle(form.title || 'Título do post', form.content_type)}</span>
             </p>
           )}
 
@@ -592,7 +592,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               <select
                 value={form.platform}
                 onChange={e => { setForm(f => ({ ...f, platform: e.target.value })); save({ platform: e.target.value }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 {PLATFORMS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
               </select>
@@ -603,7 +603,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               <select
                 value={form.content_type ?? ''}
                 onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, content_type: v })); save({ content_type: v }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Não definido</option>
                 {CONTENT_TYPES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
@@ -623,7 +623,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                     setShowPostLinkModal(true)
                   }
                 }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                 style={{ color: si.color }}
               >
                 {STATUSES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
@@ -635,7 +635,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               <select
                 value={form.client_id ?? ''}
                 onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, client_id: v })); save({ client_id: v }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">OWL Creative Club</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -649,7 +649,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 value={form.scheduled_date ?? ''}
                 onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value || null }))}
                 onBlur={() => save()}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
             {/* horário (opcional) */}
@@ -660,7 +660,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 value={form.scheduled_time ?? ''}
                 onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value || null }))}
                 onBlur={() => save()}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
             {/* data publicação */}
@@ -671,7 +671,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                 value={form.published_at ? form.published_at.split('T')[0] : ''}
                 onChange={e => setForm(f => ({ ...f, published_at: e.target.value ? e.target.value + 'T00:00:00Z' : null }))}
                 onBlur={() => save()}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
             {/* responsável */}
@@ -680,7 +680,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               <select
                 value={form.responsible ?? ''}
                 onChange={e => { const v = e.target.value || null; setForm(f => ({ ...f, responsible: v })); save({ responsible: v }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Sem responsável</option>
                 {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -713,11 +713,11 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                   onChange={e => setForm(f => ({ ...f, post_link: e.target.value || null }))}
                   onBlur={() => save()}
                   placeholder="https://instagram.com/p/..."
-                  className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+                  className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/40"
                 />
                 {form.post_link && (
                   <a href={form.post_link} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center justify-center px-3 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-[#a78bfa] hover:border-[#7c3aed]/40 transition-colors shrink-0">
+                    className="flex items-center justify-center px-3 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-[#efefef] hover:border-[#efefef]/40 transition-colors shrink-0">
                     <ExternalLink size={14} />
                   </a>
                 )}
@@ -730,7 +730,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
             <div className="flex items-center gap-2 mb-1.5">
               <label className="block text-[10px] text-muted-foreground uppercase tracking-wider">Legenda</label>
               {post.caption_edited_by_client && (
-                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap bg-[#a78bfa]/15 text-[#a78bfa]">
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full whitespace-nowrap bg-[#efefef]/15 text-[#efefef]">
                   Ajustada pelo cliente
                 </span>
               )}
@@ -741,7 +741,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               onBlur={() => save()}
               rows={5}
               placeholder="Escreva a legenda do post aqui..."
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none placeholder:text-muted-foreground/40"
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none placeholder:text-muted-foreground/40"
             />
           </div>
 
@@ -754,7 +754,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
               onBlur={() => save()}
               rows={2}
               placeholder="Briefing, links de referencia, observacoes..."
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none placeholder:text-muted-foreground/40"
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none placeholder:text-muted-foreground/40"
             />
           </div>
 
@@ -778,7 +778,7 @@ function PostPanel({ post, clients, onClose, onSaved, onDeleted }: {
                     }))}
                     onBlur={() => save()}
                     placeholder="0"
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/30"
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/30"
                   />
                 </div>
               ))}
@@ -871,7 +871,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
     date:   !form.scheduled_date,
   }
   const hasMissing = Object.values(missing).some(Boolean)
-  const errClass = (m: boolean) => attempted && m ? 'border-[#ef4444] focus:border-[#ef4444]' : 'border-[#2a2a2a] focus:border-[#7c3aed]'
+  const errClass = (m: boolean) => attempted && m ? 'border-[#ef4444] focus:border-[#ef4444]' : 'border-[#2a2a2a] focus:border-[#efefef]'
 
   async function create() {
     if (hasMissing) { setAttempted(true); return }
@@ -944,7 +944,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               <select
                 value={form.platform}
                 onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 {PLATFORMS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
               </select>
@@ -976,7 +976,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               <select
                 value={form.responsible}
                 onChange={e => setForm(f => ({ ...f, responsible: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Sem responsável</option>
                 {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -999,7 +999,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
                 type="time"
                 value={form.scheduled_time}
                 onChange={e => setForm(f => ({ ...f, scheduled_time: e.target.value }))}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
           </div>
@@ -1017,7 +1017,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
               onChange={e => setForm(f => ({ ...f, caption: e.target.value }))}
               rows={2}
               placeholder="Previa da legenda..."
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none placeholder:text-muted-foreground/40"
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none placeholder:text-muted-foreground/40"
             />
           </div>
         </div>
@@ -1043,7 +1043,7 @@ function NewPostModal({ clients, activeClientId, onClose, onCreated }: {
           <button
             onClick={create}
             disabled={saving}
-            className="flex-1 py-2.5 text-sm bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg transition-colors disabled:opacity-40 font-medium"
+            className="flex-1 py-2.5 text-sm bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] rounded-lg transition-colors disabled:opacity-40 font-medium"
           >
             {saving ? 'Criando...' : 'Criar Post'}
           </button>
@@ -1185,13 +1185,13 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
               key={i}
               ref={el => { if (day) { if (el) dayRefs.current.set(day, el); else dayRefs.current.delete(day) } }}
               className={`min-h-[110px] p-1.5 border-b transition-colors ${isLast ? '' : 'border-r border-r-[#1a1a1a]'} ${
-                day && overDay === day ? 'bg-[#7c3aed]/10 border-b-[#7c3aed]/40' : day ? 'border-b-[#1a1a1a]' : 'bg-[#0c0c0c] border-b-[#1a1a1a]'
+                day && overDay === day ? 'bg-[#efefef]/10 border-b-[#efefef]/40' : day ? 'border-b-[#1a1a1a]' : 'bg-[#0c0c0c] border-b-[#1a1a1a]'
               }`}
             >
               {day && (
                 <>
                   <div className={`text-[11px] w-5 h-5 flex items-center justify-center rounded-full mb-1 font-medium ${
-                    isToday(day) ? 'bg-[#7c3aed] text-white' : 'text-muted-foreground'
+                    isToday(day) ? 'bg-[#efefef] text-[#111111]' : 'text-muted-foreground'
                   }`}>
                     {day}
                   </div>
@@ -1212,7 +1212,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           opacity: activeDrag?.id === post.id ? 0.35 : 1,
                         }}
                         className={`w-full text-left rounded overflow-hidden hover:opacity-80 transition-opacity cursor-grab active:cursor-grabbing select-none ${
-                          isToday(day) ? 'ring-1 ring-[#7c3aed]' : ''
+                          isToday(day) ? 'ring-1 ring-[#efefef]' : ''
                         }`}
                         title={`${displayTitle(post.title, post.content_type)} - ${sInfo(post.status).label}${isToday(day) ? ' - Hoje' : ''}`}
                       >
@@ -1276,7 +1276,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
             pointerEvents: 'none',
             transform: 'rotate(2deg)',
           }}
-          className="bg-[#111111] border border-[#7c3aed] rounded-lg px-2.5 py-2 shadow-2xl opacity-95"
+          className="bg-[#111111] border border-[#efefef] rounded-lg px-2.5 py-2 shadow-2xl opacity-95"
         >
           <p className="text-[10px] font-medium truncate" style={{ color: pColor(activeDrag.platform) }}>{activeDrag.title}</p>
         </div>
@@ -1322,7 +1322,7 @@ function ContentList({ posts, showClient, onPostClick }: {
         key={post.id}
         onClick={() => onPostClick(post)}
         className={`w-full px-5 py-4 hover:bg-[#1a1a1a] transition-colors text-left flex items-center gap-4 ${
-          highlightToday ? 'bg-[#7c3aed]/[0.07] border-l-2 border-l-[#7c3aed]' : ''
+          highlightToday ? 'bg-[#efefef]/[0.07] border-l-2 border-l-[#efefef]' : ''
         }`}
       >
         {/* plataforma */}
@@ -1337,7 +1337,7 @@ function ContentList({ posts, showClient, onPostClick }: {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {highlightToday && (
-              <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#7c3aed] text-white">
+              <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#efefef] text-[#111111]">
                 Hoje
               </span>
             )}
@@ -1375,7 +1375,7 @@ function ContentList({ posts, showClient, onPostClick }: {
             {si.label}
           </span>
           {post.caption_edited_by_client && (
-            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap bg-[#a78bfa]/15 text-[#a78bfa]">
+            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap bg-[#efefef]/15 text-[#efefef]">
               Legenda ajustada
             </span>
           )}
@@ -1460,7 +1460,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
         {[
           { label: 'Posts publicados',   value: String(cur.total),                          color: '#22c55e' },
           { label: 'Curtidas totais',    value: cur.curtidas.toLocaleString('pt-BR'),        color: '#e1306c' },
-          { label: 'Alcance total',      value: cur.alcance.toLocaleString('pt-BR'),         color: '#a78bfa' },
+          { label: 'Alcance total',      value: cur.alcance.toLocaleString('pt-BR'),         color: '#efefef' },
           { label: 'Taxa de engajamento',value: cur.rate.toFixed(2) + '%',                  color: '#f59e0b',
             sub: prev.rate > 0 ? (rateDiff >= 0 ? '+' : '') + rateDiff.toFixed(2) + '% vs mês ant.' : undefined },
         ].map(k => (
@@ -1479,7 +1479,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
         {/* Engagement rate trend */}
         <div className="bg-[#111111] border border-[#1f1f1f] rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={13} className="text-[#a78bfa]" />
+            <TrendingUp size={13} className="text-[#efefef]" />
             <h3 className="text-sm font-medium">Taxa de engajamento â€" 6 meses</h3>
           </div>
           {noData ? (
@@ -1491,8 +1491,8 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
               <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="engGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.35} />
-                    <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#efefef" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#efefef" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#555' }} axisLine={false} tickLine={false} />
@@ -1502,7 +1502,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
                   formatter={(v: unknown) => [Number(v).toFixed(2) + '%', 'Engajamento']}
                   labelStyle={{ color: '#888' }}
                 />
-                <Area type="monotone" dataKey="taxa" stroke="#7c3aed" strokeWidth={2} fill="url(#engGrad)" dot={{ fill: '#7c3aed', r: 3 }} />
+                <Area type="monotone" dataKey="taxa" stroke="#efefef" strokeWidth={2} fill="url(#engGrad)" dot={{ fill: '#efefef', r: 3 }} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -1650,7 +1650,7 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Share2 size={15} className="text-[#a78bfa]" />
+            <Share2 size={15} className="text-[#efefef]" />
             <h2 className="text-sm font-semibold">Compartilhar calendário — {client.name}</h2>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={15} /></button>
@@ -1666,7 +1666,7 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
             <button
               onClick={unlockNextMonth}
               disabled={unlocking}
-              className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors disabled:opacity-50"
+              className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors disabled:opacity-50"
             >
               {unlocking ? 'Liberando...' : `Liberar ${nextMonthLabel} agora →`}
             </button>
@@ -1682,7 +1682,7 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
             checked={sharingSchedule}
             disabled={savingSharing}
             onChange={toggleSharingSchedule}
-            className="w-4 h-4 accent-[#7c3aed] shrink-0"
+            className="w-4 h-4 accent-[#efefef] shrink-0"
           />
         </label>
         {loading ? (
@@ -1833,7 +1833,7 @@ export default function ConteudoPage() {
               )}
               <button
                 onClick={() => setShowNew(true)}
-                className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm px-4 py-2.5 rounded-xl transition-colors font-medium"
+                className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm px-4 py-2.5 rounded-xl transition-colors font-medium"
               >
                 <Plus size={16} />
                 Novo Post
@@ -1848,13 +1848,13 @@ export default function ConteudoPage() {
               onClick={() => setActiveClient('todos')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
                 isAllClients
-                  ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                  ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
               }`}
             >
               Todos
               {isAllClients && (
-                <span className="text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
+                <span className="text-[10px] bg-[#efefef]/20 text-[#efefef] px-1.5 py-0.5 rounded-full">
                   {kpis.total}
                 </span>
               )}
@@ -1871,14 +1871,14 @@ export default function ConteudoPage() {
                   onClick={() => setActiveClient(client.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
                     isActive
-                      ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                      ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
                       : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
                   }`}
                 >
                   {client.name}
                   {(isActive || isAllClients) && count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-[#7c3aed]/20 text-[#a78bfa]' : 'bg-[#2a2a2a] text-muted-foreground'
+                      isActive ? 'bg-[#efefef]/20 text-[#efefef]' : 'bg-[#2a2a2a] text-muted-foreground'
                     }`}>
                       {count}
                     </span>
@@ -1891,7 +1891,7 @@ export default function ConteudoPage() {
           {/* KPI cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {[
-              { label: 'Total de posts',      value: kpis.total,      color: '#a78bfa' },
+              { label: 'Total de posts',      value: kpis.total,      color: '#efefef' },
               { label: 'Publicados',           value: kpis.publicado,  color: '#22c55e' },
               { label: 'Agendados',            value: kpis.agendado,   color: '#06b6d4' },
               { label: 'Aprovados',            value: kpis.aprovado,   color: '#8b5cf6' },
@@ -1914,10 +1914,10 @@ export default function ConteudoPage() {
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs text-muted-foreground">Criados</span>
-                    <span className="text-sm font-semibold text-[#a78bfa]">{monthCreated}/{monthQuota}</span>
+                    <span className="text-sm font-semibold text-[#efefef]">{monthCreated}/{monthQuota}</span>
                   </div>
                   <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#a78bfa] rounded-full transition-all" style={{ width: `${Math.min((monthCreated / monthQuota) * 100, 100)}%` }} />
+                    <div className="h-full bg-[#efefef] rounded-full transition-all" style={{ width: `${Math.min((monthCreated / monthQuota) * 100, 100)}%` }} />
                   </div>
                 </div>
                 <div>
@@ -1940,7 +1940,7 @@ export default function ConteudoPage() {
                 onClick={() => setViewMode('calendario')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${
                   viewMode === 'calendario'
-                    ? 'bg-[#7c3aed]/15 text-[#a78bfa]'
+                    ? 'bg-[#efefef]/15 text-[#efefef]'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -1951,7 +1951,7 @@ export default function ConteudoPage() {
                 onClick={() => setViewMode('lista')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${
                   viewMode === 'lista'
-                    ? 'bg-[#7c3aed]/15 text-[#a78bfa]'
+                    ? 'bg-[#efefef]/15 text-[#efefef]'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -1962,7 +1962,7 @@ export default function ConteudoPage() {
                 onClick={() => setViewMode('metricas')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm transition-colors ${
                   viewMode === 'metricas'
-                    ? 'bg-[#7c3aed]/15 text-[#a78bfa]'
+                    ? 'bg-[#efefef]/15 text-[#efefef]'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -1995,7 +1995,7 @@ export default function ConteudoPage() {
           {/* content area */}
           {loading ? (
             <div className="flex items-center justify-center h-40">
-              <div className="w-6 h-6 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : viewMode === 'calendario' ? (
             <ContentCalendar

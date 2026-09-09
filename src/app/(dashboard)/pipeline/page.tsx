@@ -15,7 +15,7 @@ function Confetti({ name, value }: { name: string; value: number | null }) {
     canvas.width  = window.innerWidth
     canvas.height = window.innerHeight
 
-    const COLORS = ['#7c3aed','#22c55e','#f59e0b','#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa']
+    const COLORS = ['#efefef','#22c55e','#f59e0b','#60a5fa','#f472b6','#34d399','#fbbf24','#f87171']
     const particles = Array.from({ length: 180 }, () => ({
       x: Math.random() * canvas.width,
       y: -20 - Math.random() * canvas.height * 0.4,
@@ -320,7 +320,7 @@ export default function PipelinePage() {
         </div>
         <button
           onClick={() => { setAddingStage('novo_lead'); setNewForm({ ...EMPTY_FORM }) }}
-          className="flex items-center gap-2 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm rounded-lg transition-colors"
         >
           <Plus size={14} /> Novo lead
         </button>
@@ -328,7 +328,7 @@ export default function PipelinePage() {
 
       {loading ? (
         <div className="flex items-center justify-center flex-1">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="pb-4">
@@ -371,18 +371,18 @@ export default function PipelinePage() {
                     <input autoFocus placeholder="Nome da empresa *"
                       value={newForm.company_name} onChange={e => setNewForm(f => ({ ...f, company_name: e.target.value }))}
                       onKeyDown={e => { if (e.key === 'Enter') addLead(s.key); if (e.key === 'Escape') setAddingStage(null) }}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                     <input placeholder="Nome do contato"
                       value={newForm.contact_name} onChange={e => setNewForm(f => ({ ...f, contact_name: e.target.value }))}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                     <input placeholder="Valor esperado (R$)" type="number"
                       value={newForm.estimated_value} onChange={e => setNewForm(f => ({ ...f, estimated_value: e.target.value }))}
-                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                     <div className="flex gap-1.5">
                       <button onClick={() => setAddingStage(null)}
                         className="flex-1 text-[10px] border border-[#2a2a2a] py-1.5 rounded-lg hover:bg-[#222] transition-colors">Cancelar</button>
                       <button onClick={() => addLead(s.key)} disabled={addSaving || !newForm.company_name.trim()}
-                        className="flex-1 text-[10px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-1.5 rounded-lg transition-colors disabled:opacity-40">
+                        className="flex-1 text-[10px] bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] py-1.5 rounded-lg transition-colors disabled:opacity-40">
                         {addSaving ? '...' : 'Adicionar'}
                       </button>
                     </div>
@@ -452,11 +452,11 @@ export default function PipelinePage() {
             pointerEvents: 'none',
             transform: 'rotate(2deg)',
           }}
-          className="bg-[#111111] border border-[#7c3aed] rounded-lg p-3 shadow-2xl opacity-90"
+          className="bg-[#111111] border border-[#efefef] rounded-lg p-3 shadow-2xl opacity-90"
         >
           <p className="text-xs font-semibold truncate">{activeDrag.company_name}</p>
           {activeDrag.estimated_value && (
-            <p className="text-[10px] text-[#a78bfa] mt-0.5">{formatBRL(activeDrag.estimated_value)}</p>
+            <p className="text-[10px] text-[#efefef] mt-0.5">{formatBRL(activeDrag.estimated_value)}</p>
           )}
           {activeDrag.contact_name && (
             <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{activeDrag.contact_name}</p>
@@ -512,45 +512,45 @@ export default function PipelinePage() {
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><FileText size={10} /> Empresa</label>
                   <input value={editForm.company_name} onChange={e => setEditForm(f => ({ ...f, company_name: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed]" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><User size={10} /> Nome do contato</label>
                   <input placeholder="Nome" value={editForm.contact_name} onChange={e => setEditForm(f => ({ ...f, contact_name: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Phone size={10} /> WhatsApp</label>
                     <input placeholder="(11) 99999-9999" value={editForm.contact_phone} onChange={e => setEditForm(f => ({ ...f, contact_phone: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><DollarSign size={10} /> Valor esperado</label>
                     <input type="number" placeholder="3000" value={editForm.estimated_value} onChange={e => setEditForm(f => ({ ...f, estimated_value: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Mail size={10} /> Email</label>
                   <input type="email" placeholder="contato@empresa.com" value={editForm.contact_email} onChange={e => setEditForm(f => ({ ...f, contact_email: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><AtSign size={10} /> Instagram</label>
                   <input placeholder="@empresa" value={editForm.instagram} onChange={e => setEditForm(f => ({ ...f, instagram: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><MapPin size={10} /> Origem</label>
                     <select value={editForm.origem} onChange={e => setEditForm(f => ({ ...f, origem: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] text-foreground">
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] text-foreground">
                       <option value="">Selecionar</option>
                       {ORIGEM_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
@@ -558,20 +558,20 @@ export default function PipelinePage() {
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><User size={10} /> Responsável</label>
                     <input placeholder="Ex: Gustavo" value={editForm.responsavel} onChange={e => setEditForm(f => ({ ...f, responsavel: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Calendar size={10} /> Último contato</label>
                   <input type="date" value={editForm.last_contact_at} onChange={e => setEditForm(f => ({ ...f, last_contact_at: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed]" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><FileText size={10} /> Observações</label>
                   <textarea rows={4} placeholder="Notas, próximos passos, contexto..." value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground resize-none" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground resize-none" />
                 </div>
               </div>
             </div>
@@ -583,7 +583,7 @@ export default function PipelinePage() {
                 <Trash2 size={12} /> {deleting ? 'Apagando...' : 'Apagar'}
               </button>
               <button onClick={saveEdit} disabled={saving || !editForm.company_name.trim()}
-                className="flex-1 flex items-center justify-center gap-1.5 text-sm bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-2 rounded-lg transition-colors disabled:opacity-50">
+                className="flex-1 flex items-center justify-center gap-1.5 text-sm bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] py-2 rounded-lg transition-colors disabled:opacity-50">
                 <Check size={13} /> {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>

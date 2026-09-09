@@ -36,7 +36,7 @@ const PARTNERS = ['Gustavo', 'Gabriel', 'Thomas', 'Julia', 'Mariana']
 // ── constantes ────────────────────────────────────────────────────────────────
 const COLUMNS: { key: string; label: string; color: string; dot: string }[] = [
   { key: 'afazer',    label: 'A fazer',        color: 'border-[#3a3a3a]',       dot: 'bg-[#6b7280]' },
-  { key: 'andamento', label: 'Em andamento',   color: 'border-[#7c3aed]/40',    dot: 'bg-[#7c3aed]' },
+  { key: 'andamento', label: 'Em andamento',   color: 'border-[#efefef]/40',    dot: 'bg-[#efefef]' },
   { key: 'aprovacao', label: 'Em aprovação',   color: 'border-[#f59e0b]/40',    dot: 'bg-[#f59e0b]' },
   { key: 'concluido', label: 'Concluído',      color: 'border-[#22c55e]/40',    dot: 'bg-[#22c55e]' },
   { key: 'arquivo',   label: 'Arquivo',        color: 'border-[#2a2a2a]',       dot: 'bg-[#3a3a3a]' },
@@ -44,7 +44,7 @@ const COLUMNS: { key: string; label: string; color: string; dot: string }[] = [
 
 // gera uma cor de accent consistente por nome do cliente
 function clientColor(name: string): string {
-  const colors = ['#7c3aed','#2563eb','#059669','#d97706','#dc2626','#db2777','#0891b2','#65a30d']
+  const colors = ['#efefef','#2563eb','#059669','#d97706','#dc2626','#db2777','#0891b2','#65a30d']
   let hash = 0
   for (const c of name) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff
   return colors[Math.abs(hash) % colors.length]
@@ -235,12 +235,12 @@ function DetailPanel({
         {/* header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#2a2a2a] shrink-0">
           <div className="flex items-center gap-2">
-            {saving && <div className="w-3 h-3 border border-[#7c3aed] border-t-transparent rounded-full animate-spin" />}
+            {saving && <div className="w-3 h-3 border border-[#efefef] border-t-transparent rounded-full animate-spin" />}
             <span className="text-xs text-muted-foreground">{saving ? 'Salvando...' : 'Auto-salvo'}</span>
           </div>
           <div className="flex items-center gap-2">
             {project.clients && (
-              <Link href={`/clientes/${project.clients.id}`} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1.5 rounded-lg hover:bg-[#1a1a1a]">
+              <Link href={`/clientes/${project.clients.id}`} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1.5 rounded-lg hover:bg-[#1a1a1a]">
                 <ExternalLink size={14} />
               </Link>
             )}
@@ -258,7 +258,7 @@ function DetailPanel({
             value={form.title}
             onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             onBlur={() => save()}
-            className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#7c3aed] transition-colors"
+            className="w-full text-lg font-semibold bg-transparent border-b border-[#2a2a2a] pb-2 focus:outline-none focus:border-[#efefef] transition-colors"
           />
 
           {/* meta fields */}
@@ -268,7 +268,7 @@ function DetailPanel({
               <select
                 value={form.owner ?? ''}
                 onChange={e => { setForm(f => ({ ...f, owner: e.target.value || null })); save({ owner: e.target.value || null }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Sem dono</option>
                 {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -279,7 +279,7 @@ function DetailPanel({
               <select
                 value={form.status}
                 onChange={e => { setForm(f => ({ ...f, status: e.target.value })); save({ status: e.target.value }) }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
@@ -293,7 +293,7 @@ function DetailPanel({
                   setForm(f => ({ ...f, client_id, lead_id }))
                   save({ client_id, lead_id })
                 }}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Sem cliente</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -311,7 +311,7 @@ function DetailPanel({
                 value={form.deadline ?? ''}
                 onChange={e => setForm(f => ({ ...f, deadline: e.target.value || null }))}
                 onBlur={() => save()}
-                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
           </div>
@@ -325,7 +325,7 @@ function DetailPanel({
               onBlur={() => save()}
               rows={3}
               placeholder="Detalhes do projeto, escopo, entregas..."
-              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none placeholder:text-muted-foreground/40"
+              className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none placeholder:text-muted-foreground/40"
             />
           </div>
 
@@ -351,9 +351,9 @@ function DetailPanel({
                 onChange={e => setNewResp(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addResponsavel()}
                 placeholder="Nome do responsável"
-                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/40"
               />
-              <button onClick={addResponsavel} className="bg-[#7c3aed]/10 hover:bg-[#7c3aed]/20 text-[#a78bfa] px-3 py-1.5 rounded-lg text-sm transition-colors">
+              <button onClick={addResponsavel} className="bg-[#efefef]/10 hover:bg-[#efefef]/20 text-[#efefef] px-3 py-1.5 rounded-lg text-sm transition-colors">
                 <Plus size={14} />
               </button>
             </div>
@@ -402,9 +402,9 @@ function DetailPanel({
                 onChange={e => setNewTask(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && addTask()}
                 placeholder="Nova tarefa do checklist"
-                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/40"
+                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/40"
               />
-              <button onClick={addTask} className="bg-[#7c3aed]/10 hover:bg-[#7c3aed]/20 text-[#a78bfa] px-3 py-1.5 rounded-lg text-sm transition-colors">
+              <button onClick={addTask} className="bg-[#efefef]/10 hover:bg-[#efefef]/20 text-[#efefef] px-3 py-1.5 rounded-lg text-sm transition-colors">
                 <Plus size={14} />
               </button>
             </div>
@@ -482,7 +482,7 @@ function ScheduleShareModal({ client, onClose, onToggled }: {
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Share2 size={15} className="text-[#a78bfa]" />
+            <Share2 size={15} className="text-[#efefef]" />
             <h2 className="text-sm font-semibold">Compartilhar cronograma — {client.name}</h2>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={15} /></button>
@@ -500,7 +500,7 @@ function ScheduleShareModal({ client, onClose, onToggled }: {
             checked={sharing}
             disabled={saving}
             onChange={toggleSharing}
-            className="w-4 h-4 accent-[#7c3aed] shrink-0"
+            className="w-4 h-4 accent-[#efefef] shrink-0"
           />
         </label>
         {loading ? (
@@ -574,7 +574,7 @@ function NewProjectModal({ clients, leads, onClose, onCreated }: {
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && create()}
               placeholder="Ex: Identidade Visual, Gestão de Tráfego..."
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -583,7 +583,7 @@ function NewProjectModal({ clients, leads, onClose, onCreated }: {
               <select
                 value={form.owner}
                 onChange={e => setForm(f => ({ ...f, owner: e.target.value }))}
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Sem dono</option>
                 {PARTNERS.map(p => <option key={p} value={p}>{p}</option>)}
@@ -594,7 +594,7 @@ function NewProjectModal({ clients, leads, onClose, onCreated }: {
               <select
                 value={form.status}
                 onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 {COLUMNS.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
               </select>
@@ -604,7 +604,7 @@ function NewProjectModal({ clients, leads, onClose, onCreated }: {
               <select
                 value={form.client_id}
                 onChange={e => setForm(f => ({ ...f, client_id: e.target.value }))}
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="">Sem cliente</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -622,7 +622,7 @@ function NewProjectModal({ clients, leads, onClose, onCreated }: {
               type="date"
               value={form.deadline}
               onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
             />
           </div>
         </div>
@@ -632,7 +632,7 @@ function NewProjectModal({ clients, leads, onClose, onCreated }: {
         <div className="flex gap-3 pt-1">
           <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
           <button onClick={create} disabled={saving}
-            className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60 font-medium">
+            className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60 font-medium">
             {saving ? 'Criando...' : 'Criar projeto'}
           </button>
         </div>
@@ -765,7 +765,7 @@ export default function ProjetosPage() {
         </div>
         {/* drop zone */}
         <div className={`rounded-xl border-2 border-dashed transition-all p-2 space-y-2 min-h-[80px] md:min-h-[160px] ${
-          isDragTarget ? 'border-[#7c3aed]/60 bg-[#7c3aed]/5' : 'border-transparent'
+          isDragTarget ? 'border-[#efefef]/60 bg-[#efefef]/5' : 'border-transparent'
         }`}>
           {colProjects.length === 0 && !isDragTarget && (
             <div className="flex items-center justify-center h-10 md:h-20 text-xs text-muted-foreground/30">Vazio</div>
@@ -816,7 +816,7 @@ export default function ProjetosPage() {
             <select
               value={activeClient}
               onChange={e => setActiveClient(e.target.value)}
-              className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             >
               <option value="todas">Todas as empresas</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -836,7 +836,7 @@ export default function ProjetosPage() {
               </button>
             )}
             <button onClick={() => setShowNew(true)}
-              className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+              className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors">
               <Plus size={14} /> Novo projeto
             </button>
           </div>
@@ -849,14 +849,14 @@ export default function ProjetosPage() {
               onClick={() => setActiveOwner(key)}
               className={`px-5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 activeOwner === key
-                  ? 'border-[#7c3aed] text-foreground'
+                  ? 'border-[#efefef] text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
               {label}
               {key !== 'todos' && (
                 <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full ${
-                  activeOwner === key ? 'bg-[#7c3aed]/20 text-[#a78bfa]' : 'bg-[#1a1a1a] text-muted-foreground'
+                  activeOwner === key ? 'bg-[#efefef]/20 text-[#efefef]' : 'bg-[#1a1a1a] text-muted-foreground'
                 }`}>
                   {projects.filter(p => p.owner === key && p.status !== 'arquivo').length}
                 </span>
@@ -869,7 +869,7 @@ export default function ProjetosPage() {
       {/* kanban board */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-4 py-4 md:p-6 space-y-3 md:space-y-4">
@@ -895,7 +895,7 @@ export default function ProjetosPage() {
             pointerEvents: 'none',
             transform: 'rotate(2deg)',
           }}
-          className="bg-[#1a1a1a] border border-[#7c3aed] rounded-xl p-4 shadow-2xl opacity-90"
+          className="bg-[#1a1a1a] border border-[#efefef] rounded-xl p-4 shadow-2xl opacity-90"
         >
           <p className="text-sm font-medium truncate">{activeDrag.title}</p>
           {activeDrag.clients && (

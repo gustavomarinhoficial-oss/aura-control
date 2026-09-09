@@ -64,7 +64,7 @@ function AttendeeMultiSelect({ members, value, onChange }: { members: Member[]; 
             onClick={() => toggle(m.id)}
             className={`flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${
               active
-                ? 'border-[#7c3aed] bg-[#7c3aed]/15 text-[#a78bfa]'
+                ? 'border-[#efefef] bg-[#efefef]/15 text-[#efefef]'
                 : 'border-[#2a2a2a] text-muted-foreground hover:border-[#3a3a3a] hover:text-foreground'
             }`}
           >
@@ -129,14 +129,14 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
         <input
           value={title} onChange={e => setTitle(e.target.value)}
           placeholder="Ex: Reunião de alinhamento — Cliente X"
-          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
         />
       </div>
       <div>
         <label className="block text-xs text-muted-foreground mb-1">Cliente (opcional)</label>
         <select
           value={entityValue} onChange={e => setEntityValue(e.target.value)}
-          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
         >
           <option value="">— Nenhum cliente —</option>
           {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -151,12 +151,12 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Data *</label>
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
-            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
         </div>
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Horário</label>
           <input type="time" value={time} onChange={e => setTime(e.target.value)}
-            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
         </div>
       </div>
       <div>
@@ -164,7 +164,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
         <input
           value={location} onChange={e => setLocation(e.target.value)}
           placeholder="Ex: Escritório, endereço do cliente..."
-          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
         />
       </div>
       <div>
@@ -177,12 +177,12 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
           value={notes} onChange={e => setNotes(e.target.value)}
           rows={2}
           placeholder="Pauta, contexto..."
-          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none"
+          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none"
         />
       </div>
       {error && <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={12} />{error}</p>}
       <div className="flex gap-3 pt-1">
-        <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60 font-medium">
+        <button type="submit" disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60 font-medium">
           {saving ? 'Salvando...' : submitLabel}
         </button>
       </div>
@@ -281,7 +281,7 @@ export default function ReunioesPage() {
       <div
         id={`meeting-${meeting.id}`}
         className={`group bg-[#1a1a1a] border rounded-xl px-5 py-4 transition-all duration-500 ${
-          pulseMeeting === meeting.id ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/40' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
+          pulseMeeting === meeting.id ? 'border-[#efefef] ring-2 ring-[#efefef]/40' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
         }`}
       >
         <div className="flex items-start gap-4">
@@ -312,7 +312,7 @@ export default function ReunioesPage() {
               </p>
               <button
                 onClick={() => setEditing(meeting)}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#a78bfa] transition-all shrink-0"
+                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all shrink-0"
                 title="Editar reunião"
               >
                 <Edit2 size={11} />
@@ -324,7 +324,7 @@ export default function ReunioesPage() {
                 {formatDate(meeting.meeting_date)}{meeting.start_time && ` · ${meeting.start_time.slice(0, 5)}`}
               </span>
               {meeting.clients ? (
-                <span className="text-[11px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">{meeting.clients.name}</span>
+                <span className="text-[11px] text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">{meeting.clients.name}</span>
               ) : meeting.leads && (
                 <span className="text-[11px] text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">(Lead) {meeting.leads.company_name}</span>
               )}
@@ -360,7 +360,7 @@ export default function ReunioesPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} />
           Nova reunião
@@ -369,7 +369,7 @@ export default function ReunioesPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : upcoming.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 gap-3 text-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">

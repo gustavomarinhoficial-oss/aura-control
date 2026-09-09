@@ -48,7 +48,7 @@ function formatDateShort(dateStr: string) {
 
 const PROJECT_STATUS_LABEL: Record<string, { label: string; color: string }> = {
   afazer:     { label: 'A fazer',        color: '#6b7280' },
-  andamento:  { label: 'Em andamento',   color: '#7c3aed' },
+  andamento:  { label: 'Em andamento',   color: '#efefef' },
   aprovacao:  { label: 'Em aprovação',   color: '#f59e0b' },
   concluido:  { label: 'Concluído',      color: '#22c55e' },
 }
@@ -327,7 +327,7 @@ function PostCard({ post, onApprove, onReject, onCaptionSave, acting, canReview 
               onChange={e => setCaptionDraft(e.target.value)}
               rows={4}
               autoFocus
-              className="w-full bg-[#0d0d0d] border border-[#7c3aed] rounded-lg px-3 py-2.5 text-sm text-[#e5e5e5] focus:outline-none resize-none"
+              className="w-full bg-[#0d0d0d] border border-[#efefef] rounded-lg px-3 py-2.5 text-sm text-[#e5e5e5] focus:outline-none resize-none"
             />
             <div className="flex gap-2">
               <button
@@ -340,7 +340,7 @@ function PostCard({ post, onApprove, onReject, onCaptionSave, acting, canReview 
               <button
                 onClick={saveCaption}
                 disabled={savingCaption || !captionDraft.trim()}
-                className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs py-2 rounded-lg transition-colors disabled:opacity-50 font-medium"
+                className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-xs py-2 rounded-lg transition-colors disabled:opacity-50 font-medium"
               >
                 {savingCaption ? 'Salvando...' : 'Salvar legenda'}
               </button>
@@ -353,13 +353,13 @@ function PostCard({ post, onApprove, onReject, onCaptionSave, acting, canReview 
               {canAct && (
                 <button
                   onClick={startEditingCaption}
-                  className="mt-1.5 flex items-center gap-1 text-[11px] text-[#7c3aed] hover:text-[#a78bfa] transition-colors"
+                  className="mt-1.5 flex items-center gap-1 text-[11px] text-[#efefef] hover:text-[#efefef] transition-colors"
                 >
                   <Edit2 size={11} /> Editar legenda
                 </button>
               )}
               {post.caption_edited_by_client && (
-                <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#a78bfa]">
+                <p className="mt-1.5 flex items-center gap-1 text-[11px] text-[#efefef]">
                   <Check size={11} /> Legenda ajustada por você
                 </p>
               )}
@@ -506,12 +506,12 @@ function CalendarView({ posts, onApprove, onReject, onCaptionSave, actingId, can
                 disabled={!day}
                 onClick={() => setSelectedDay(isSelected ? null : day)}
                 className={`min-h-[52px] p-1 flex flex-col items-center gap-0.5 border-b border-r border-[#1a1a1a] transition-colors ${
-                  isSelected ? 'bg-[#7c3aed]/15' : day ? 'hover:bg-[#1c1c1c]' : ''
+                  isSelected ? 'bg-[#efefef]/15' : day ? 'hover:bg-[#1c1c1c]' : ''
                 }`}
               >
                 {day && (
                   <>
-                    <span className={`text-[11px] w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-[#7c3aed] text-white font-semibold' : 'text-[#9ca3af]'}`}>
+                    <span className={`text-[11px] w-5 h-5 flex items-center justify-center rounded-full ${isToday ? 'bg-[#efefef] text-[#111111] font-semibold' : 'text-[#9ca3af]'}`}>
                       {day}
                     </span>
                     <div className="flex gap-0.5 flex-wrap justify-center">
@@ -573,7 +573,7 @@ function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
       {project.responsaveis.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {project.responsaveis.map(r => (
-            <span key={r} className="text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">{r}</span>
+            <span key={r} className="text-[10px] text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">{r}</span>
           ))}
         </div>
       )}
@@ -585,7 +585,7 @@ function ScheduleProjectCard({ project }: { project: ScheduleProject }) {
             <span>{pct}%</span>
           </div>
           <div className="h-1.5 bg-[#262626] rounded-full overflow-hidden">
-            <div className="h-full bg-[#7c3aed] rounded-full transition-all" style={{ width: `${pct}%` }} />
+            <div className="h-full bg-[#efefef] rounded-full transition-all" style={{ width: `${pct}%` }} />
           </div>
           <div className="space-y-1.5 pt-1">
             {[...project.checklist]
@@ -610,7 +610,7 @@ function ScheduleView({ projects, loading }: { projects: ScheduleProject[]; load
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 size={20} className="animate-spin text-[#7c3aed]" />
+        <Loader2 size={20} className="animate-spin text-[#efefef]" />
       </div>
     )
   }
@@ -707,7 +707,7 @@ export default function PublicCalendarPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0d0d0d]">
-        <Loader2 size={22} className="animate-spin text-[#7c3aed]" />
+        <Loader2 size={22} className="animate-spin text-[#efefef]" />
       </div>
     )
   }
@@ -732,7 +732,7 @@ export default function PublicCalendarPage() {
       <div className="max-w-2xl mx-auto px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between mb-1">
           <div>
-            <p className="text-[10px] tracking-[0.25em] text-[#7c3aed] uppercase font-semibold">Calendário de conteúdo</p>
+            <p className="text-[10px] tracking-[0.25em] text-[#efefef] uppercase font-semibold">Calendário de conteúdo</p>
             <h1 className="text-2xl font-bold tracking-tight mt-0.5">{client.name}</h1>
           </div>
           <button
@@ -754,13 +754,13 @@ export default function PublicCalendarPage() {
           <div className="flex items-center bg-[#161616] border border-[#262626] rounded-xl p-1 gap-1 mb-5 w-fit">
             <button
               onClick={() => setActiveSection('conteudo')}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'conteudo' ? 'bg-[#7c3aed] text-white' : 'text-[#8a8a8a] hover:text-white'}`}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'conteudo' ? 'bg-[#efefef] text-[#111111]' : 'text-[#8a8a8a] hover:text-white'}`}
             >
               Conteúdo
             </button>
             <button
               onClick={() => setActiveSection('cronograma')}
-              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'cronograma' ? 'bg-[#7c3aed] text-white' : 'text-[#8a8a8a] hover:text-white'}`}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'cronograma' ? 'bg-[#efefef] text-[#111111]' : 'text-[#8a8a8a] hover:text-white'}`}
             >
               <ListTodo size={13} /> Cronograma
             </button>

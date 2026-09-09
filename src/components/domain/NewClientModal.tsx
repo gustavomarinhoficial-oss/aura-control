@@ -44,7 +44,7 @@ export function NewClientModal({ onClose, onCreated }: Props) {
             <select
               value={form.billing_day}
               onChange={e => set('billing_day', e.target.value)}
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             >
               <option value="">Não definido</option>
               {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
@@ -57,14 +57,14 @@ export function NewClientModal({ onClose, onCreated }: Props) {
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
               rows={3}
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors resize-none"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors resize-none"
               placeholder="Observações opcionais..."
             />
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm font-medium py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50">
               {saving ? 'Salvando...' : 'Criar cliente'}
             </button>
           </div>
@@ -85,7 +85,7 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+        className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
       />
     </div>
   )

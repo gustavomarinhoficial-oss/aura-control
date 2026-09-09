@@ -29,7 +29,7 @@ export function TodayMeetingsCard() {
   return (
     <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
       <Link href="/reunioes" className="flex items-center gap-2 mb-3 hover:opacity-80 transition-opacity">
-        <CalendarClock size={14} className="text-[#a78bfa]" />
+        <CalendarClock size={14} className="text-[#efefef]" />
         <h2 className="text-sm font-medium">Reunião hoje</h2>
       </Link>
       <div className="space-y-2.5">
@@ -43,7 +43,7 @@ export function TodayMeetingsCard() {
                 </p>
               )}
             </div>
-            {m.start_time && <span className="text-xs text-[#a78bfa] font-medium shrink-0">{m.start_time.slice(0, 5)}</span>}
+            {m.start_time && <span className="text-xs text-[#efefef] font-medium shrink-0">{m.start_time.slice(0, 5)}</span>}
           </Link>
         ))}
       </div>

@@ -236,23 +236,23 @@ export default function InfluenciadoresPage() {
             <input autoFocus placeholder="Nome do influenciador *"
               value={newForm.name} onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))}
               onKeyDown={e => { if (e.key === 'Enter') addInfluencer(s.key); if (e.key === 'Escape') setAddingStatus(null) }}
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
             <input placeholder="Nicho (ex: restaurantes)"
               value={newForm.niche} onChange={e => setNewForm(f => ({ ...f, niche: e.target.value }))}
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
             <select value={newForm.client_id} onChange={e => setNewForm(f => ({ ...f, client_id: e.target.value }))}
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] text-foreground">
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] text-foreground">
               <option value="">Sem cliente vinculado</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <input placeholder="Valor negociado (R$)" type="number"
               value={newForm.value} onChange={e => setNewForm(f => ({ ...f, value: e.target.value }))}
-              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
             <div className="flex gap-1.5">
               <button onClick={() => setAddingStatus(null)}
                 className="flex-1 text-[10px] border border-[#2a2a2a] py-1.5 rounded-lg hover:bg-[#222] transition-colors">Cancelar</button>
               <button onClick={() => addInfluencer(s.key)} disabled={addSaving || !newForm.name.trim()}
-                className="flex-1 text-[10px] bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-1.5 rounded-lg transition-colors disabled:opacity-40">
+                className="flex-1 text-[10px] bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] py-1.5 rounded-lg transition-colors disabled:opacity-40">
                 {addSaving ? '...' : 'Adicionar'}
               </button>
             </div>
@@ -276,7 +276,7 @@ export default function InfluenciadoresPage() {
                   <button
                     onClick={e => duplicateInfluencer(row, e)}
                     title="Duplicar (ex: pra outra empresa)"
-                    className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
+                    className="text-muted-foreground hover:text-[#efefef] transition-colors"
                   >
                     <Copy size={10} />
                   </button>
@@ -322,14 +322,14 @@ export default function InfluenciadoresPage() {
           <select
             value={activeClient}
             onChange={e => setActiveClient(e.target.value)}
-            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+            className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
           >
             <option value="todas">Todas as empresas</option>
             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <button
             onClick={() => { setAddingStatus('a_contatar'); setNewForm({ ...EMPTY_FORM, client_id: activeClient !== 'todas' ? activeClient : '' }) }}
-            className="flex items-center gap-2 px-4 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm rounded-lg transition-colors"
           >
             <Plus size={14} /> Novo influenciador
           </button>
@@ -338,7 +338,7 @@ export default function InfluenciadoresPage() {
 
       {loading ? (
         <div className="flex items-center justify-center flex-1">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <div className="pb-4 space-y-3 md:space-y-4">
@@ -363,11 +363,11 @@ export default function InfluenciadoresPage() {
             pointerEvents: 'none',
             transform: 'rotate(2deg)',
           }}
-          className="bg-[#111111] border border-[#7c3aed] rounded-lg p-3 shadow-2xl opacity-90"
+          className="bg-[#111111] border border-[#efefef] rounded-lg p-3 shadow-2xl opacity-90"
         >
           <p className="text-xs font-semibold truncate">{activeDrag.name}</p>
           {activeDrag.value && (
-            <p className="text-[10px] text-[#a78bfa] mt-0.5">{formatBRL(activeDrag.value)}</p>
+            <p className="text-[10px] text-[#efefef] mt-0.5">{formatBRL(activeDrag.value)}</p>
           )}
         </div>
       )}
@@ -420,19 +420,19 @@ export default function InfluenciadoresPage() {
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><User size={10} /> Nome</label>
                   <input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed]" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Tag size={10} /> Nicho</label>
                     <input placeholder="Restaurantes" value={editForm.niche} onChange={e => setEditForm(f => ({ ...f, niche: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><AtSign size={10} /> Instagram</label>
                     <input placeholder="@influenciador" value={editForm.instagram} onChange={e => setEditForm(f => ({ ...f, instagram: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>
 
@@ -440,26 +440,26 @@ export default function InfluenciadoresPage() {
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Phone size={10} /> WhatsApp</label>
                     <input placeholder="(11) 99999-9999" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><DollarSign size={10} /> Valor negociado</label>
                     <input type="number" placeholder="500" value={editForm.value} onChange={e => setEditForm(f => ({ ...f, value: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Mail size={10} /> Email</label>
                   <input type="email" placeholder="contato@influenciador.com" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><Building2 size={10} /> Cliente</label>
                     <select value={editForm.client_id} onChange={e => setEditForm(f => ({ ...f, client_id: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] text-foreground">
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] text-foreground">
                       <option value="">Sem cliente vinculado</option>
                       {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
@@ -467,14 +467,14 @@ export default function InfluenciadoresPage() {
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><User size={10} /> Responsável</label>
                     <input placeholder="Ex: Mariana" value={editForm.responsible} onChange={e => setEditForm(f => ({ ...f, responsible: e.target.value }))}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><FileText size={10} /> Observações</label>
                   <textarea rows={4} placeholder="Notas, próximos passos, contexto..." value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground resize-none" />
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground resize-none" />
                 </div>
               </div>
             </div>
@@ -491,7 +491,7 @@ export default function InfluenciadoresPage() {
                 <Copy size={12} /> Duplicar
               </button>
               <button onClick={saveEdit} disabled={saving || !editForm.name.trim()}
-                className="flex-1 flex items-center justify-center gap-1.5 text-sm bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-2 rounded-lg transition-colors disabled:opacity-50">
+                className="flex-1 flex items-center justify-center gap-1.5 text-sm bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] py-2 rounded-lg transition-colors disabled:opacity-50">
                 <Check size={13} /> {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>

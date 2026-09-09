@@ -62,7 +62,7 @@ function AssigneeMultiSelect({ members, value, onChange }: { members: Member[]; 
             onClick={() => toggle(m.id)}
             className={`flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${
               active
-                ? 'border-[#7c3aed] bg-[#7c3aed]/15 text-[#a78bfa]'
+                ? 'border-[#efefef] bg-[#efefef]/15 text-[#efefef]'
                 : 'border-[#2a2a2a] text-muted-foreground hover:border-[#3a3a3a] hover:text-foreground'
             }`}
           >
@@ -119,7 +119,7 @@ function TaskChecklist({ taskId }: { taskId: string }) {
       {items.length > 0 && (
         <div className="flex items-center gap-2 mb-2">
           <div className="flex-1 h-1 bg-[#2a2a2a] rounded-full overflow-hidden">
-            <div className="h-full bg-[#7c3aed] rounded-full transition-all" style={{ width: `${Math.round((done / items.length) * 100)}%` }} />
+            <div className="h-full bg-[#efefef] rounded-full transition-all" style={{ width: `${Math.round((done / items.length) * 100)}%` }} />
           </div>
           <span className="text-[10px] text-muted-foreground shrink-0">{done}/{items.length}</span>
         </div>
@@ -129,7 +129,7 @@ function TaskChecklist({ taskId }: { taskId: string }) {
           <button
             onClick={() => toggleItem(item.id, item.completed)}
             className={`w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-colors ${
-              item.completed ? 'bg-[#7c3aed] border-[#7c3aed]' : 'border-[#3a3a3a] hover:border-[#7c3aed]'
+              item.completed ? 'bg-[#efefef] border-[#efefef]' : 'border-[#3a3a3a] hover:border-[#efefef]'
             }`}
           >
             {item.completed && <Check size={8} className="text-white" />}
@@ -154,7 +154,7 @@ function TaskChecklist({ taskId }: { taskId: string }) {
           className="flex-1 text-xs bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
         />
         {newTitle.trim() && (
-          <button onClick={addItem} className="text-[#7c3aed] hover:text-[#a78bfa] transition-colors">
+          <button onClick={addItem} className="text-[#efefef] hover:text-[#efefef] transition-colors">
             <Plus size={12} />
           </button>
         )}
@@ -283,7 +283,7 @@ export default function TarefasPage() {
           </button>
           <button
             onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Plus size={14} />
             Nova tarefa
@@ -316,13 +316,13 @@ export default function TarefasPage() {
                 onClick={() => setActiveOwner(person)}
                 className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
                   activeOwner === person
-                    ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                    ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
                     : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
                 }`}
               >
                 {person === 'todos' ? 'Todos' : person}
                 {activeOwner === person && person !== 'todos' && (
-                  <span className="ml-1.5 text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">
+                  <span className="ml-1.5 text-[10px] bg-[#efefef]/20 text-[#efefef] px-1.5 py-0.5 rounded-full">
                     {filtered.length}
                   </span>
                 )}
@@ -334,7 +334,7 @@ export default function TarefasPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 gap-3 text-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
@@ -359,7 +359,7 @@ export default function TarefasPage() {
                 id={`task-${task.id}`}
                 className={`group bg-[#1a1a1a] border rounded-xl px-5 py-4 transition-all duration-500 ${
                   pulseTask === task.id
-                    ? 'border-[#7c3aed] ring-2 ring-[#7c3aed]/40'
+                    ? 'border-[#efefef] ring-2 ring-[#efefef]/40'
                     : task.status === 'concluido' ? 'border-[#2a2a2a] opacity-60' : 'border-[#2a2a2a] hover:border-[#3a3a3a]'
                 }`}
               >
@@ -393,7 +393,7 @@ export default function TarefasPage() {
                       </p>
                       <button
                         onClick={() => setEditingTask(task)}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#a78bfa] transition-all shrink-0"
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all shrink-0"
                         title="Editar tarefa"
                       >
                         <Edit2 size={11} />
@@ -408,7 +408,7 @@ export default function TarefasPage() {
                           🌐 Todos os clientes
                         </span>
                       ) : task.clients ? (
-                        <span className="text-[11px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">
+                        <span className="text-[11px] text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">
                           {task.clients.name}
                         </span>
                       ) : task.leads && (
@@ -528,7 +528,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
               type="text"
               name="title"
               placeholder="Ex: Criar relatório mensal"
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             />
           </div>
           <div>
@@ -537,7 +537,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
               name="description"
               rows={2}
               placeholder="Detalhes opcionais..."
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors resize-none"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors resize-none"
             />
           </div>
           <div>
@@ -545,7 +545,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
             <select
               name="client_id"
               defaultValue=""
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             >
               <option value="">— Nenhum cliente —</option>
               <option value="todos">🌐 Todos os clientes</option>
@@ -567,7 +567,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
               <select
                 name="priority"
                 defaultValue="media"
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="baixa">Baixa</option>
                 <option value="media">Média</option>
@@ -579,7 +579,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
               <input
                 type="date"
                 name="due_date"
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
           </div>
@@ -592,7 +592,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
             <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">
               Cancelar
             </button>
-            <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
+            <button type="submit" disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
               {saving ? 'Criando...' : 'Criar tarefa'}
             </button>
           </div>
@@ -652,7 +652,7 @@ function EditTaskModal({ task, clients, leads, members, onClose, onSaved }: {
     onSaved()
   }
 
-  const inputCls = 'w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors'
+  const inputCls = 'w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors'
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
@@ -715,7 +715,7 @@ function EditTaskModal({ task, clients, leads, members, onClose, onSaved }: {
             <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">
               Cancelar
             </button>
-            <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
+            <button type="submit" disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
               {saving ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
@@ -776,14 +776,14 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
             <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-4 text-xs text-muted-foreground space-y-1.5">
               <p className="text-foreground font-medium text-sm mb-2">Como funciona</p>
               <p>1. Baixe o modelo e preencha com suas tarefas</p>
-              <p>2. Colunas: <span className="text-[#a78bfa]">Tarefa, Responsavel, Prazo, Prioridade, Cliente</span></p>
-              <p>3. Prazo no formato <span className="text-[#a78bfa]">DD/MM/AAAA</span> ou <span className="text-[#a78bfa]">AAAA-MM-DD</span></p>
-              <p>4. Prioridade: <span className="text-[#a78bfa]">alta, media ou baixa</span></p>
+              <p>2. Colunas: <span className="text-[#efefef]">Tarefa, Responsavel, Prazo, Prioridade, Cliente</span></p>
+              <p>3. Prazo no formato <span className="text-[#efefef]">DD/MM/AAAA</span> ou <span className="text-[#efefef]">AAAA-MM-DD</span></p>
+              <p>4. Prioridade: <span className="text-[#efefef]">alta, media ou baixa</span></p>
             </div>
 
             <button
               onClick={downloadTemplate}
-              className="w-full flex items-center justify-center gap-2 border border-[#7c3aed]/40 text-[#a78bfa] hover:bg-[#7c3aed]/10 rounded-lg py-2.5 text-sm transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-[#efefef]/40 text-[#efefef] hover:bg-[#efefef]/10 rounded-lg py-2.5 text-sm transition-colors"
             >
               <Download size={14} />
               Baixar modelo CSV
@@ -791,9 +791,9 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
 
             <button
               onClick={() => fileRef.current?.click()}
-              className="w-full flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#2a2a2a] hover:border-[#7c3aed]/50 rounded-xl py-8 text-muted-foreground hover:text-foreground transition-colors group"
+              className="w-full flex flex-col items-center justify-center gap-3 border-2 border-dashed border-[#2a2a2a] hover:border-[#efefef]/50 rounded-xl py-8 text-muted-foreground hover:text-foreground transition-colors group"
             >
-              <FileSpreadsheet size={28} strokeWidth={1.5} className="group-hover:text-[#a78bfa] transition-colors" />
+              <FileSpreadsheet size={28} strokeWidth={1.5} className="group-hover:text-[#efefef] transition-colors" />
               <div className="text-center">
                 <p className="text-sm font-medium">Clique para selecionar o arquivo</p>
                 <p className="text-xs mt-0.5">CSV ou Excel (.xlsx, .xls)</p>
@@ -811,7 +811,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
 
         {status === 'loading' && (
           <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <div className="w-8 h-8 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             <p className="text-sm text-muted-foreground">Importando tarefas...</p>
           </div>
         )}
@@ -831,7 +831,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
             </div>
             <button
               onClick={onImported}
-              className="w-full bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors"
+              className="w-full bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors"
             >
               Ver tarefas
             </button>
@@ -853,7 +853,7 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
               <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">
                 Fechar
               </button>
-              <button onClick={() => setStatus('idle')} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors">
+              <button onClick={() => setStatus('idle')} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors">
                 Tentar de novo
               </button>
             </div>

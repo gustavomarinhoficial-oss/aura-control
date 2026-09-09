@@ -33,7 +33,7 @@ const DAYS_AHEAD_OPTIONS = [
 ]
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}:00` }))
 
-const COLORS = ['#7c3aed', '#2563eb', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#65a30d', '#9333ea']
+const COLORS = ['#efefef', '#2563eb', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#65a30d', '#9333ea']
 
 function getInitials(name: string) {
   return name.trim().split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)
@@ -170,7 +170,7 @@ export default function ConfiguracoesPage() {
       {/* PIX e Agência */}
       <section className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
         <div className="flex items-center gap-2 mb-5">
-          <Key size={14} className="text-[#a78bfa]" />
+          <Key size={14} className="text-[#efefef]" />
           <h2 className="text-sm font-medium">Dados para cobrança via WhatsApp</h2>
         </div>
         <div className="space-y-4">
@@ -181,7 +181,7 @@ export default function ConfiguracoesPage() {
               value={agencyName}
               onChange={e => setAgencyName(e.target.value)}
               placeholder="OWL Creative Club"
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             />
           </div>
           <div>
@@ -191,7 +191,7 @@ export default function ConfiguracoesPage() {
               value={pixKey}
               onChange={e => setPixKey(e.target.value)}
               placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             />
             <p className="text-[10px] text-muted-foreground mt-1">Usada no texto de cobrança gerado automaticamente para os clientes.</p>
           </div>
@@ -200,7 +200,7 @@ export default function ConfiguracoesPage() {
             className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition-all ${
               pixSaved
                 ? 'bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/20'
-                : 'bg-[#7c3aed] hover:bg-[#6d28d9] text-white'
+                : 'bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111]'
             }`}
           >
             {pixSaved ? <><Check size={13} /> Salvo!</> : 'Salvar'}
@@ -237,13 +237,13 @@ export default function ConfiguracoesPage() {
       {/* Membros */}
       <section className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
         <div className="flex items-center gap-2 mb-5">
-          <Users size={14} className="text-[#a78bfa]" />
+          <Users size={14} className="text-[#efefef]" />
           <h2 className="text-sm font-medium">Membros da equipe</h2>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center h-20">
-            <div className="w-4 h-4 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           <div className="space-y-2 mb-5">
@@ -276,12 +276,12 @@ export default function ConfiguracoesPage() {
               onChange={e => setName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') addMember() }}
               placeholder="Nome completo"
-              className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             />
             <button
               onClick={addMember}
               disabled={saving || !name.trim()}
-              className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
+              className="bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               <Plus size={14} />
             </button>
@@ -314,7 +314,7 @@ export default function ConfiguracoesPage() {
         <section className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell size={14} className="text-[#a78bfa]" />
+              <Bell size={14} className="text-[#efefef]" />
               <h2 className="text-sm font-medium">Alertas e notificações</h2>
             </div>
             <div className="flex items-center gap-2">
@@ -326,7 +326,7 @@ export default function ConfiguracoesPage() {
               <button onClick={testAlert} disabled={testing} className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] px-2.5 py-1.5 rounded-lg hover:bg-[#222] transition-colors disabled:opacity-50">
                 <Send size={11} /> {testing ? 'Enviando...' : 'Testar'}
               </button>
-              <button onClick={saveAlerts} disabled={alertSaving} className="flex items-center gap-1.5 text-xs bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50">
+              <button onClick={saveAlerts} disabled={alertSaving} className="flex items-center gap-1.5 text-xs bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50">
                 {alertSaved ? <Check size={11} /> : <Save size={11} />}
                 {alertSaving ? 'Salvando...' : alertSaved ? 'Salvo!' : 'Salvar'}
               </button>
@@ -358,11 +358,11 @@ export default function ConfiguracoesPage() {
           <div className="border-t border-[#2a2a2a] pt-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Mail size={13} className="text-[#a78bfa]" />
+                <Mail size={13} className="text-[#efefef]" />
                 <span className="text-sm font-medium">Email</span>
               </div>
               <button onClick={() => updateAlert('email_enabled', !alertSettings.email_enabled)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${alertSettings.email_enabled ? 'bg-[#7c3aed]' : 'bg-[#2a2a2a]'}`}>
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${alertSettings.email_enabled ? 'bg-[#efefef]' : 'bg-[#2a2a2a]'}`}>
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${alertSettings.email_enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
             </div>
@@ -377,8 +377,8 @@ export default function ConfiguracoesPage() {
                 <div className="flex gap-2">
                   <input type="email" placeholder="email@exemplo.com" value={newEmail} onChange={e => setNewEmail(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addEmail()}
-                    className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
-                  <button onClick={addEmail} className="px-3 py-2 bg-[#7c3aed]/20 text-[#a78bfa] border border-[#7c3aed]/30 rounded-lg hover:bg-[#7c3aed]/30 transition-colors"><Plus size={13} /></button>
+                    className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
+                  <button onClick={addEmail} className="px-3 py-2 bg-[#efefef]/20 text-[#efefef] border border-[#efefef]/30 rounded-lg hover:bg-[#efefef]/30 transition-colors"><Plus size={13} /></button>
                 </div>
                 <p className="text-[10px] text-muted-foreground">Requer <code className="bg-[#1a1a1a] px-1 rounded">RESEND_API_KEY</code> no .env.local e no Vercel. Crie sua conta grátis em <strong>resend.com</strong></p>
               </div>
@@ -389,20 +389,20 @@ export default function ConfiguracoesPage() {
           <div className="border-t border-[#2a2a2a] pt-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <MessageCircle size={13} className="text-[#a78bfa]" />
+                <MessageCircle size={13} className="text-[#efefef]" />
                 <span className="text-sm font-medium">WhatsApp</span>
-                <span className="text-[10px] bg-[#7c3aed]/20 text-[#a78bfa] px-1.5 py-0.5 rounded-full">via Whapi.cloud · grátis</span>
+                <span className="text-[10px] bg-[#efefef]/20 text-[#efefef] px-1.5 py-0.5 rounded-full">via Whapi.cloud · grátis</span>
               </div>
               <button onClick={() => updateAlert('whatsapp_enabled', !alertSettings.whatsapp_enabled)}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${alertSettings.whatsapp_enabled ? 'bg-[#7c3aed]' : 'bg-[#2a2a2a]'}`}>
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${alertSettings.whatsapp_enabled ? 'bg-[#efefef]' : 'bg-[#2a2a2a]'}`}>
                 <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${alertSettings.whatsapp_enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
               </button>
             </div>
             {alertSettings.whatsapp_enabled && (
               <div className="space-y-3 pl-5">
                 {/* Instrução Whapi */}
-                <div className="bg-[#111] border border-[#7c3aed]/20 rounded-lg px-3 py-3 space-y-1">
-                  <p className="text-xs font-medium text-[#a78bfa]">Como funciona:</p>
+                <div className="bg-[#111] border border-[#efefef]/20 rounded-lg px-3 py-3 space-y-1">
+                  <p className="text-xs font-medium text-[#efefef]">Como funciona:</p>
                   <p className="text-xs text-muted-foreground">Mensagens enviadas pelo WhatsApp conectado à sua conta Whapi.cloud. Requer <code className="bg-[#1a1a1a] px-1 rounded">WHAPI_TOKEN</code> configurado no Vercel.</p>
                 </div>
                 {alertSettings.whatsapp_numbers.map((n, i) => (
@@ -415,20 +415,20 @@ export default function ConfiguracoesPage() {
                   </div>
                 ))}
                 {!showWaForm ? (
-                  <button onClick={() => setShowWaForm(true)} className="flex items-center gap-1.5 text-xs text-[#a78bfa] border border-[#7c3aed]/30 px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/10 transition-colors">
+                  <button onClick={() => setShowWaForm(true)} className="flex items-center gap-1.5 text-xs text-[#efefef] border border-[#efefef]/30 px-3 py-1.5 rounded-lg hover:bg-[#efefef]/10 transition-colors">
                     <Plus size={11} /> Adicionar número
                   </button>
                 ) : (
                   <div className="space-y-2 bg-[#111] border border-[#2a2a2a] rounded-lg p-3">
                     <input placeholder="Nome (ex: Gustavo)" value={newWaName} onChange={e => setNewWaName(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                     <input placeholder="Número com DDD (ex: 11999999999)" value={newWaPhone} onChange={e => setNewWaPhone(e.target.value)}
-                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                      className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                     <div className="flex gap-2">
                       <button onClick={() => { setShowWaForm(false); setNewWaName(''); setNewWaPhone(''); setNewWaKey('') }}
                         className="flex-1 text-xs border border-[#2a2a2a] px-3 py-1.5 rounded-lg hover:bg-[#1a1a1a] transition-colors">Cancelar</button>
                       <button onClick={addWhatsapp} disabled={!newWaName || !newWaPhone}
-                        className="flex-1 text-xs bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">Adicionar</button>
+                        className="flex-1 text-xs bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40">Adicionar</button>
                     </div>
                   </div>
                 )}

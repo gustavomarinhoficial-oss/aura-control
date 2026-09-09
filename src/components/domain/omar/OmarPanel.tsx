@@ -40,7 +40,7 @@ function ToolBadge({ tool }: { tool: OmarUIMessage['toolEvents'][number] }) {
   return (
     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
       {tool.status === 'running'
-        ? <Loader2 size={11} className="animate-spin text-[#a78bfa]" />
+        ? <Loader2 size={11} className="animate-spin text-[#efefef]" />
         : <Check size={11} className="text-[#22c55e]" />}
       <Icon size={11} />
       <span>{tool.label}{tool.status === 'done' ? ' — feito' : '...'}</span>
@@ -64,7 +64,7 @@ function TaskCardView({ task }: { task: OmarUIMessage['taskCards'][number] }) {
       </div>
       <Link
         href={`/tarefas?task=${task.id}`}
-        className="flex items-center gap-1 text-xs font-medium text-[#a78bfa] hover:text-white bg-[#7c3aed]/10 hover:bg-[#7c3aed] px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
+        className="flex items-center gap-1 text-xs font-medium text-[#efefef] hover:text-[#111111] bg-[#efefef]/10 hover:bg-[#efefef] px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
       >
         Ver tarefa
         <ArrowRight size={12} />
@@ -89,7 +89,7 @@ function MeetingCardView({ meeting }: { meeting: OmarUIMessage['meetingCards'][n
       </div>
       <Link
         href={`/reunioes?meeting=${meeting.id}`}
-        className="flex items-center gap-1 text-xs font-medium text-[#a78bfa] hover:text-white bg-[#7c3aed]/10 hover:bg-[#7c3aed] px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
+        className="flex items-center gap-1 text-xs font-medium text-[#efefef] hover:text-[#111111] bg-[#efefef]/10 hover:bg-[#efefef] px-2.5 py-1.5 rounded-lg transition-colors shrink-0"
       >
         Ver reunião
         <ArrowRight size={12} />
@@ -103,7 +103,7 @@ function MessageBubble({ msg }: { msg: OmarUIMessage }) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
-        isUser ? 'bg-[#7c3aed] text-white' : 'bg-[#1a1a1a] text-foreground'
+        isUser ? 'bg-[#efefef] text-[#111111]' : 'bg-[#1a1a1a] text-foreground'
       }`}>
         {!isUser && msg.toolEvents.length > 0 && (
           <div className="flex flex-col gap-1 mb-2 pb-2 border-b border-[#2a2a2a]">
@@ -180,7 +180,7 @@ export function OmarPanel({ open, onOpenChange }: { open: boolean; onOpenChange:
                 key={c.id}
                 onClick={() => { loadConversation(c.id); setShowHistory(false) }}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
-                  c.id === conversationId ? 'bg-[#7c3aed]/10 text-[#a78bfa]' : 'text-foreground hover:bg-[#1a1a1a]'
+                  c.id === conversationId ? 'bg-[#efefef]/10 text-[#efefef]' : 'text-foreground hover:bg-[#1a1a1a]'
                 }`}
               >
                 {c.title || 'Conversa sem título'}
@@ -213,7 +213,7 @@ export function OmarPanel({ open, onOpenChange }: { open: boolean; onOpenChange:
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
                 placeholder={speech.recording ? 'Ouvindo...' : 'Pergunte alguma coisa ao Omar...'}
-                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#7c3aed] transition-colors"
+                className="flex-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm outline-none focus:border-[#efefef] transition-colors"
                 disabled={sending || speech.recording}
               />
               {speech.supported && (
@@ -232,7 +232,7 @@ export function OmarPanel({ open, onOpenChange }: { open: boolean; onOpenChange:
               <button
                 onClick={handleSend}
                 disabled={sending || !input.trim()}
-                className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#7c3aed] text-white disabled:opacity-40 transition-opacity shrink-0"
+                className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#efefef] text-[#111111] disabled:opacity-40 transition-opacity shrink-0"
               >
                 <Send size={15} />
               </button>

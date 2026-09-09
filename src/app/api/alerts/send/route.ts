@@ -158,7 +158,7 @@ export async function POST(request: Request) {
 
     const html = `
       <div style="font-family:Inter,sans-serif;background:#111;color:#f0f0f0;padding:24px;border-radius:12px;max-width:600px;">
-        <h2 style="color:#a78bfa;margin-bottom:16px;">OWL Hub</h2>
+        <h2 style="color:#efefef;margin-bottom:16px;">OWL Hub</h2>
         ${htmlLines}
         <p style="margin-top:24px;font-size:12px;color:#666;">Enviado automaticamente pelo OWL Hub</p>
       </div>`

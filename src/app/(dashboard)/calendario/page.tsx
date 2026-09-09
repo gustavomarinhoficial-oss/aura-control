@@ -134,7 +134,7 @@ export default function CalendarioPage() {
         id: charge.id,
         type: 'charge',
         title: charge.description,
-        color: charge.paid_at ? '#22c55e' : '#7c3aed',
+        color: charge.paid_at ? '#22c55e' : '#efefef',
         amount: Number(charge.amount),
         status: charge.paid_at ? 'pago' : 'pendente',
       })
@@ -278,7 +278,7 @@ export default function CalendarioPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               recording
                 ? 'bg-[#ef4444] hover:bg-[#dc2626] text-white animate-pulse'
-                : 'bg-[#7c3aed] hover:bg-[#6d28d9] text-white'
+                : 'bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111]'
             }`}
           >
             {recording ? <MicOff size={14} /> : <Mic size={14} />}
@@ -296,7 +296,7 @@ export default function CalendarioPage() {
               onClick={() => setActiveOwner(person)}
               className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
                 activeOwner === person
-                  ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium'
+                  ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
                   : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
               }`}
             >
@@ -309,7 +309,7 @@ export default function CalendarioPage() {
       {/* Painel de voz */}
       {(recording || transcript || voiceError || savedMsg) && (
         <div className={`border rounded-xl p-4 space-y-3 ${
-          recording ? 'border-[#ef4444]/40 bg-[#ef4444]/5' : 'border-[#7c3aed]/30 bg-[#7c3aed]/5'
+          recording ? 'border-[#ef4444]/40 bg-[#ef4444]/5' : 'border-[#efefef]/30 bg-[#efefef]/5'
         }`}>
           {recording && (
             <div className="flex items-center gap-3">
@@ -370,7 +370,7 @@ export default function CalendarioPage() {
                     </div>
                   </div>
                   {parsed.client_hint && (
-                    <p className="text-xs text-[#a78bfa]">Cliente detectado: {parsed.client_hint}</p>
+                    <p className="text-xs text-[#efefef]">Cliente detectado: {parsed.client_hint}</p>
                   )}
                   <div className="flex gap-2 pt-1">
                     <button
@@ -382,13 +382,13 @@ export default function CalendarioPage() {
                     <button
                       onClick={confirmCreate}
                       disabled={saving}
-                      className="flex items-center gap-1.5 text-xs bg-[#7c3aed] hover:bg-[#6d28d9] text-white px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
+                      className="flex items-center gap-1.5 text-xs bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60"
                     >
                       <Check size={11} /> {saving ? 'Salvando...' : 'Confirmar e criar'}
                     </button>
                     <button
                       onClick={startRecording}
-                      className="flex items-center gap-1.5 text-xs border border-[#7c3aed]/40 text-[#a78bfa] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed]/10 transition-colors"
+                      className="flex items-center gap-1.5 text-xs border border-[#efefef]/40 text-[#efefef] px-3 py-1.5 rounded-lg hover:bg-[#efefef]/10 transition-colors"
                     >
                       <Mic size={11} /> Falar de novo
                     </button>
@@ -413,7 +413,7 @@ export default function CalendarioPage() {
           {/* Células */}
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <div className="grid grid-cols-7">
@@ -432,11 +432,11 @@ export default function CalendarioPage() {
                     key={day}
                     onClick={() => setSelectedDay(isSelected ? null : day)}
                     className={`min-h-[80px] border-b border-r border-[#1f1f1f] p-2 cursor-pointer transition-colors ${
-                      isSelected ? 'bg-[#7c3aed]/10' : 'hover:bg-[#222222]'
+                      isSelected ? 'bg-[#efefef]/10' : 'hover:bg-[#222222]'
                     }`}
                   >
                     <div className={`text-xs font-medium mb-1.5 w-6 h-6 flex items-center justify-center rounded-full ${
-                      isToday ? 'bg-[#7c3aed] text-white' : 'text-muted-foreground'
+                      isToday ? 'bg-[#efefef] text-[#111111]' : 'text-muted-foreground'
                     }`}>
                       {day}
                     </div>
@@ -482,7 +482,7 @@ export default function CalendarioPage() {
               <h3 className="text-sm font-medium mb-4">
                 {selectedDay} de {MONTH_NAMES[month]}
                 {`${year}-${String(month + 1).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}` === todayStr && (
-                  <span className="ml-2 text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 px-1.5 py-0.5 rounded-full">Hoje</span>
+                  <span className="ml-2 text-[10px] text-[#efefef] bg-[#efefef]/10 px-1.5 py-0.5 rounded-full">Hoje</span>
                 )}
               </h3>
 
@@ -534,7 +534,7 @@ export default function CalendarioPage() {
       <div className="flex items-center gap-6 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#ef4444]" /> Tarefa alta prioridade</div>
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#f59e0b]" /> Tarefa média</div>
-        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#7c3aed]" /> Cobrança pendente</div>
+        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#efefef]" /> Cobrança pendente</div>
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#22c55e]" /> Cobrança paga</div>
         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#60a5fa]" /> Reunião</div>
       </div>

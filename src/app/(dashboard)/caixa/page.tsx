@@ -133,7 +133,7 @@ export default function CaixaPage() {
         </div>
         <button
           onClick={() => { setShowNew(true); setForm({ ...EMPTY_FORM }); setFormError('') }}
-          className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} /> Novo movimento
         </button>
@@ -141,15 +141,15 @@ export default function CaixaPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
         <>
           {/* Saldo + meta */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-[#1a1a1a] border border-[#7c3aed]/30 rounded-xl p-5">
+            <div className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-2">
-                <Wallet size={14} className="text-[#a78bfa]" />
+                <Wallet size={14} className="text-[#efefef]" />
                 <span className="text-xs text-muted-foreground uppercase tracking-wider">Saldo atual do caixa</span>
               </div>
               <p className="text-3xl font-bold">{formatBRL(balance)}</p>
@@ -161,7 +161,7 @@ export default function CaixaPage() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wider">Meta de reserva mínima</span>
                 </div>
                 {!editingTarget && (
-                  <button onClick={() => { setEditingTarget(true); setTargetInput(String(reserveTarget)) }} className="text-muted-foreground hover:text-[#a78bfa] transition-colors">
+                  <button onClick={() => { setEditingTarget(true); setTargetInput(String(reserveTarget)) }} className="text-muted-foreground hover:text-[#efefef] transition-colors">
                     <Pencil size={12} />
                   </button>
                 )}
@@ -170,8 +170,8 @@ export default function CaixaPage() {
                 <div className="flex gap-2">
                   <input autoFocus type="number" value={targetInput} onChange={e => setTargetInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && saveTarget()}
-                    className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed]" />
-                  <button onClick={saveTarget} className="bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg px-3 flex items-center justify-center"><Check size={14} /></button>
+                    className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
+                  <button onClick={saveTarget} className="bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] rounded-lg px-3 flex items-center justify-center"><Check size={14} /></button>
                 </div>
               ) : (
                 <>
@@ -179,7 +179,7 @@ export default function CaixaPage() {
                   {reserveTarget > 0 && (
                     <div className="mt-2 space-y-1">
                       <div className="h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${reservePct}%`, backgroundColor: reserveMet ? '#22c55e' : '#7c3aed' }} />
+                        <div className="h-full rounded-full transition-all" style={{ width: `${reservePct}%`, backgroundColor: reserveMet ? '#22c55e' : '#efefef' }} />
                       </div>
                       <p className={`text-[11px] ${reserveMet ? 'text-[#22c55e]' : 'text-muted-foreground'}`}>
                         {reserveMet ? '✓ meta atingida' : `${Math.round(reservePct)}% da meta`}
@@ -264,7 +264,7 @@ export default function CaixaPage() {
               <select
                 value={form.type}
                 onChange={e => { const type = e.target.value; setForm(f => ({ ...f, type, direction: TYPE_META[type].defaultDirection })) }}
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]"
+                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]"
               >
                 {Object.entries(TYPE_META).map(([key, meta]) => <option key={key} value={key}>{meta.label}</option>)}
               </select>
@@ -288,12 +288,12 @@ export default function CaixaPage() {
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
                 <input autoFocus type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] placeholder:text-muted-foreground" />
+                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Data</label>
                 <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]" />
+                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]" />
               </div>
             </div>
 
@@ -301,14 +301,14 @@ export default function CaixaPage() {
               <label className="block text-xs text-muted-foreground mb-1.5">Nota (opcional)</label>
               <textarea rows={2} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                 placeholder="Contexto do movimento..."
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] resize-none placeholder:text-muted-foreground" />
+                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] resize-none placeholder:text-muted-foreground" />
             </div>
 
             {formError && <p className="text-xs text-[#ef4444]">{formError}</p>}
 
             <div className="flex gap-3">
               <button onClick={() => setShowNew(false)} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-              <button onClick={addMovement} disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50">
+              <button onClick={addMovement} disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50">
                 {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>

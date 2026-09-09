@@ -83,7 +83,7 @@ export default function ClientProfilePage() {
   type FilesGrouped = { contratos: FileEntry[]; 'identidade-visual': FileEntry[]; financeiro: FileEntry[]; outros: FileEntry[] }
   type FolderKey = 'contratos' | 'identidade-visual' | 'financeiro' | 'outros'
   const FOLDERS: { key: FolderKey; label: string; color: string; required: string[] }[] = [
-    { key: 'contratos', label: 'Contratos', color: '#a78bfa', required: ['Contrato assinado'] },
+    { key: 'contratos', label: 'Contratos', color: '#efefef', required: ['Contrato assinado'] },
     { key: 'identidade-visual', label: 'Identidade Visual', color: '#fbbf24', required: ['Manual de marca','Logo vetor (AI/EPS/SVG)','Logo PNG','Logo JPG','Logo colorida','Logo preto e branco','Logo negativa','Logo monocromática','Logo horizontal','Logo vertical','Símbolo isolado','Paleta de cores (hex/RGB/CMYK)','Tipografia'] },
     { key: 'financeiro', label: 'Financeiro', color: '#4ade80', required: ['Notas fiscais emitidas','Comprovantes de pagamento','Relatórios de performance enviados'] },
     { key: 'outros', label: 'Outros', color: '#60a5fa', required: [] },
@@ -380,7 +380,7 @@ export default function ClientProfilePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -389,7 +389,7 @@ export default function ClientProfilePage() {
     return (
       <div className="text-center py-20">
         <p className="text-muted-foreground">Cliente não encontrado</p>
-        <button onClick={() => router.push('/clientes')} className="text-[#7c3aed] text-sm mt-2 hover:underline">Voltar</button>
+        <button onClick={() => router.push('/clientes')} className="text-[#efefef] text-sm mt-2 hover:underline">Voltar</button>
       </div>
     )
   }
@@ -420,8 +420,8 @@ export default function ClientProfilePage() {
 
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#7c3aed]/30 to-[#7c3aed]/10 border border-[#7c3aed]/20 flex items-center justify-center">
-              <span className="text-lg font-bold text-[#a78bfa]">{client.name.charAt(0).toUpperCase()}</span>
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#efefef]/30 to-[#efefef]/10 border border-[#efefef]/20 flex items-center justify-center">
+              <span className="text-lg font-bold text-[#efefef]">{client.name.charAt(0).toUpperCase()}</span>
             </div>
             <div>
               <div className="flex items-center gap-3">
@@ -457,7 +457,7 @@ export default function ClientProfilePage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={13} className="text-[#7c3aed]" />
+              <TrendingUp size={13} className="text-[#efefef]" />
               <span className="text-xs text-muted-foreground uppercase tracking-wider">MRR</span>
             </div>
             <p className="text-xl font-semibold">{formatBRL(mrr)}</p>
@@ -528,7 +528,7 @@ export default function ClientProfilePage() {
               {!isJulia && client.billing_day && (
                 <div className="flex items-center gap-3">
                   <Clock size={13} className="text-muted-foreground shrink-0" />
-                  <span className="text-sm">Vence todo dia <span className="font-semibold text-[#a78bfa]">{client.billing_day}</span></span>
+                  <span className="text-sm">Vence todo dia <span className="font-semibold text-[#efefef]">{client.billing_day}</span></span>
                 </div>
               )}
             </div>
@@ -547,7 +547,7 @@ export default function ClientProfilePage() {
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Resumo financeiro</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'MRR atual', value: formatBRL(mrr), color: 'text-[#a78bfa]' },
+                  { label: 'MRR atual', value: formatBRL(mrr), color: 'text-[#efefef]' },
                   { label: 'Total recebido', value: formatBRL(totalReceived), color: 'text-[#22c55e]' },
                   { label: 'Pendente', value: formatBRL(totalPending), color: 'text-muted-foreground' },
                   { label: 'Atrasado', value: formatBRL(totalOverdue), color: totalOverdue > 0 ? 'text-[#ef4444]' : 'text-muted-foreground' },
@@ -569,14 +569,14 @@ export default function ClientProfilePage() {
           <div className="flex justify-end">
             <button
               onClick={() => setShowNewService(v => !v)}
-              className="flex items-center gap-2 text-sm text-[#7c3aed] hover:text-[#a78bfa] transition-colors"
+              className="flex items-center gap-2 text-sm text-[#efefef] hover:text-[#efefef] transition-colors"
             >
               <Plus size={14} /> Adicionar serviço
             </button>
           </div>
 
           {showNewService && (
-            <div className="bg-[#1a1a1a] border border-[#7c3aed]/30 rounded-xl p-5 space-y-4">
+            <div className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-xl p-5 space-y-4">
               <h3 className="text-sm font-medium">Novo serviço</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -585,7 +585,7 @@ export default function ClientProfilePage() {
                     type="text"
                     value={newService.name}
                     onChange={e => setNewService(s => ({ ...s, name: e.target.value }))}
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                   />
                 </div>
                 <div>
@@ -594,12 +594,12 @@ export default function ClientProfilePage() {
                     type="number"
                     value={newService.amount}
                     onChange={e => setNewService(s => ({ ...s, amount: e.target.value }))}
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">Tipo</label>
-                  <select value={newService.type} onChange={e => setNewService(s => ({ ...s, type: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors">
+                  <select value={newService.type} onChange={e => setNewService(s => ({ ...s, type: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors">
                     <option value="recorrente">Recorrente</option>
                     <option value="avulso">Avulso</option>
                   </select>
@@ -607,7 +607,7 @@ export default function ClientProfilePage() {
                 {newService.type === 'recorrente' && (
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Recorrência</label>
-                    <select value={newService.recurrence} onChange={e => setNewService(s => ({ ...s, recurrence: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors">
+                    <select value={newService.recurrence} onChange={e => setNewService(s => ({ ...s, recurrence: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors">
                       <option value="mensal">Mensal</option>
                       <option value="trimestral">Trimestral</option>
                       <option value="anual">Anual</option>
@@ -616,12 +616,12 @@ export default function ClientProfilePage() {
                 )}
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">Início</label>
-                  <input type="date" value={newService.started_at} onChange={e => setNewService(s => ({ ...s, started_at: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                  <input type="date" value={newService.started_at} onChange={e => setNewService(s => ({ ...s, started_at: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                 </div>
                 {newService.type === 'recorrente' && (
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Cobrar a partir de <span className="text-[#555]">(opcional)</span></label>
-                    <input type="date" value={newService.first_charge_date} onChange={e => setNewService(s => ({ ...s, first_charge_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    <input type="date" value={newService.first_charge_date} onChange={e => setNewService(s => ({ ...s, first_charge_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                     <p className="text-[10px] text-muted-foreground mt-1">Se o cliente entrou no meio do mês e só vai pagar mais pra frente, defina aqui.</p>
                   </div>
                 )}
@@ -629,7 +629,7 @@ export default function ClientProfilePage() {
               {serviceError && <p className="text-xs text-[#ef4444] flex items-center gap-1"><AlertCircle size={11} />{serviceError}</p>}
               <div className="flex gap-3">
                 <button onClick={() => { setShowNewService(false); setServiceError('') }} className="flex-1 border border-[#2a2a2a] text-sm py-2 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-                <button onClick={addService} disabled={savingService} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
+                <button onClick={addService} disabled={savingService} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
                   {savingService ? 'Salvando...' : 'Salvar'}
                 </button>
               </div>
@@ -649,16 +649,16 @@ export default function ClientProfilePage() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs text-muted-foreground mb-1">Nome</label>
-                          <input type="text" value={editServiceForm.name} onChange={e => setEditServiceForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                          <input type="text" value={editServiceForm.name} onChange={e => setEditServiceForm(f => ({ ...f, name: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                         </div>
                         <div>
                           <label className="block text-xs text-muted-foreground mb-1">Valor (R$)</label>
-                          <input type="number" value={editServiceForm.amount} onChange={e => setEditServiceForm(f => ({ ...f, amount: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                          <input type="number" value={editServiceForm.amount} onChange={e => setEditServiceForm(f => ({ ...f, amount: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                         </div>
                         {s.type === 'recorrente' && (
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1">Recorrência</label>
-                            <select value={editServiceForm.recurrence} onChange={e => setEditServiceForm(f => ({ ...f, recurrence: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors">
+                            <select value={editServiceForm.recurrence} onChange={e => setEditServiceForm(f => ({ ...f, recurrence: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors">
                               <option value="mensal">Mensal</option>
                               <option value="trimestral">Trimestral</option>
                               <option value="anual">Anual</option>
@@ -667,26 +667,26 @@ export default function ClientProfilePage() {
                         )}
                         <div>
                           <label className="block text-xs text-muted-foreground mb-1">Término do contrato</label>
-                          <input type="date" value={editServiceForm.contract_end} onChange={e => setEditServiceForm(f => ({ ...f, contract_end: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                          <input type="date" value={editServiceForm.contract_end} onChange={e => setEditServiceForm(f => ({ ...f, contract_end: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                         </div>
                         {s.type === 'recorrente' && (
                           <div>
                             <label className="block text-xs text-muted-foreground mb-1">Cobrar a partir de</label>
-                            <input type="date" value={editServiceForm.first_charge_date} onChange={e => setEditServiceForm(f => ({ ...f, first_charge_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                            <input type="date" value={editServiceForm.first_charge_date} onChange={e => setEditServiceForm(f => ({ ...f, first_charge_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                             <p className="text-[10px] text-muted-foreground mt-1">Cobranças pendentes antes dessa data são removidas.</p>
                           </div>
                         )}
                       </div>
                       {parseFloat(editServiceForm.amount) !== Number(s.amount) && (
-                        <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/30 rounded-lg px-4 py-3">
-                          <label className="block text-xs text-[#a78bfa] mb-1.5">Novo valor a partir de</label>
-                          <input type="date" value={editServiceForm.effective_date} onChange={e => setEditServiceForm(f => ({ ...f, effective_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                        <div className="bg-[#efefef]/10 border border-[#efefef]/30 rounded-lg px-4 py-3">
+                          <label className="block text-xs text-[#efefef] mb-1.5">Novo valor a partir de</label>
+                          <input type="date" value={editServiceForm.effective_date} onChange={e => setEditServiceForm(f => ({ ...f, effective_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                           <p className="text-[10px] text-muted-foreground mt-1.5">Cobranças pendentes a partir desta data serão atualizadas para o novo valor. As anteriores permanecem como estão.</p>
                         </div>
                       )}
                       <div className="flex gap-3 pt-1">
                         <button onClick={() => setEditingService(null)} className="flex-1 border border-[#2a2a2a] text-sm py-2 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-                        <button onClick={() => saveEditService(s.id, Number(s.amount))} disabled={savingEditService} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
+                        <button onClick={() => saveEditService(s.id, Number(s.amount))} disabled={savingEditService} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2 rounded-lg transition-colors disabled:opacity-60">
                           {savingEditService ? 'Salvando...' : 'Salvar'}
                         </button>
                       </div>
@@ -712,14 +712,14 @@ export default function ClientProfilePage() {
                           )
                         })()}
                         {s.first_charge_date && s.first_charge_date > new Date().toISOString().split('T')[0] && (
-                          <span className="flex items-center gap-1 text-[10px] mt-0.5 text-[#a78bfa]">
+                          <span className="flex items-center gap-1 text-[10px] mt-0.5 text-[#efefef]">
                             <Clock size={9} /> Primeira cobrança em {formatDate(s.first_charge_date)}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-semibold">{formatBRL(Number(s.amount))}</span>
-                        <button onClick={() => startEditService(s)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors">
+                        <button onClick={() => startEditService(s)} className="text-muted-foreground hover:text-[#efefef] transition-colors">
                           <Edit2 size={14} />
                         </button>
                         <button onClick={() => toggleService(s.id, s.active)} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -843,7 +843,7 @@ export default function ClientProfilePage() {
         <div className="space-y-4">
           {loadingReports ? (
             <div className="flex items-center justify-center h-32">
-              <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : weeklyReports.length === 0 ? (
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-10 text-center">
@@ -969,7 +969,7 @@ export default function ClientProfilePage() {
                   </div>
                   <button
                     onClick={() => openFilePicker(openFolder)}
-                    className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#7c3aed]/40 text-muted-foreground hover:text-[#a78bfa] px-3 py-1.5 rounded-lg transition-colors"
+                    className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#efefef]/40 text-muted-foreground hover:text-[#efefef] px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Upload size={11} /> Novo arquivo
                   </button>
@@ -977,10 +977,10 @@ export default function ClientProfilePage() {
 
                 {/* Confirmação de upload */}
                 {pendingFile && (
-                  <div className="bg-[#1a1a1a] border border-[#7c3aed]/30 rounded-xl p-5 space-y-3">
+                  <div className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-xl p-5 space-y-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center shrink-0">
-                        <File size={15} className="text-[#a78bfa]" />
+                      <div className="w-9 h-9 rounded-lg bg-[#efefef]/10 flex items-center justify-center shrink-0">
+                        <File size={15} className="text-[#efefef]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{pendingFile.name}</p>
@@ -1007,7 +1007,7 @@ export default function ClientProfilePage() {
                       <button
                         onClick={confirmUpload}
                         disabled={uploading}
-                        className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2 rounded-lg transition-colors disabled:opacity-60"
+                        className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2 rounded-lg transition-colors disabled:opacity-60"
                       >
                         {uploading ? 'Enviando...' : 'Enviar'}
                       </button>
@@ -1055,7 +1055,7 @@ export default function ClientProfilePage() {
                                     </span>
                                     <button
                                       onClick={() => downloadFile(openFolder, f.name, original)}
-                                      className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-0.5"
+                                      className="text-muted-foreground hover:text-[#efefef] transition-colors p-0.5"
                                       title="Baixar"
                                     >
                                       <Download size={13} />
@@ -1074,7 +1074,7 @@ export default function ClientProfilePage() {
                           ) : (
                             <button
                               onClick={() => openFilePicker(openFolder, slot)}
-                              className="shrink-0 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-[#a78bfa] border border-[#2a2a2a] hover:border-[#7c3aed]/40 px-2 py-1 rounded-md transition-colors"
+                              className="shrink-0 flex items-center gap-1 text-[11px] text-muted-foreground hover:text-[#efefef] border border-[#2a2a2a] hover:border-[#efefef]/40 px-2 py-1 rounded-md transition-colors"
                             >
                               <Upload size={10} /> Upload
                             </button>
@@ -1109,7 +1109,7 @@ export default function ClientProfilePage() {
                             </div>
                             <button
                               onClick={() => downloadFile(openFolder, f.name, original)}
-                              className="text-muted-foreground hover:text-[#a78bfa] transition-colors"
+                              className="text-muted-foreground hover:text-[#efefef] transition-colors"
                               title="Baixar"
                             >
                               <Download size={14} />
@@ -1144,7 +1144,7 @@ export default function ClientProfilePage() {
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl divide-y divide-[#2a2a2a]">
               {client.status_history.map(h => (
                 <div key={h.id} className="px-5 py-4 flex items-center gap-4">
-                  <div className="w-2 h-2 rounded-full bg-[#7c3aed] shrink-0" />
+                  <div className="w-2 h-2 rounded-full bg-[#efefef] shrink-0" />
                   <div>
                     <p className="text-sm">
                       <span className="text-muted-foreground">{statusLabel[h.old_status ?? ''] ?? '—'}</span>
@@ -1177,7 +1177,7 @@ export default function ClientProfilePage() {
               onBlur={() => saveExtras()}
               rows={4}
               placeholder="Metas, expectativas e resultados esperados..."
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50 resize-none"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50 resize-none"
             />
           </div>
 
@@ -1190,7 +1190,7 @@ export default function ClientProfilePage() {
               </div>
               <button
                 onClick={() => setExtras(x => ({ ...x, social_media: [...x.social_media, { platform: 'Instagram', handle: '' }] }))}
-                className="flex items-center gap-1 text-xs text-[#a78bfa] hover:text-[#7c3aed] transition-colors"
+                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
               >
                 <Plus size={12} /> Adicionar
               </button>
@@ -1208,7 +1208,7 @@ export default function ClientProfilePage() {
                       setExtras(x => ({ ...x, social_media: arr }))
                     }}
                     onBlur={() => saveExtras()}
-                    className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors w-36 shrink-0"
+                    className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-[#efefef] transition-colors w-36 shrink-0"
                   >
                     {SOCIAL_PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
@@ -1220,7 +1220,7 @@ export default function ClientProfilePage() {
                     }}
                     onBlur={() => saveExtras()}
                     placeholder="@usuario ou URL"
-                    className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                    className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                   />
                   <button
                     onClick={() => { const arr = extras.social_media.filter((_, j) => j !== i); setExtras(x => ({ ...x, social_media: arr })); saveExtras({ social_media: arr }) }}
@@ -1242,7 +1242,7 @@ export default function ClientProfilePage() {
               </div>
               <button
                 onClick={() => setExtras(x => ({ ...x, links: [...x.links, { label: '', url: '' }] }))}
-                className="flex items-center gap-1 text-xs text-[#a78bfa] hover:text-[#7c3aed] transition-colors"
+                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
               >
                 <Plus size={12} /> Adicionar
               </button>
@@ -1258,19 +1258,19 @@ export default function ClientProfilePage() {
                     onChange={e => { const arr = [...extras.links]; arr[i] = { ...arr[i], label: e.target.value }; setExtras(x => ({ ...x, links: arr })) }}
                     onBlur={() => saveExtras()}
                     placeholder="Rótulo (ex: Site)"
-                    className="w-32 shrink-0 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                    className="w-32 shrink-0 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                   />
                   <input
                     value={lk.url}
                     onChange={e => { const arr = [...extras.links]; arr[i] = { ...arr[i], url: e.target.value }; setExtras(x => ({ ...x, links: arr })) }}
                     onBlur={() => saveExtras()}
                     placeholder="https://..."
-                    className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                    className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                   />
                   <button
                     onClick={() => { navigator.clipboard.writeText(lk.url) }}
                     title="Copiar link"
-                    className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1"
+                    className="text-muted-foreground hover:text-[#efefef] transition-colors p-1"
                   >
                     <Copy size={14} />
                   </button>
@@ -1295,7 +1295,7 @@ export default function ClientProfilePage() {
               </div>
               <button
                 onClick={() => setExtras(x => ({ ...x, passwords: [...x.passwords, { label: '', username: '', password: '', url: '' }] }))}
-                className="flex items-center gap-1 text-xs text-[#a78bfa] hover:text-[#7c3aed] transition-colors"
+                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
               >
                 <Plus size={12} /> Adicionar
               </button>
@@ -1312,7 +1312,7 @@ export default function ClientProfilePage() {
                       onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], label: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                       onBlur={() => saveExtras()}
                       placeholder="Rótulo (ex: Google Ads)"
-                      className="flex-1 min-w-0 bg-transparent border-b border-[#2a2a2a] pb-1 text-sm font-medium focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                      className="flex-1 min-w-0 bg-transparent border-b border-[#2a2a2a] pb-1 text-sm font-medium focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                     />
                     <button
                       onClick={() => { const arr = extras.passwords.filter((_, j) => j !== i); setExtras(x => ({ ...x, passwords: arr })); saveExtras({ passwords: arr }) }}
@@ -1330,9 +1330,9 @@ export default function ClientProfilePage() {
                           onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], username: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                           onBlur={() => saveExtras()}
                           placeholder="usuario@email.com"
-                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                         />
-                        <button onClick={() => navigator.clipboard.writeText(pw.username)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"><Copy size={12} /></button>
+                        <button onClick={() => navigator.clipboard.writeText(pw.username)} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"><Copy size={12} /></button>
                       </div>
                     </div>
                     <div className="min-w-0">
@@ -1344,15 +1344,15 @@ export default function ClientProfilePage() {
                           onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], password: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                           onBlur={() => saveExtras()}
                           placeholder="••••••••"
-                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                         />
                         <button
                           onClick={() => setRevealedPasswords(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n })}
-                          className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"
+                          className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"
                         >
                           {revealedPasswords.has(i) ? <EyeOff size={12} /> : <Eye size={12} />}
                         </button>
-                        <button onClick={() => navigator.clipboard.writeText(pw.password)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"><Copy size={12} /></button>
+                        <button onClick={() => navigator.clipboard.writeText(pw.password)} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"><Copy size={12} /></button>
                       </div>
                     </div>
                   </div>
@@ -1364,9 +1364,9 @@ export default function ClientProfilePage() {
                         onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], url: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
                         onBlur={() => saveExtras()}
                         placeholder="https://..."
-                        className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#7c3aed] transition-colors placeholder:text-muted-foreground/50"
+                        className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
                       />
-                      <button onClick={() => navigator.clipboard.writeText(pw.url)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors p-1 shrink-0"><Copy size={12} /></button>
+                      <button onClick={() => navigator.clipboard.writeText(pw.url)} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"><Copy size={12} /></button>
                     </div>
                   </div>
                 </div>
@@ -1385,7 +1385,7 @@ export default function ClientProfilePage() {
 
           {editorialLoading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : editorial ? (() => {
             const today = new Date().toISOString().slice(0, 10)
@@ -1410,8 +1410,8 @@ export default function ClientProfilePage() {
                 <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-[#7c3aed]/10 flex items-center justify-center shrink-0">
-                        <File size={18} className="text-[#a78bfa]" />
+                      <div className="w-10 h-10 rounded-lg bg-[#efefef]/10 flex items-center justify-center shrink-0">
+                        <File size={18} className="text-[#efefef]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{editorial.pdf_name}</p>
@@ -1449,14 +1449,14 @@ export default function ClientProfilePage() {
                   <div className="flex items-center gap-2 pt-1">
                     <button
                       onClick={async () => { await loadEditorialPdf(); }}
-                      className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#7c3aed]/40 text-muted-foreground hover:text-[#a78bfa] px-3 py-1.5 rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#efefef]/40 text-muted-foreground hover:text-[#efefef] px-3 py-1.5 rounded-lg transition-colors"
                     >
                       <Eye size={12} /> Visualizar PDF
                     </button>
                     <button
                       onClick={() => editorialInputRef.current?.click()}
                       disabled={editorialUploading}
-                      className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#7c3aed]/40 text-muted-foreground hover:text-[#a78bfa] px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 text-xs border border-[#2a2a2a] hover:border-[#efefef]/40 text-muted-foreground hover:text-[#efefef] px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Upload size={12} /> {editorialUploading ? 'Enviando...' : 'Substituir PDF'}
                     </button>
@@ -1493,7 +1493,7 @@ export default function ClientProfilePage() {
                       <span className="text-xs text-muted-foreground">{editorial.pdf_name}</span>
                       <div className="flex items-center gap-2">
                         <a href={editorialPdfUrl} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-[#a78bfa] transition-colors">
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-[#efefef] transition-colors">
                           <Download size={12} /> Baixar
                         </a>
                         <button onClick={() => setEditorialPdfUrl(null)} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -1509,8 +1509,8 @@ export default function ClientProfilePage() {
           })() : (
             /* Estado vazio */
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-10 flex flex-col items-center gap-4 text-center">
-              <div className="w-12 h-12 rounded-xl bg-[#7c3aed]/10 flex items-center justify-center">
-                <File size={22} className="text-[#a78bfa]" />
+              <div className="w-12 h-12 rounded-xl bg-[#efefef]/10 flex items-center justify-center">
+                <File size={22} className="text-[#efefef]" />
               </div>
               <div>
                 <p className="text-sm font-medium">Nenhuma linha editorial cadastrada</p>
@@ -1522,7 +1522,7 @@ export default function ClientProfilePage() {
               <button
                 onClick={() => { setEditorialError(''); editorialInputRef.current?.click() }}
                 disabled={editorialUploading}
-                className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+                className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
               >
                 <Upload size={14} />
                 {editorialUploading ? 'Enviando...' : 'Upload PDF'}
@@ -1598,7 +1598,7 @@ export default function ClientProfilePage() {
                 <select
                   value={form.billing_day ?? ''}
                   onChange={e => setForm(f => ({ ...f, billing_day: e.target.value ? parseInt(e.target.value) : null }))}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                 >
                   <option value="">Não definido</option>
                   {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
@@ -1612,12 +1612,12 @@ export default function ClientProfilePage() {
                   placeholder="Ex: 20"
                   value={form.monthly_content_quota ?? ''}
                   onChange={e => setForm(f => ({ ...f, monthly_content_quota: e.target.value ? parseInt(e.target.value) : null }))}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                 />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Status</label>
-                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as Client['status'] }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors">
+                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as Client['status'] }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors">
                   <option value="ativo">Ativo</option>
                   <option value="pausado">Pausado</option>
                   <option value="encerrado">Encerrado</option>
@@ -1625,12 +1625,12 @@ export default function ClientProfilePage() {
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Observações</label>
-                <textarea value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors resize-none" />
+                <textarea value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none" />
               </div>
             </div>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setEditing(false)} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-              <button onClick={saveClient} disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
+              <button onClick={saveClient} disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60">
                 {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
@@ -1704,7 +1704,7 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
   return (
     <div>
       <label className="block text-xs text-muted-foreground mb-1">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+      <input type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
     </div>
   )
 }

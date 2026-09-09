@@ -46,7 +46,7 @@ export function NewGoalModal({ onClose, onCreated }: Props) {
             <select
               value={form.period}
               onChange={e => set('period', e.target.value)}
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors capitalize"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors capitalize"
             >
               {months.map(m => <option key={m.val} value={m.val} className="capitalize">{m.label}</option>)}
             </select>
@@ -61,7 +61,7 @@ export function NewGoalModal({ onClose, onCreated }: Props) {
                   onClick={() => set('type', v)}
                   className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
                     form.type === v
-                      ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]'
+                      ? 'bg-[#efefef]/10 border-[#efefef]/30 text-[#efefef]'
                       : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
                   }`}
                 >
@@ -79,13 +79,13 @@ export function NewGoalModal({ onClose, onCreated }: Props) {
               value={form.target_value}
               onChange={e => set('target_value', e.target.value)}
               placeholder={form.type === 'mrr' ? '10000' : '20'}
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             />
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm font-medium py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50">
               {saving ? 'Salvando...' : 'Criar meta'}
             </button>
           </div>

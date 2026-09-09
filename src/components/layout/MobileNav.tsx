@@ -120,7 +120,7 @@ export function MobileNav() {
                     href={href}
                     className={`flex flex-col items-center gap-1.5 py-4 rounded-xl transition-colors ${
                       active
-                        ? 'bg-[#7c3aed]/15 text-[#a78bfa]'
+                        ? 'bg-[#efefef]/15 text-[#efefef]'
                         : 'text-[#666] hover:text-foreground hover:bg-[#1a1a1a]'
                     }`}
                   >
@@ -157,7 +157,7 @@ export function MobileNav() {
               key={href}
               href={href}
               className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
-                active ? 'text-[#a78bfa]' : 'text-[#555] hover:text-[#888]'
+                active ? 'text-[#efefef]' : 'text-[#555] hover:text-[#888]'
               }`}
             >
               <Icon size={22} strokeWidth={active ? 2 : 1.5} />
@@ -170,7 +170,7 @@ export function MobileNav() {
         <button
           onClick={() => setOpen(true)}
           className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
-            open || isMoreActive ? 'text-[#a78bfa]' : 'text-[#555] hover:text-[#888]'
+            open || isMoreActive ? 'text-[#efefef]' : 'text-[#555] hover:text-[#888]'
           }`}
         >
           <MoreHorizontal size={22} strokeWidth={open || isMoreActive ? 2 : 1.5} />

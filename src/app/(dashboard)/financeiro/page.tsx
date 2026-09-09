@@ -36,7 +36,7 @@ interface HistoricoPoint { label: string; key: string; revenue: number; expenses
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
-  prolabore:  { label: 'Pró-labore',    color: '#a78bfa' },
+  prolabore:  { label: 'Pró-labore',    color: '#efefef' },
   salario:    { label: 'Salário',       color: '#818cf8' },
   impostos:   { label: 'Impostos',      color: '#f59e0b' },
   aluguel:    { label: 'Aluguel',       color: '#60a5fa' },
@@ -230,25 +230,25 @@ function ExpenseModal({ initial, onClose, onSaved }: {
             <label className="block text-xs text-muted-foreground mb-1">Descrição</label>
             <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Ex: Pró-labore do sócio, Imposto DAS..."
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Valor (R$)</label>
               <input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                 placeholder="0,00"
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Vencimento</label>
               <input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
             </div>
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Categoria</label>
             <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors">
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors">
               {Object.entries(EXPENSE_CATEGORIES).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
               ))}
@@ -258,7 +258,7 @@ function ExpenseModal({ initial, onClose, onSaved }: {
             <label className="block text-xs text-muted-foreground mb-1">Observações (opcional)</label>
             <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               placeholder="Referência, número NF..."
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
           </div>
           {isRecurringEdit ? (
             <div className="space-y-2">
@@ -295,7 +295,7 @@ function ExpenseModal({ initial, onClose, onSaved }: {
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))}
-                  className="w-4 h-4 accent-[#7c3aed]" />
+                  className="w-4 h-4 accent-[#efefef]" />
                 <span className="text-sm">Despesa recorrente (mensal)</span>
               </label>
               {form.recurrent && (
@@ -303,17 +303,17 @@ function ExpenseModal({ initial, onClose, onSaved }: {
                   <label className="block text-xs text-muted-foreground mb-1">Repetir até quando? (opcional)</label>
                   <input type="date" value={form.recurrence_end_date}
                     onChange={e => setForm(f => ({ ...f, recurrence_end_date: e.target.value }))}
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                   <p className="text-[11px] text-muted-foreground mt-1">Ex: despesa por 6 meses — coloque a data do último mês. Deixe em branco pra repetir sem prazo.</p>
                 </div>
               )}
             </div>
           )}
           {isRecurringEdit && amountChanged && (
-            <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/20 rounded-lg p-3 space-y-2">
+            <div className="bg-[#efefef]/10 border border-[#efefef]/20 rounded-lg p-3 space-y-2">
               <p className="text-xs text-foreground">O valor mudou. A partir de quando vale o novo valor?</p>
               <input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)}
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
               <p className="text-[11px] text-muted-foreground">Atualiza esta e todas as parcelas futuras ainda não pagas.</p>
             </div>
           )}
@@ -324,7 +324,7 @@ function ExpenseModal({ initial, onClose, onSaved }: {
         <div className="flex gap-3 pt-1">
           <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
           <button onClick={save} disabled={saving}
-            className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60 font-medium">
+            className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-60 font-medium">
             {saving ? 'Salvando...' : initial ? 'Salvar' : 'Criar despesa'}
           </button>
         </div>
@@ -467,7 +467,7 @@ export default function FinanceiroPage() {
             <Plus size={14} /> Nova despesa
           </button>
           <button onClick={() => setShowNewCharge(true)}
-            className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             <Plus size={14} /> Nova receita
           </button>
         </div>
@@ -493,18 +493,18 @@ export default function FinanceiroPage() {
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${lucro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
           <div className="flex items-center gap-2 mb-3">
-            <Wallet size={13} className="text-[#a78bfa]" />
+            <Wallet size={13} className="text-[#efefef]" />
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Lucro líquido</p>
           </div>
-          <p className={`text-xl font-semibold ${lucro >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'}`}>{formatBRL(lucro)}</p>
+          <p className={`text-xl font-semibold ${lucro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{formatBRL(lucro)}</p>
           <p className="text-[11px] text-muted-foreground mt-1">receita − despesas pagas</p>
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${margemLucro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
           <div className="flex items-center gap-2 mb-3">
-            <TrendingUp size={13} className={margemLucro >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'} />
+            <TrendingUp size={13} className={margemLucro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'} />
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Margem de lucro</p>
           </div>
-          <p className={`text-xl font-semibold ${margemLucro >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'}`}>{margemLucro.toFixed(1)}%</p>
+          <p className={`text-xl font-semibold ${margemLucro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{margemLucro.toFixed(1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-1">lucro ÷ faturamento</p>
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${inadimplente > 0 ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'}`}>
@@ -534,7 +534,7 @@ export default function FinanceiroPage() {
           {/* Gráfico comparativo 6 meses */}
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
             <div className="flex items-center gap-2 mb-5">
-              <TrendingUp size={14} className="text-[#a78bfa]" />
+              <TrendingUp size={14} className="text-[#efefef]" />
               <h2 className="text-sm font-medium">Receita vs Despesas — últimos 6 meses</h2>
             </div>
             {historico.length === 0 ? (
@@ -572,15 +572,15 @@ export default function FinanceiroPage() {
           {historico.length > 0 && (
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
               <div className="flex items-center gap-2 mb-5">
-                <Wallet size={14} className="text-[#a78bfa]" />
+                <Wallet size={14} className="text-[#efefef]" />
                 <h2 className="text-sm font-medium">Lucro líquido — últimos 6 meses</h2>
               </div>
               <ResponsiveContainer width="100%" height={160}>
                 <AreaChart data={historico}>
                   <defs>
                     <linearGradient id="gProfit" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#a78bfa" stopOpacity={0} />
+                      <stop offset="0%" stopColor="#efefef" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#efefef" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid vertical={false} stroke="#2a2a2a" />
@@ -590,7 +590,7 @@ export default function FinanceiroPage() {
                     contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }}
                     formatter={(v: unknown) => [formatBRL(Number(v)), 'Lucro']}
                   />
-                  <Area type="monotone" dataKey="profit" stroke="#a78bfa" fill="url(#gProfit)" strokeWidth={2} dot={{ fill: '#a78bfa', r: 3 }} />
+                  <Area type="monotone" dataKey="profit" stroke="#efefef" fill="url(#gProfit)" strokeWidth={2} dot={{ fill: '#efefef', r: 3 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -613,7 +613,7 @@ export default function FinanceiroPage() {
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Lucro</p>
-                      <p className={`font-medium ${h.profit >= 0 ? 'text-[#a78bfa]' : 'text-[#ef4444]'}`}>{formatBRL(h.profit)}</p>
+                      <p className={`font-medium ${h.profit >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{formatBRL(h.profit)}</p>
                     </div>
                   </div>
                 </div>
@@ -657,7 +657,7 @@ export default function FinanceiroPage() {
       {tab === 'receitas' && (
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-40"><div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" /></div>
+            <div className="flex items-center justify-center h-40"><div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" /></div>
           ) : withStatus.length === 0 ? (
             <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">Nenhuma receita neste mês</div>
           ) : (
@@ -715,7 +715,7 @@ export default function FinanceiroPage() {
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl flex flex-col items-center justify-center h-40 gap-3 text-sm text-muted-foreground">
               <ArrowDownCircle size={24} className="opacity-30" />
               Nenhuma despesa neste mês
-              <button onClick={() => setShowNewExpense(true)} className="flex items-center gap-1 text-xs text-[#a78bfa] hover:text-[#7c3aed] transition-colors">
+              <button onClick={() => setShowNewExpense(true)} className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors">
                 <Plus size={12} /> Adicionar despesa
               </button>
             </div>

@@ -27,7 +27,7 @@ const ALL_NAV = [
 ]
 
 const ROLE_COLOR: Record<Role, string> = {
-  gustavo: '#a78bfa',
+  gustavo: '#efefef',
   gabriel: '#34d399',
   thomas:  '#60a5fa',
   admin:   '#f59e0b',
@@ -123,7 +123,7 @@ export function Sidebar() {
               href={href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors ${
                 active
-                  ? 'bg-[#7c3aed]/10 text-[#a78bfa]'
+                  ? 'bg-[#efefef]/10 text-[#efefef]'
                   : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
               }`}
             >
@@ -139,7 +139,7 @@ export function Sidebar() {
         {installPrompt && (
           <button
             onClick={handleInstall}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-[#a78bfa] hover:bg-[#7c3aed]/10 transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-[#efefef] hover:bg-[#efefef]/10 transition-colors"
           >
             <Download size={16} strokeWidth={1.5} />
             Instalar app

@@ -132,7 +132,7 @@ export default function MetasPage() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} />
           Nova meta
@@ -141,7 +141,7 @@ export default function MetasPage() {
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (isJulia ? goals.filter(g => g.type === 'custom' && g.title) : goals).length === 0 ? (
         <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
@@ -150,7 +150,7 @@ export default function MetasPage() {
             <p className="text-sm font-medium">Nenhuma meta cadastrada</p>
             <p className="text-xs text-muted-foreground mt-1">Crie metas automáticas de MRR ou metas personalizadas</p>
           </div>
-          <button onClick={() => setShowNew(true)} className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors">
+          <button onClick={() => setShowNew(true)} className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors">
             Criar primeira meta
           </button>
         </div>
@@ -171,14 +171,14 @@ export default function MetasPage() {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold leading-snug">{goalTitle(g)}</p>
                       {isAuto && (
-                        <span title="Atualizado automaticamente" className="text-[#7c3aed]">
+                        <span title="Atualizado automaticamente" className="text-[#efefef]">
                           <Zap size={11} fill="currentColor" />
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {!isAuto && g.clients && (
-                        <span className="text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">
                           {g.clients.name}
                         </span>
                       )}
@@ -199,7 +199,7 @@ export default function MetasPage() {
                     {!isAuto && (
                       <button
                         onClick={() => startEditCurrent(g)}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#a78bfa] transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all"
                         title="Atualizar progresso"
                       >
                         <TrendingUp size={13} />
@@ -225,7 +225,7 @@ export default function MetasPage() {
                   <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${p}%`, background: done ? '#22c55e' : '#7c3aed' }}
+                      style={{ width: `${p}%`, background: done ? '#22c55e' : '#efefef' }}
                     />
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function MetasPage() {
                       onChange={e => setEditCurrent(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') saveCurrent(g.id); if (e.key === 'Escape') setEditingId(null) }}
                       autoFocus
-                      className="flex-1 bg-[#111111] border border-[#7c3aed]/40 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                      className="flex-1 bg-[#111111] border border-[#efefef]/40 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                     />
                     <button onClick={() => saveCurrent(g.id)} className="text-[#22c55e] hover:text-[#4ade80] transition-colors"><Check size={14} /></button>
                     <button onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground transition-colors"><X size={14} /></button>
@@ -339,7 +339,7 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                 type="button"
                 onClick={() => setMode('auto')}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
-                  mode === 'auto' ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
+                  mode === 'auto' ? 'bg-[#efefef]/10 border-[#efefef]/30 text-[#efefef]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <Zap size={11} fill={mode === 'auto' ? 'currentColor' : 'none'} />
@@ -349,7 +349,7 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                 type="button"
                 onClick={() => setMode('custom')}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
-                  mode === 'custom' ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
+                  mode === 'custom' ? 'bg-[#efefef]/10 border-[#efefef]/30 text-[#efefef]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Personalizada
@@ -364,7 +364,7 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                 <div className="flex gap-2">
                   {([['mrr', 'MRR (receita)'], ['clientes', 'Clientes ativos']] as const).map(([v, l]) => (
                     <button key={v} type="button" onClick={() => setAutoType(v)}
-                      className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-colors ${autoType === v ? 'bg-[#7c3aed]/10 border-[#7c3aed]/30 text-[#a78bfa]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'}`}>
+                      className={`flex-1 py-2.5 rounded-lg text-xs font-medium border transition-colors ${autoType === v ? 'bg-[#efefef]/10 border-[#efefef]/30 text-[#efefef]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'}`}>
                       {l}
                     </button>
                   ))}
@@ -373,7 +373,7 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Período</label>
                 <select value={period} onChange={e => setPeriod(e.target.value)}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors capitalize">
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors capitalize">
                   {months.map(m => <option key={m.val} value={m.val} className="capitalize">{m.label}</option>)}
                 </select>
               </div>
@@ -383,10 +383,10 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                 </label>
                 <input type="number" value={form.target_value} onChange={e => setF('target_value', e.target.value)}
                   placeholder={autoType === 'mrr' ? '10000' : '20'}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
               </div>
               <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                <Zap size={10} className="text-[#7c3aed]" fill="currentColor" />
+                <Zap size={10} className="text-[#efefef]" fill="currentColor" />
                 O progresso é atualizado automaticamente com os dados reais da agência.
               </p>
             </>
@@ -396,12 +396,12 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                 <label className="block text-xs text-muted-foreground mb-1.5">Título *</label>
                 <input type="text" value={form.title} onChange={e => setF('title', e.target.value)}
                   placeholder="Ex: Bater 10k seguidores" autoFocus
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Cliente (opcional)</label>
                 <select value={form.client_id} onChange={e => setF('client_id', e.target.value)}
-                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors">
+                  className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors">
                   <option value="">Nenhum (meta interna)</option>
                   {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -411,13 +411,13 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                   <label className="block text-xs text-muted-foreground mb-1.5">Valor alvo *</label>
                   <input type="number" value={form.target_value} onChange={e => setF('target_value', e.target.value)}
                     placeholder="10000"
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1.5">Unidade</label>
                   <input type="text" value={form.unit} onChange={e => setF('unit', e.target.value)}
                     placeholder="seguidores"
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -425,12 +425,12 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
                   <label className="block text-xs text-muted-foreground mb-1.5">Valor atual</label>
                   <input type="number" value={form.current_value} onChange={e => setF('current_value', e.target.value)}
                     placeholder="0"
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1.5">Prazo</label>
                   <input type="date" value={form.deadline} onChange={e => setF('deadline', e.target.value)}
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors" />
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
                 </div>
               </div>
             </>
@@ -439,7 +439,7 @@ function NewGoalModal({ clients, onlyCustom, onClose, onCreated }: { clients: Cl
           {error && <p className="text-xs text-[#ef4444]">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm font-medium py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-            <button type="submit" disabled={saving} className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium py-2.5 rounded-lg transition-colors disabled:opacity-50">
               {saving ? 'Criando...' : 'Criar meta'}
             </button>
           </div>

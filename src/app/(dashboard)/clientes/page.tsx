@@ -62,7 +62,7 @@ export default function ClientesPage() {
         {!hideFinance && (
           <button
             onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             <Plus size={14} />
             Novo cliente
@@ -77,7 +77,7 @@ export default function ClientesPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar cliente..."
-            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg pl-8 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+            className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg pl-8 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
           />
         </div>
         <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1">
@@ -99,7 +99,7 @@ export default function ClientesPage() {
       <div className="md:hidden space-y-2">
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-40 text-sm text-muted-foreground bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
@@ -112,8 +112,8 @@ export default function ClientesPage() {
             className="block bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-4 flex items-center gap-3 hover:border-[#3a3a3a] active:bg-[#222] transition-colors"
           >
             {/* avatar */}
-            <div className="w-10 h-10 rounded-full bg-[#7c3aed]/15 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-[#a78bfa]">{c.name[0].toUpperCase()}</span>
+            <div className="w-10 h-10 rounded-full bg-[#efefef]/15 flex items-center justify-center shrink-0">
+              <span className="text-sm font-bold text-[#efefef]">{c.name[0].toUpperCase()}</span>
             </div>
             {/* info */}
             <div className="flex-1 min-w-0">
@@ -139,7 +139,7 @@ export default function ClientesPage() {
       <div className="hidden md:block bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">

@@ -29,7 +29,7 @@ interface AIResource {
 
 // ── categorias ─────────────────────────────────────────────────────────────────
 const CATEGORIES = [
-  { key: 'prompt',    label: 'Prompt',     icon: Sparkles,   color: '#a78bfa', bg: '#a78bfa18' },
+  { key: 'prompt',    label: 'Prompt',     icon: Sparkles,   color: '#efefef', bg: '#efefef18' },
   { key: 'gpt',       label: 'GPT',        icon: Bot,        color: '#60a5fa', bg: '#60a5fa18' },
   { key: 'automacao', label: 'Automação',  icon: Zap,        color: '#f97316', bg: '#f9731618' },
   { key: 'agente',    label: 'Agente',     icon: Brain,      color: '#f472b6', bg: '#f472b618' },
@@ -139,7 +139,7 @@ function ResourceCard({ item, onClick, onToggleFeatured }: {
         <div className="flex items-center gap-2">
           {item.author && (
             <div className="flex items-center gap-1">
-              <div className="w-4 h-4 rounded-full bg-[#7c3aed]/30 flex items-center justify-center text-[8px] font-bold text-[#a78bfa]">
+              <div className="w-4 h-4 rounded-full bg-[#efefef]/30 flex items-center justify-center text-[8px] font-bold text-[#efefef]">
                 {item.author[0]?.toUpperCase()}
               </div>
               <span className="text-[10px] text-muted-foreground">{item.author}</span>
@@ -330,7 +330,7 @@ function ResourcePanel({ item, onClose, onUpdate, onDelete }: {
           <div className="flex items-center gap-2">
             {(item.content || item.link) && (
               <button onClick={handleUse}
-                className="flex-1 flex items-center justify-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium py-2.5 rounded-xl transition-colors">
+                className="flex-1 flex items-center justify-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium py-2.5 rounded-xl transition-colors">
                 {copied ? <><Check size={14} /> Copiado!</> : <><Copy size={14} /> Copiar e usar</>}
               </button>
             )}
@@ -462,7 +462,7 @@ function EditItemModal({ item, onClose, onSaved }: {
           {/* Título */}
           <div>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Título *</p>
-            <div className="flex items-center gap-2 bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 focus-within:border-[#7c3aed]/50">
+            <div className="flex items-center gap-2 bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 focus-within:border-[#efefef]/50">
               <SelIcon size={14} style={{ color: selectedCat.color }} strokeWidth={1.8} />
               <input autoFocus value={form.title} onChange={e => set('title', e.target.value)}
                 placeholder="Nome do recurso" required
@@ -475,7 +475,7 @@ function EditItemModal({ item, onClose, onSaved }: {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Descrição</p>
             <textarea value={form.description} onChange={e => set('description', e.target.value)}
               rows={2} placeholder="Para que serve, como usar..."
-              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground resize-none" />
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground resize-none" />
           </div>
 
           {/* Conteúdo */}
@@ -485,7 +485,7 @@ function EditItemModal({ item, onClose, onSaved }: {
             </p>
             <textarea value={form.content} onChange={e => set('content', e.target.value)}
               rows={4} placeholder="Cole o prompt, instruções ou descrição detalhada..."
-              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground resize-none" />
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground resize-none" />
           </div>
 
           {/* Link */}
@@ -493,7 +493,7 @@ function EditItemModal({ item, onClose, onSaved }: {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Link externo</p>
             <input type="url" value={form.link} onChange={e => set('link', e.target.value)}
               placeholder="https://..."
-              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground" />
           </div>
 
           {/* Tags + Autor */}
@@ -502,13 +502,13 @@ function EditItemModal({ item, onClose, onSaved }: {
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Tags</p>
               <input value={form.tags} onChange={e => set('tags', e.target.value)}
                 placeholder="copywriting, social"
-                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground" />
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Adicionado por</p>
               <input value={form.author} onChange={e => set('author', e.target.value)}
                 placeholder="Seu nome"
-                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground" />
             </div>
           </div>
 
@@ -547,7 +547,7 @@ function EditItemModal({ item, onClose, onSaved }: {
             Cancelar
           </button>
           <button type="submit" disabled={saving || !form.title.trim()}
-            className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+            className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] disabled:opacity-50 text-[#111111] text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
             {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Check size={14} /> Salvar</>}
           </button>
         </div>
@@ -649,7 +649,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
           {/* Título */}
           <div>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Título *</p>
-            <div className="flex items-center gap-2 bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 focus-within:border-[#7c3aed]/50">
+            <div className="flex items-center gap-2 bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 focus-within:border-[#efefef]/50">
               <SelIcon size={14} style={{ color: selectedCat.color }} strokeWidth={1.8} />
               <input autoFocus value={form.title} onChange={e => set('title', e.target.value)}
                 placeholder="Nome do recurso" required
@@ -662,7 +662,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Descrição</p>
             <textarea value={form.description} onChange={e => set('description', e.target.value)}
               rows={2} placeholder="Para que serve, como usar..."
-              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground resize-none" />
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground resize-none" />
           </div>
 
           {/* Conteúdo / Prompt */}
@@ -672,7 +672,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
             </p>
             <textarea value={form.content} onChange={e => set('content', e.target.value)}
               rows={4} placeholder="Cole o prompt, instruções ou descrição detalhada..."
-              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground resize-none" />
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground resize-none" />
           </div>
 
           {/* Link */}
@@ -680,7 +680,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Link externo</p>
             <input type="url" value={form.link} onChange={e => set('link', e.target.value)}
               placeholder="https://chatgpt.com/g/... ou Make, Zapier, etc."
-              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+              className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground" />
           </div>
 
           {/* Tags + Autor */}
@@ -689,14 +689,14 @@ function NewItemModal({ authorName, onClose, onCreated }: {
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Tags</p>
               <input value={form.tags} onChange={e => set('tags', e.target.value)}
                 placeholder="copywriting, social, ads"
-                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground" />
               <p className="text-[9px] text-muted-foreground mt-1">separadas por vírgula</p>
             </div>
             <div>
               <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">Adicionado por</p>
               <input value={form.author} onChange={e => set('author', e.target.value)}
                 placeholder="Seu nome"
-                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed]/50 placeholder:text-muted-foreground" />
+                className="w-full bg-[#111111] border border-[#1f1f1f] rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]/50 placeholder:text-muted-foreground" />
             </div>
           </div>
 
@@ -730,7 +730,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
             Cancelar
           </button>
           <button type="submit" disabled={saving || !form.title.trim()}
-            className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+            className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] disabled:opacity-50 text-[#111111] text-sm font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
             {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Plus size={14} /> Adicionar</>}
           </button>
         </div>
@@ -809,7 +809,7 @@ export default function IAPage() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#f472b6] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#efefef] to-[#f472b6] flex items-center justify-center">
                 <Brain size={16} className="text-white" strokeWidth={1.8} />
               </div>
               <h1 className="text-xl font-semibold tracking-tight">Central de IA</h1>
@@ -817,7 +817,7 @@ export default function IAPage() {
             <p className="text-sm text-muted-foreground">Prompts, GPTs, automações e tudo que a equipe descobre.</p>
           </div>
           <button onClick={() => setShowNew(true)}
-            className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+            className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
             <Plus size={15} /> Adicionar
           </button>
         </div>
@@ -827,7 +827,7 @@ export default function IAPage() {
           <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input ref={searchRef} value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar prompts, ferramentas, automações..."
-            className="w-full bg-[#111111] border border-[#1f1f1f] rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#7c3aed]/40 placeholder:text-muted-foreground transition-colors" />
+            className="w-full bg-[#111111] border border-[#1f1f1f] rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#efefef]/40 placeholder:text-muted-foreground transition-colors" />
           {search && (
             <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               <X size={13} />
@@ -924,7 +924,7 @@ export default function IAPage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           <button onClick={() => setActivecat('todos')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
-              activecat === 'todos' ? 'bg-[#7c3aed]/15 text-[#a78bfa] border border-[#7c3aed]/30' : 'bg-[#111111] border border-[#1f1f1f] text-muted-foreground hover:text-foreground'
+              activecat === 'todos' ? 'bg-[#efefef]/15 text-[#efefef] border border-[#efefef]/30' : 'bg-[#111111] border border-[#1f1f1f] text-muted-foreground hover:text-foreground'
             }`}>
             Todos <span className="opacity-60">{items.length}</span>
           </button>
@@ -950,7 +950,7 @@ export default function IAPage() {
         {/* Grid principal */}
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center">
@@ -965,7 +965,7 @@ export default function IAPage() {
             </p>
             {!search && (
               <button onClick={() => setShowNew(true)}
-                className="flex items-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
                 <Plus size={14} /> Adicionar primeiro
               </button>
             )}

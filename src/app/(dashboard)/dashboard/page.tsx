@@ -80,24 +80,24 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
 
   const pct      = goal && goal > 0 ? Math.min((numericValue / goal) * 100, 100) : null
   const overGoal = goal ? numericValue >= goal : false
-  const barColor = overGoal ? '#22c55e' : pct && pct >= 70 ? '#f59e0b' : '#7c3aed'
+  const barColor = overGoal ? '#22c55e' : pct && pct >= 70 ? '#f59e0b' : '#efefef'
 
   return (
     <div className={`relative bg-[#1a1a1a] border rounded-xl p-5 overflow-hidden transition-all group hover:border-[#3a3a3a] ${
-      accent ? 'border-[#7c3aed]/30' : highlight ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'
+      accent ? 'border-[#efefef]/30' : highlight ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'
     }`}>
-      {accent && <div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/5 to-transparent pointer-events-none" />}
+      {accent && <div className="absolute inset-0 bg-gradient-to-br from-[#efefef]/5 to-transparent pointer-events-none" />}
       <div className="flex items-center justify-between mb-4">
         <span className="text-xs text-muted-foreground uppercase tracking-wider">{label}</span>
         <div className="flex items-center gap-1.5">
           <button onClick={() => { setEditing(true); setInput(goal ? String(goal) : '') }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-[#a78bfa] p-1 rounded" title="Definir meta">
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-[#efefef] p-1 rounded" title="Definir meta">
             <Pencil size={11} />
           </button>
           <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-            highlight ? 'bg-[#ef4444]/10' : accent ? 'bg-[#7c3aed]/10' : 'bg-[#2a2a2a]'
+            highlight ? 'bg-[#ef4444]/10' : accent ? 'bg-[#efefef]/10' : 'bg-[#2a2a2a]'
           }`}>
-            <Icon size={13} className={highlight ? 'text-[#ef4444]' : accent ? 'text-[#a78bfa]' : 'text-muted-foreground'} strokeWidth={1.5} />
+            <Icon size={13} className={highlight ? 'text-[#ef4444]' : accent ? 'text-[#efefef]' : 'text-muted-foreground'} strokeWidth={1.5} />
           </div>
         </div>
       </div>
@@ -121,10 +121,10 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
           <input autoFocus type="number" placeholder={isCurrency ? 'Ex: 30000' : 'Ex: 10'} value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') saveGoal(); if (e.key === 'Escape') setEditing(false) }}
-            className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#7c3aed] mb-2 placeholder:text-muted-foreground" />
+            className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] mb-2 placeholder:text-muted-foreground" />
           <div className="flex gap-2">
             <button onClick={() => setEditing(false)} className="flex-1 text-xs border border-[#2a2a2a] py-1.5 rounded-lg hover:bg-[#222] transition-colors">Cancelar</button>
-            <button onClick={saveGoal} className="flex-1 text-xs bg-[#7c3aed] hover:bg-[#6d28d9] text-white py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1">
+            <button onClick={saveGoal} className="flex-1 text-xs bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] py-1.5 rounded-lg transition-colors flex items-center justify-center gap-1">
               <Check size={11} /> Salvar
             </button>
           </div>
@@ -184,7 +184,7 @@ function GustavoDashboard() {
     })
   }, [])
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" /></div>
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" /></div>
   if (!data) return null
 
   const hasChartData  = data.chartData.some(d => d.value > 0)
@@ -229,16 +229,16 @@ function GustavoDashboard() {
             ))}
             {alerts.renewals.map(s => (
               <div key={s.id} className="flex items-center gap-2 text-xs">
-                <Clock size={11} className="text-[#a78bfa] shrink-0" />
-                <span className="text-[#a78bfa] font-medium shrink-0">Renovação</span>
+                <Clock size={11} className="text-[#efefef] shrink-0" />
+                <span className="text-[#efefef] font-medium shrink-0">Renovação</span>
                 <span className="text-muted-foreground truncate">{s.clients?.name} · {s.name} · até {formatDate(s.contract_end)}</span>
               </div>
             ))}
             {editorialAlerts.map(ea => {
               const isUrgent = ea.daysLeft <= 5
               const isMedium = ea.daysLeft <= 15
-              const color = isUrgent ? 'text-[#ef4444]' : isMedium ? 'text-[#f59e0b]' : 'text-[#a78bfa]'
-              const dot = isUrgent ? 'bg-[#ef4444]' : isMedium ? 'bg-[#f59e0b]' : 'bg-[#a78bfa]'
+              const color = isUrgent ? 'text-[#ef4444]' : isMedium ? 'text-[#f59e0b]' : 'text-[#efefef]'
+              const dot = isUrgent ? 'bg-[#ef4444]' : isMedium ? 'bg-[#f59e0b]' : 'bg-[#efefef]'
               const label = ea.daysLeft < 0 ? 'Editorial expirado' : `Editorial ${ea.daysLeft}d`
               return (
                 <Link key={ea.id} href={`/clientes/${ea.client_id}?tab=editorial`} className="flex items-center gap-2 text-xs hover:opacity-80 transition-opacity">
@@ -280,15 +280,15 @@ function GustavoDashboard() {
       </div>
 
       {pipelineTotal > 0 && (
-        <div className="bg-[#1a1a1a] border border-[#7c3aed]/20 rounded-xl p-5 hover:border-[#7c3aed]/40 transition-colors">
+        <div className="bg-[#1a1a1a] border border-[#efefef]/20 rounded-xl p-5 hover:border-[#efefef]/40 transition-colors">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2"><Kanban size={14} className="text-[#a78bfa]" /><h2 className="text-sm font-medium">Receita potencial</h2></div>
-            <Link href="/pipeline" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">Ver pipeline <ArrowUpRight size={10} /></Link>
+            <div className="flex items-center gap-2"><Kanban size={14} className="text-[#efefef]" /><h2 className="text-sm font-medium">Receita potencial</h2></div>
+            <Link href="/pipeline" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">Ver pipeline <ArrowUpRight size={10} /></Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
             <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">MRR atual</p><p className={`text-lg font-semibold ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr)}</p></div>
             <div className="bg-[#111111] border border-[#f97316]/30 rounded-lg p-3"><p className="text-[10px] text-muted-foreground mb-1">Quase fechando</p><p className={`text-lg font-semibold text-[#f97316] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(hotTotal)}</p><p className={`text-[9px] text-muted-foreground ${hideNums ? 'blur-sm select-none' : ''}`}>{hotLeads.length} lead{hotLeads.length !== 1 ? 's' : ''}</p></div>
-            <div className="bg-[#111111] border border-[#7c3aed]/30 rounded-lg p-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-br from-[#7c3aed]/10 to-transparent pointer-events-none" /><p className="text-[10px] text-muted-foreground mb-1">Se tudo fechar</p><p className={`text-lg font-semibold text-[#a78bfa] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr + pipelineTotal)}</p><p className={`text-[9px] text-[#7c3aed] ${hideNums ? 'blur-sm select-none' : ''}`}>+{formatBRL(pipelineTotal)}</p></div>
+            <div className="bg-[#111111] border border-[#efefef]/30 rounded-lg p-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-br from-[#efefef]/10 to-transparent pointer-events-none" /><p className="text-[10px] text-muted-foreground mb-1">Se tudo fechar</p><p className={`text-lg font-semibold text-[#efefef] ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.mrr + pipelineTotal)}</p><p className={`text-[9px] text-[#efefef] ${hideNums ? 'blur-sm select-none' : ''}`}>+{formatBRL(pipelineTotal)}</p></div>
           </div>
           <div className="space-y-2">
             {Object.entries(STAGE_META).map(([key, meta]) => {
@@ -315,18 +315,18 @@ function GustavoDashboard() {
         <div className="lg:col-span-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#3a3a3a] transition-colors">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-sm font-medium">Receita — últimos 6 meses</h2>
-            {hasChartData && <span className={`text-xs text-[#a78bfa] bg-[#7c3aed]/10 px-2 py-0.5 rounded-full ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.chartData.reduce((s, d) => s + d.value, 0))} total</span>}
+            {hasChartData && <span className={`text-xs text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full ${hideNums ? 'blur-sm select-none' : ''}`}>{formatBRL(data.chartData.reduce((s, d) => s + d.value, 0))} total</span>}
           </div>
           {!hasChartData ? (
             <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">Nenhum pagamento registrado ainda</div>
           ) : (
             <ResponsiveContainer width="100%" height={160}>
               <AreaChart data={data.chartData}>
-                <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#7c3aed" stopOpacity={0.2} /><stop offset="95%" stopColor="#7c3aed" stopOpacity={0} /></linearGradient></defs>
+                <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#efefef" stopOpacity={0.2} /><stop offset="95%" stopColor="#efefef" stopOpacity={0} /></linearGradient></defs>
                 <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8, fontSize: 12 }} formatter={(v) => [formatBRL(Number(v)), 'Receita']} />
-                <Area type="monotone" dataKey="value" stroke="#7c3aed" strokeWidth={2} fill="url(#pg)" dot={{ fill: '#7c3aed', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#a78bfa' }} />
+                <Area type="monotone" dataKey="value" stroke="#efefef" strokeWidth={2} fill="url(#pg)" dot={{ fill: '#efefef', r: 3, strokeWidth: 0 }} activeDot={{ r: 5, fill: '#efefef' }} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -334,7 +334,7 @@ function GustavoDashboard() {
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 hover:border-[#3a3a3a] transition-colors">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium">Vencendo em 7 dias</h2>
-            {data.upcoming.length > 0 && <Link href="/financeiro" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">Ver todos <ArrowUpRight size={10} /></Link>}
+            {data.upcoming.length > 0 && <Link href="/financeiro" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">Ver todos <ArrowUpRight size={10} /></Link>}
           </div>
           {data.upcoming.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">Nenhuma cobrança próxima</p>
@@ -354,8 +354,8 @@ function GustavoDashboard() {
       {tasks.length > 0 && (
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2"><CheckSquare size={14} className="text-[#a78bfa]" /><h2 className="text-sm font-medium">Tarefas abertas</h2><span className="text-[11px] bg-[#7c3aed]/10 text-[#a78bfa] px-1.5 py-0.5 rounded-full">{tasks.length}</span></div>
-            <Link href="/tarefas" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">Ver todas <ArrowUpRight size={10} /></Link>
+            <div className="flex items-center gap-2"><CheckSquare size={14} className="text-[#efefef]" /><h2 className="text-sm font-medium">Tarefas abertas</h2><span className="text-[11px] bg-[#efefef]/10 text-[#efefef] px-1.5 py-0.5 rounded-full">{tasks.length}</span></div>
+            <Link href="/tarefas" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">Ver todas <ArrowUpRight size={10} /></Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {tasks.map(task => {
@@ -368,7 +368,7 @@ function GustavoDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{task.title}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      {task.clients && <span className="text-[10px] text-[#a78bfa]">{task.clients.name}</span>}
+                      {task.clients && <span className="text-[10px] text-[#efefef]">{task.clients.name}</span>}
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pColor}`}>{task.priority}</span>
                       {task.due_date && <span className={`text-[10px] ${isOverdue ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>{formatDate(task.due_date)}</span>}
                     </div>
@@ -435,7 +435,7 @@ function GabrielDashboard() {
           { label: 'Posts esta semana',     value: String(thisWeek.length),  color: '#34d399', icon: CalendarDays },
           { label: 'Aguardando aprovação',  value: String(awaiting.length),  color: '#f59e0b', icon: Bell },
           { label: 'Publicados este mês',   value: String(published.length), color: '#22c55e', icon: CheckSquare },
-          { label: 'Projetos em aprovação', value: String(inApproval.length),color: '#a78bfa', icon: Layers },
+          { label: 'Projetos em aprovação', value: String(inApproval.length),color: '#efefef', icon: Layers },
         ].map(k => (
           <div key={k.label} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
@@ -528,9 +528,9 @@ function GabrielDashboard() {
 
       {/* Projetos em aprovação */}
       {inApproval.length > 0 && (
-        <div className="bg-[#1a1a1a] border border-[#a78bfa]/20 rounded-xl p-5">
+        <div className="bg-[#1a1a1a] border border-[#efefef]/20 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2"><Layers size={13} className="text-[#a78bfa]" /><h2 className="text-sm font-medium">Projetos aguardando aprovação</h2><span className="text-[10px] bg-[#7c3aed]/10 text-[#a78bfa] px-1.5 py-0.5 rounded-full">{inApproval.length}</span></div>
+            <div className="flex items-center gap-2"><Layers size={13} className="text-[#efefef]" /><h2 className="text-sm font-medium">Projetos aguardando aprovação</h2><span className="text-[10px] bg-[#efefef]/10 text-[#efefef] px-1.5 py-0.5 rounded-full">{inApproval.length}</span></div>
             <Link href="/projetos" className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">Ver todos <ArrowUpRight size={10} /></Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -541,7 +541,7 @@ function GabrielDashboard() {
                 <div key={proj.id} className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-4">
                   <p className="text-sm font-medium truncate mb-1">{proj.title}</p>
                   {proj.clients && <p className="text-[10px] text-muted-foreground mb-2">{proj.clients.name}</p>}
-                  {total > 0 && <div className="h-1 bg-[#2a2a2a] rounded-full overflow-hidden"><div className="h-full bg-[#a78bfa] rounded-full" style={{ width: `${Math.round((done/total)*100)}%` }} /></div>}
+                  {total > 0 && <div className="h-1 bg-[#2a2a2a] rounded-full overflow-hidden"><div className="h-full bg-[#efefef] rounded-full" style={{ width: `${Math.round((done/total)*100)}%` }} /></div>}
                   {proj.deadline && <p className="text-[10px] text-muted-foreground mt-1.5">Prazo: {formatDate(proj.deadline)}</p>}
                 </div>
               )
@@ -648,7 +648,7 @@ function EngajamentoClientes({ posts, clients }: { posts: ContentPost[]; clients
                       className="h-full rounded-full transition-all"
                       style={{
                         width: `${barPct}%`,
-                        background: idx === 0 ? '#34d399' : idx === 1 ? '#60a5fa' : '#a78bfa',
+                        background: idx === 0 ? '#34d399' : idx === 1 ? '#60a5fa' : '#efefef',
                       }}
                     />
                   </div>
@@ -735,7 +735,7 @@ function ThomasDashboard() {
           { label: 'Projetos atrasados',    value: String(overdue.length),          color: overdue.length > 0 ? '#ef4444' : '#22c55e' },
           { label: 'Vencendo esta semana',  value: String(thisWeek.length),         color: thisWeek.length > 0 ? '#f59e0b' : '#22c55e' },
           { label: 'Clientes ativos',       value: String(clientStatus.ativo),      color: '#60a5fa' },
-          { label: 'Tarefas abertas',       value: String(tasks.length),            color: '#a78bfa' },
+          { label: 'Tarefas abertas',       value: String(tasks.length),            color: '#efefef' },
         ].map(k => (
           <div key={k.label} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-3">{k.label}</p>
@@ -834,8 +834,8 @@ function ThomasDashboard() {
       {tasks.length > 0 && (
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2"><CheckSquare size={14} className="text-[#a78bfa]" /><h2 className="text-sm font-medium">Tarefas abertas</h2><span className="text-[11px] bg-[#7c3aed]/10 text-[#a78bfa] px-1.5 py-0.5 rounded-full">{tasks.length}</span></div>
-            <Link href="/tarefas" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">Ver todas <ArrowUpRight size={10} /></Link>
+            <div className="flex items-center gap-2"><CheckSquare size={14} className="text-[#efefef]" /><h2 className="text-sm font-medium">Tarefas abertas</h2><span className="text-[11px] bg-[#efefef]/10 text-[#efefef] px-1.5 py-0.5 rounded-full">{tasks.length}</span></div>
+            <Link href="/tarefas" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">Ver todas <ArrowUpRight size={10} /></Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {tasks.slice(0, 6).map(task => {
@@ -847,7 +847,7 @@ function ThomasDashboard() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium truncate">{task.title}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      {task.clients && <span className="text-[10px] text-[#a78bfa]">{task.clients.name}</span>}
+                      {task.clients && <span className="text-[10px] text-[#efefef]">{task.clients.name}</span>}
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${pColor}`}>{task.priority}</span>
                       {task.due_date && <span className={`text-[10px] ${isOverdue ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>{formatDate(task.due_date)}</span>}
                     </div>
@@ -901,7 +901,7 @@ function JuliaDashboard() {
   const overdueTask  = tasks.filter(t => t.due_date && t.due_date < today)
 
   const kpis = [
-    { label: 'Posts agendados',   value: agendados.length,  color: '#a78bfa' },
+    { label: 'Posts agendados',   value: agendados.length,  color: '#efefef' },
     { label: 'Publicados (7d)',   value: publicados.length, color: '#34d399' },
     { label: 'Rascunhos',         value: rascunhos.length,  color: '#f59e0b' },
     { label: 'Tarefas abertas',   value: tasks.length,      color: '#f472b6' },
@@ -925,16 +925,16 @@ function JuliaDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Próximos posts agendados */}
-        <div className="bg-[#1a1a1a] border border-[#a78bfa]/20 rounded-xl p-5">
+        <div className="bg-[#1a1a1a] border border-[#efefef]/20 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CalendarDays size={13} className="text-[#a78bfa]" />
+              <CalendarDays size={13} className="text-[#efefef]" />
               <h2 className="text-sm font-medium">Próximos posts</h2>
               {agendados.length > 0 && (
-                <span className="text-[10px] bg-[#7c3aed]/10 text-[#a78bfa] px-1.5 py-0.5 rounded-full">{agendados.length}</span>
+                <span className="text-[10px] bg-[#efefef]/10 text-[#efefef] px-1.5 py-0.5 rounded-full">{agendados.length}</span>
               )}
             </div>
-            <Link href="/conteudo" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">
+            <Link href="/conteudo" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">
               Ver calendário <ArrowUpRight size={10} />
             </Link>
           </div>
@@ -983,7 +983,7 @@ function JuliaDashboard() {
                 </span>
               )}
             </div>
-            <Link href="/tarefas" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">
+            <Link href="/tarefas" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">
               Ver todas <ArrowUpRight size={10} />
             </Link>
           </div>
@@ -1068,7 +1068,7 @@ function MarianaDashboard() {
   const kpis = [
     { label: 'Reuniões hoje',      value: reunioesHoje.length,     color: '#22d3ee' },
     { label: 'Reuniões esta semana', value: reunioesSemana.length, color: '#60a5fa' },
-    { label: 'Tarefas abertas',    value: tasks.length,            color: '#a78bfa' },
+    { label: 'Tarefas abertas',    value: tasks.length,            color: '#efefef' },
     { label: 'Tarefas atrasadas',  value: tarefasAtrasadas.length, color: tarefasAtrasadas.length > 0 ? '#ef4444' : '#22c55e' },
   ]
 
@@ -1140,15 +1140,15 @@ function MarianaDashboard() {
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${tarefasAtrasadas.length > 0 ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'}`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CheckSquare size={13} className={tarefasAtrasadas.length > 0 ? 'text-[#ef4444]' : 'text-[#a78bfa]'} />
+              <CheckSquare size={13} className={tarefasAtrasadas.length > 0 ? 'text-[#ef4444]' : 'text-[#efefef]'} />
               <h2 className="text-sm font-medium">Tarefas abertas</h2>
               {tasks.length > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tarefasAtrasadas.length > 0 ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#7c3aed]/10 text-[#a78bfa]'}`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${tarefasAtrasadas.length > 0 ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#efefef]/10 text-[#efefef]'}`}>
                   {tasks.length}
                 </span>
               )}
             </div>
-            <Link href="/tarefas" className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors flex items-center gap-1">
+            <Link href="/tarefas" className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors flex items-center gap-1">
               Ver todas <ArrowUpRight size={10} />
             </Link>
           </div>
@@ -1200,7 +1200,7 @@ export default function DashboardPage() {
   if (role === null) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }

@@ -75,7 +75,7 @@ export function CeoBriefingHeader() {
       {collapsed ? (
         <button
           onClick={toggleCollapsed}
-          className="flex items-center gap-2 text-sm text-[#a78bfa] bg-[#7c3aed]/10 hover:bg-[#7c3aed]/15 border border-[#7c3aed]/25 rounded-lg px-3 py-2 transition-colors"
+          className="flex items-center gap-2 text-sm text-[#efefef] bg-[#efefef]/10 hover:bg-[#efefef]/15 border border-[#efefef]/25 rounded-lg px-3 py-2 transition-colors"
         >
           <Sparkles size={13} />
           Recomendação do Omar
@@ -83,11 +83,11 @@ export function CeoBriefingHeader() {
         </button>
       ) : (
         <>
-          <div className="bg-gradient-to-br from-[#7c3aed]/10 to-transparent border border-[#7c3aed]/25 rounded-xl p-5">
+          <div className="bg-gradient-to-br from-[#efefef]/10 to-transparent border border-[#efefef]/25 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Sparkles size={14} className="text-[#a78bfa]" />
-                <h2 className="text-sm font-medium text-[#a78bfa]">Recomendação do Omar pra hoje</h2>
+                <Sparkles size={14} className="text-[#efefef]" />
+                <h2 className="text-sm font-medium text-[#efefef]">Recomendação do Omar pra hoje</h2>
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -115,12 +115,12 @@ export function CeoBriefingHeader() {
             )}
 
             {briefing && briefing.focos.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#7c3aed]/15">
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[#efefef]/15">
                 {briefing.focos.map((f, i) => (
                   <Link
                     key={i}
                     href="/tarefas"
-                    className="flex items-center gap-1.5 text-xs bg-[#111111] border border-[#2a2a2a] hover:border-[#7c3aed]/40 rounded-full px-3 py-1.5 transition-colors"
+                    className="flex items-center gap-1.5 text-xs bg-[#111111] border border-[#2a2a2a] hover:border-[#efefef]/40 rounded-full px-3 py-1.5 transition-colors"
                   >
                     <span className={`w-1.5 h-1.5 rounded-full ${f.priority === 'alta' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'}`} />
                     <span className="font-medium">{f.title}</span>

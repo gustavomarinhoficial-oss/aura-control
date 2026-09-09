@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const body = await request.json()
   const { data, error } = await supabase
     .from('members')
-    .insert({ name: body.name, initials: body.initials, color: body.color ?? '#7c3aed' })
+    .insert({ name: body.name, initials: body.initials, color: body.color ?? '#efefef' })
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

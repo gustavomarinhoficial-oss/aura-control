@@ -150,10 +150,10 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Dados</h3>
               {!editing
-                ? <button onClick={() => setEditing(true)} className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors">Editar</button>
+                ? <button onClick={() => setEditing(true)} className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors">Editar</button>
                 : <div className="flex gap-3">
                     <button onClick={() => setEditing(false)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">Cancelar</button>
-                    <button onClick={saveClient} disabled={saving} className="text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors">{saving ? 'Salvando...' : 'Salvar'}</button>
+                    <button onClick={saveClient} disabled={saving} className="text-xs text-[#efefef] hover:text-[#efefef] transition-colors">{saving ? 'Salvando...' : 'Salvar'}</button>
                   </div>
               }
             </div>
@@ -169,7 +169,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                   <select
                     value={form.billing_day ?? ''}
                     onChange={e => setForm(f => ({ ...f, billing_day: e.target.value ? parseInt(e.target.value) : null }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
                   >
                     <option value="">Não definido</option>
                     {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
@@ -180,7 +180,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                   <select
                     value={form.status}
                     onChange={e => setForm(f => ({ ...f, status: e.target.value as Client['status'] }))}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
                   >
                     {statusOpts.map(s => <option key={s} value={s}>{statusLabel[s]}</option>)}
                   </select>
@@ -191,7 +191,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                     value={form.notes ?? ''}
                     onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                     rows={3}
-                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors resize-none"
+                    className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors resize-none"
                   />
                 </div>
               </div>
@@ -213,19 +213,19 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Serviços</h3>
               <button
                 onClick={() => setShowNewService(v => !v)}
-                className="flex items-center gap-1 text-xs text-[#7c3aed] hover:text-[#a78bfa] transition-colors"
+                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
               >
                 <Plus size={12} /> Adicionar
               </button>
             </div>
 
             {showNewService && (
-              <div ref={newServiceRef} className="bg-[#1a1a1a] border border-[#7c3aed]/30 rounded-lg p-4 mb-4 space-y-3">
+              <div ref={newServiceRef} className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-lg p-4 mb-4 space-y-3">
                 <EditField label="Nome do serviço" value={newService.name} onChange={v => setNewService(s => ({ ...s, name: v }))} />
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs text-muted-foreground mb-1">Tipo</label>
-                    <select value={newService.type} onChange={e => setNewService(s => ({ ...s, type: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors">
+                    <select value={newService.type} onChange={e => setNewService(s => ({ ...s, type: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors">
                       <option value="recorrente">Recorrente</option>
                       <option value="avulso">Avulso</option>
                     </select>
@@ -233,7 +233,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                   {newService.type === 'recorrente' && (
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">Recorrência</label>
-                      <select value={newService.recurrence} onChange={e => setNewService(s => ({ ...s, recurrence: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors">
+                      <select value={newService.recurrence} onChange={e => setNewService(s => ({ ...s, recurrence: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors">
                         <option value="mensal">Mensal</option>
                         <option value="trimestral">Trimestral</option>
                         <option value="anual">Anual</option>
@@ -253,7 +253,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                       type="date"
                       value={newService.first_charge_date}
                       onChange={e => setNewService(s => ({ ...s, first_charge_date: e.target.value }))}
-                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                      className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
                     />
                     <p className="text-[10px] text-muted-foreground mt-1">Se o cliente entrou no meio do mês e só vai pagar mais pra frente, defina aqui. Nenhuma cobrança é gerada antes dessa data.</p>
                   </div>
@@ -264,7 +264,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                     type="date"
                     value={newService.contract_end}
                     onChange={e => setNewService(s => ({ ...s, contract_end: e.target.value }))}
-                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">Se vazio, o serviço continua até ser encerrado manualmente.</p>
                 </div>
@@ -286,7 +286,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                   <button
                     onClick={addService}
                     disabled={savingService}
-                    className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-xs py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {savingService ? 'Salvando...' : 'Salvar serviço'}
                   </button>
@@ -308,7 +308,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                             type="text"
                             value={editServiceForm.name}
                             onChange={e => setEditServiceForm(f => ({ ...f, name: e.target.value }))}
-                            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-2">
@@ -318,7 +318,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                               type="number"
                               value={editServiceForm.amount}
                               onChange={e => setEditServiceForm(f => ({ ...f, amount: e.target.value }))}
-                              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                             />
                           </div>
                           {s.type === 'recorrente' && (
@@ -327,7 +327,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                               <select
                                 value={editServiceForm.recurrence}
                                 onChange={e => setEditServiceForm(f => ({ ...f, recurrence: e.target.value }))}
-                                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                               >
                                 <option value="mensal">Mensal</option>
                                 <option value="trimestral">Trimestral</option>
@@ -342,7 +342,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                             type="date"
                             value={editServiceForm.contract_end}
                             onChange={e => setEditServiceForm(f => ({ ...f, contract_end: e.target.value }))}
-                            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                           />
                         </div>
                         {s.type === 'recorrente' && (
@@ -352,7 +352,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                               type="date"
                               value={editServiceForm.first_charge_date}
                               onChange={e => setEditServiceForm(f => ({ ...f, first_charge_date: e.target.value }))}
-                              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#7c3aed] transition-colors"
+                              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                             />
                             <p className="text-[10px] text-muted-foreground mt-1">Cobranças pendentes antes dessa data são removidas.</p>
                           </div>
@@ -367,7 +367,7 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                           <button
                             onClick={() => saveEditService(s.id)}
                             disabled={savingEditService}
-                            className="flex-1 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs py-1.5 rounded-lg transition-colors disabled:opacity-60"
+                            className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-xs py-1.5 rounded-lg transition-colors disabled:opacity-60"
                           >
                             {savingEditService ? 'Salvando...' : 'Salvar'}
                           </button>
@@ -393,13 +393,13 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                             )
                           })()}
                           {s.first_charge_date && s.first_charge_date > new Date().toISOString().split('T')[0] && (
-                            <span className="flex items-center gap-1 text-[10px] mt-0.5 text-[#a78bfa]">
+                            <span className="flex items-center gap-1 text-[10px] mt-0.5 text-[#efefef]">
                               <Clock size={9} /> Primeira cobrança em {formatDate(s.first_charge_date)}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => startEditService(s)} className="text-muted-foreground hover:text-[#a78bfa] transition-colors">
+                          <button onClick={() => startEditService(s)} className="text-muted-foreground hover:text-[#efefef] transition-colors">
                             <Edit2 size={13} />
                           </button>
                           <button onClick={() => toggleService(s.id, s.active)} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -453,7 +453,7 @@ function EditField({ label, value, onChange, type = 'text' }: { label: string; v
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#7c3aed] transition-colors"
+        className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
       />
     </div>
   )

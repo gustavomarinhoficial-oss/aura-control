@@ -97,7 +97,7 @@ export default function RelatoriosPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+        <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
@@ -156,7 +156,7 @@ export default function RelatoriosPage() {
         <button
           onClick={() => setScope('geral')}
           className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
-            scope === 'geral' ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+            scope === 'geral' ? 'bg-[#efefef]/15 text-[#efefef] font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
           }`}
         >
           Geral da empresa
@@ -166,7 +166,7 @@ export default function RelatoriosPage() {
             key={c.id}
             onClick={() => setScope(c.id)}
             className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
-              scope === c.id ? 'bg-[#7c3aed]/15 text-[#a78bfa] font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+              scope === c.id ? 'bg-[#efefef]/15 text-[#efefef] font-medium' : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
             }`}
           >
             {c.name}
@@ -176,7 +176,7 @@ export default function RelatoriosPage() {
 
       {loadingClient ? (
         <div className="flex items-center justify-center h-40">
-          <div className="w-5 h-5 border-2 border-[#7c3aed] border-t-transparent rounded-full animate-spin" />
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : !activeReport ? (
         <div className="flex flex-col items-center justify-center h-40 gap-2 text-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
@@ -184,10 +184,10 @@ export default function RelatoriosPage() {
         </div>
       ) : (
         <>
-          <div className="bg-gradient-to-br from-[#7c3aed]/10 to-transparent border border-[#7c3aed]/25 rounded-xl p-5">
+          <div className="bg-gradient-to-br from-[#efefef]/10 to-transparent border border-[#efefef]/25 rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles size={14} className="text-[#a78bfa]" />
-              <h2 className="text-sm font-medium text-[#a78bfa]">Análise do Omar</h2>
+              <Sparkles size={14} className="text-[#efefef]" />
+              <h2 className="text-sm font-medium text-[#efefef]">Análise do Omar</h2>
             </div>
             <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">{activeReport.summary}</p>
           </div>
