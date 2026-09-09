@@ -23,14 +23,14 @@ interface InfluencerRow {
 }
 
 const STATUSES: { key: string; label: string; color: string; bg: string }[] = [
-  { key: 'a_contatar',           label: 'A contatar',            color: '#6b7280', bg: '#6b728015' },
+  { key: 'a_contatar',           label: 'Aguardando resposta',   color: '#6b7280', bg: '#6b728015' },
   { key: 'em_contato',           label: 'Em contato',            color: '#3b82f6', bg: '#3b82f615' },
   { key: 'negociando',           label: 'Negociando',            color: '#f59e0b', bg: '#f59e0b15' },
   { key: 'fechado',              label: 'Fechado',               color: '#22c55e', bg: '#22c55e15' },
   { key: 'video_gravado',        label: 'Vídeo gravado',         color: '#8b5cf6', bg: '#8b5cf615' },
   { key: 'aguardando_aprovacao', label: 'Esperando aprovação',   color: '#06b6d4', bg: '#06b6d415' },
   { key: 'publicado',            label: 'Publicado',             color: '#16a34a', bg: '#16a34a15' },
-  { key: 'recusado',             label: 'Recusado',              color: '#ef4444', bg: '#ef444415' },
+  { key: 'recusado',             label: 'Recusado/não respondido', color: '#ef4444', bg: '#ef444415' },
 ]
 
 const EMPTY_FORM = {
