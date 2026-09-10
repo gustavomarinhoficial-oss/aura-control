@@ -272,7 +272,7 @@ export default function InfluenciadoresPage() {
               className="bg-[#111111] border border-[#2a2a2a] hover:border-[#3a3a3a] rounded-lg p-3 cursor-grab active:cursor-grabbing transition-all group select-none">
               <div className="flex items-start justify-between gap-1 mb-1">
                 <p className="text-xs font-semibold leading-snug line-clamp-2">{row.name}</p>
-                <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1.5 shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={e => duplicateInfluencer(row, e)}
                     title="Duplicar (ex: pra outra empresa)"

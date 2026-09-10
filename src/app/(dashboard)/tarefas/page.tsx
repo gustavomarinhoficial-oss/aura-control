@@ -137,7 +137,7 @@ function TaskChecklist({ taskId }: { taskId: string }) {
           <span className={`text-xs flex-1 ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{item.title}</span>
           <button
             onClick={() => deleteItem(item.id)}
-            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all"
+            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all"
           >
             <Trash2 size={10} />
           </button>
@@ -393,7 +393,7 @@ export default function TarefasPage() {
                       </p>
                       <button
                         onClick={() => setEditingTask(task)}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all shrink-0"
+                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all shrink-0"
                         title="Editar tarefa"
                       >
                         <Edit2 size={11} />
@@ -440,7 +440,7 @@ export default function TarefasPage() {
                   {/* Delete */}
                   <button
                     onClick={() => deleteTask(task.id)}
-                    className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all mt-0.5"
+                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all mt-0.5"
                   >
                     <Trash2 size={14} />
                   </button>

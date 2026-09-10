@@ -91,7 +91,7 @@ function ResourceCard({ item, onClick, onToggleFeatured }: {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+        <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
           {(item.content || item.link) && (
             <button onClick={handleCopy} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[#222] transition-colors" title="Copiar">
               {copied ? <Check size={13} className="text-[#34d399]" /> : <Copy size={13} className="text-muted-foreground" />}

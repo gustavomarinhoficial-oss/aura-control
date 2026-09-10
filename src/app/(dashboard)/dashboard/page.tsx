@@ -91,7 +91,7 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
         <span className="text-xs text-muted-foreground uppercase tracking-wider">{label}</span>
         <div className="flex items-center gap-1.5">
           <button onClick={() => { setEditing(true); setInput(goal ? String(goal) : '') }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-[#efefef] p-1 rounded" title="Definir meta">
+            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-[#efefef] p-1 rounded" title="Definir meta">
             <Pencil size={11} />
           </button>
           <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
@@ -108,7 +108,7 @@ function KpiCard({ label, value, numericValue, sub, icon: Icon, highlight, accen
             <p className={`text-xs ${overGoal ? 'text-[#22c55e]' : 'text-muted-foreground'} ${hide ? 'blur-sm select-none' : ''}`}>
               {overGoal ? '✓ meta atingida' : `${Math.round(pct ?? 0)}% de ${isCurrency ? formatBRL(goal) : goal}`}
             </p>
-            <button onClick={clearGoal} className="text-[9px] text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">limpar</button>
+            <button onClick={clearGoal} className="text-[9px] text-muted-foreground hover:text-foreground opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">limpar</button>
           </div>
           <div className="h-1 bg-[#2a2a2a] rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: barColor }} />

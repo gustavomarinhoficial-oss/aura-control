@@ -199,7 +199,7 @@ export default function MetasPage() {
                     {!isAuto && (
                       <button
                         onClick={() => startEditCurrent(g)}
-                        className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all"
+                        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all"
                         title="Atualizar progresso"
                       >
                         <TrendingUp size={13} />
@@ -208,7 +208,7 @@ export default function MetasPage() {
                     <button
                       onClick={() => deleteGoal(g.id)}
                       disabled={isDeleting}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all disabled:opacity-50"
+                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all disabled:opacity-50"
                       title="Apagar meta"
                     >
                       <Trash2 size={13} />

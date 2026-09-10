@@ -312,7 +312,7 @@ export default function ReunioesPage() {
               </p>
               <button
                 onClick={() => setEditing(meeting)}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all shrink-0"
+                className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#efefef] transition-all shrink-0"
                 title="Editar reunião"
               >
                 <Edit2 size={11} />
@@ -340,7 +340,7 @@ export default function ReunioesPage() {
 
           <button
             onClick={() => deleteMeeting(meeting.id)}
-            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all mt-0.5"
+            className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all mt-0.5"
           >
             <Trash2 size={14} />
           </button>
