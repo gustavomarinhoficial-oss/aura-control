@@ -36,6 +36,7 @@ const ALL_MORE_NAV = [
   { href: '/fdmc/financeiro', label: 'FDMC Financeiro', icon: DollarSign,    roles: ['gustavo', 'gabriel'] },
   { href: '/fdmc/tarefas',    label: 'FDMC Tarefas',    icon: CheckSquare,   roles: ['gustavo', 'gabriel'] },
   { href: '/fdmc/reunioes',   label: 'FDMC Reuniões',   icon: CalendarClock, roles: ['gustavo', 'gabriel'] },
+  { href: '/fdmc/ia',         label: 'FDMC Central IA', icon: Brain,         roles: ['gustavo', 'gabriel'] },
 ]
 
 function navFor(items: typeof ALL_PINNED, role: Role) {

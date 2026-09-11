@@ -1,11 +1,15 @@
 ﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = createServiceClient()
+  const { searchParams } = new URL(request.url)
+  const workspace = searchParams.get('workspace') === 'fdmc' ? 'fdmc' : 'owl'
+
   const { data, error } = await supabase
     .from('ai_resources')
     .select('*')
+    .eq('workspace', workspace)
     .order('created_at', { ascending: false })
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
@@ -27,6 +31,7 @@ export async function POST(request: Request) {
       featured:    body.featured ?? false,
       file_path:   body.file_path || null,
       file_name:   body.file_name || null,
+      workspace:   body.workspace === 'fdmc' ? 'fdmc' : 'owl',
     })
     .select()
     .single()

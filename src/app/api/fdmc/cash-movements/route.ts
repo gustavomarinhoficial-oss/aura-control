@@ -7,9 +7,9 @@ export async function GET() {
 
   const supabase = createServiceClient()
   const { data, error } = await supabase
-    .from('fdmc_entries')
+    .from('fdmc_cash_movements')
     .select('*')
-    .order('entry_date', { ascending: false })
+    .order('movement_date', { ascending: false })
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -22,18 +22,16 @@ export async function POST(request: Request) {
   const supabase = createServiceClient()
   const body = await request.json()
 
-  if (!body.description || !body.amount || !body.entry_date || !['receita', 'despesa'].includes(body.type)) {
+  if (!body.movement_date || !body.amount) {
     return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
   }
 
   const { data, error } = await supabase
-    .from('fdmc_entries')
+    .from('fdmc_cash_movements')
     .insert({
-      type: body.type,
-      description: body.description,
+      movement_date: body.movement_date,
       amount: Number(body.amount),
-      entry_date: body.entry_date,
-      notes: body.notes || null,
+      note: body.note || null,
     })
     .select()
     .single()

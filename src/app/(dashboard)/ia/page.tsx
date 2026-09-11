@@ -557,8 +557,9 @@ function EditItemModal({ item, onClose, onSaved }: {
 }
 
 // ── Modal novo item ────────────────────────────────────────────────────────────
-function NewItemModal({ authorName, onClose, onCreated }: {
+function NewItemModal({ authorName, workspace, onClose, onCreated }: {
   authorName: string
+  workspace: 'owl' | 'fdmc'
   onClose: () => void
   onCreated: (item: AIResource) => void
 }) {
@@ -596,7 +597,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
     const res = await fetch('/api/ia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags, file_path, file_name }),
+      body: JSON.stringify({ ...form, tags, file_path, file_name, workspace }),
     })
     if (res.ok) {
       onCreated(await res.json())
@@ -740,7 +741,7 @@ function NewItemModal({ authorName, onClose, onCreated }: {
 }
 
 // ── Página principal ───────────────────────────────────────────────────────────
-export default function IAPage() {
+export function IaView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' } = {}) {
   const [items, setItems]         = useState<AIResource[]>([])
   const [loading, setLoading]     = useState(true)
   const [search, setSearch]       = useState('')
@@ -751,7 +752,7 @@ export default function IAPage() {
   const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetch('/api/ia').then(r => r.json()).then(d => {
+    fetch(`/api/ia?workspace=${workspace}`).then(r => r.json()).then(d => {
       setItems(Array.isArray(d) ? d : [])
       setLoading(false)
     })
@@ -760,7 +761,7 @@ export default function IAPage() {
       const role = getRole(user?.user_metadata)
       setAuthorName(ROLE_NAME[role] || user?.email?.split('@')[0] || '')
     })
-  }, [])
+  }, [workspace])
 
   // Filtro
   const filtered = items.filter(item => {
@@ -812,7 +813,7 @@ export default function IAPage() {
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#efefef] to-[#f472b6] flex items-center justify-center">
                 <Brain size={16} className="text-white" strokeWidth={1.8} />
               </div>
-              <h1 className="text-xl font-semibold tracking-tight">Central de IA</h1>
+              <h1 className="text-xl font-semibold tracking-tight">{workspace === 'fdmc' ? 'Central de IA — FDMC' : 'Central de IA'}</h1>
             </div>
             <p className="text-sm text-muted-foreground">Prompts, GPTs, automações e tudo que a equipe descobre.</p>
           </div>
@@ -993,10 +994,15 @@ export default function IAPage() {
       {showNew && (
         <NewItemModal
           authorName={authorName}
+          workspace={workspace}
           onClose={() => setShowNew(false)}
           onCreated={onCreated}
         />
       )}
     </>
   )
+}
+
+export default function IAPage() {
+  return <IaView workspace="owl" />
 }

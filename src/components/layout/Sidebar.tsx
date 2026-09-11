@@ -30,6 +30,7 @@ const FDMC_NAV = [
   { href: '/fdmc/financeiro', label: 'Financeiro', icon: DollarSign },
   { href: '/fdmc/tarefas',    label: 'Tarefas',     icon: CheckSquare },
   { href: '/fdmc/reunioes',   label: 'Reuniões',    icon: CalendarClock },
+  { href: '/fdmc/ia',         label: 'Central IA',  icon: Brain },
 ]
 
 const ROLE_COLOR: Record<Role, string> = {
