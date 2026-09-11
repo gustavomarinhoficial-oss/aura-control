@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, type Role } from '@/lib/roles'
+import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, canAccessFdmc, type Role } from '@/lib/roles'
 import { OwlMark } from '@/components/ui/OwlMark'
 import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet } from 'lucide-react'
 
@@ -24,6 +24,12 @@ const ALL_NAV = [
   { href: '/reunioes',       label: 'Reuniões',       icon: CalendarClock },
   { href: '/calendario',     label: 'Calendário',     icon: CalendarDays },
   { href: '/configuracoes', label: 'Config.',         icon: Settings },
+]
+
+const FDMC_NAV = [
+  { href: '/fdmc/financeiro', label: 'Financeiro', icon: DollarSign },
+  { href: '/fdmc/tarefas',    label: 'Tarefas',     icon: CheckSquare },
+  { href: '/fdmc/reunioes',   label: 'Reuniões',    icon: CalendarClock },
 ]
 
 const ROLE_COLOR: Record<Role, string> = {
@@ -132,6 +138,29 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        {canAccessFdmc(role) && (
+          <>
+            <p className="px-3 mt-4 mb-1.5 text-[9px] font-semibold tracking-[0.2em] text-muted-foreground/50 uppercase">FDMC Hub</p>
+            {FDMC_NAV.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href || pathname.startsWith(href + '/')
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-1 transition-colors ${
+                    active
+                      ? 'bg-[#efefef]/10 text-[#efefef]'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+                  }`}
+                >
+                  <Icon size={16} strokeWidth={active ? 2 : 1.5} />
+                  {label}
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       {/* Footer */}

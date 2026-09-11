@@ -39,6 +39,7 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
   const tasksRes = await db
     .from('tasks')
     .select('id, title, status, priority, due_date, clients(name), task_assignees(members(id, name))')
+    .eq('workspace', 'owl')
     .neq('status', 'concluido')
   const allTasks = tasksRes.data ?? []
 

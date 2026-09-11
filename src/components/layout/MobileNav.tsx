@@ -33,13 +33,16 @@ const ALL_MORE_NAV = [
   { href: '/reunioes',     label: 'Reuniões',       icon: CalendarClock,roles: ['all'] },
   { href: '/calendario',   label: 'Calendário',     icon: CalendarDays, roles: ['all'] },
   { href: '/configuracoes',label: 'Config.',        icon: Settings,     roles: ['admin'] },
+  { href: '/fdmc/financeiro', label: 'FDMC Financeiro', icon: DollarSign,    roles: ['gustavo', 'gabriel'] },
+  { href: '/fdmc/tarefas',    label: 'FDMC Tarefas',    icon: CheckSquare,   roles: ['gustavo', 'gabriel'] },
+  { href: '/fdmc/reunioes',   label: 'FDMC Reuniões',   icon: CalendarClock, roles: ['gustavo', 'gabriel'] },
 ]
 
 function navFor(items: typeof ALL_PINNED, role: Role) {
   return items.filter(n => {
     if (n.roles.includes('all')) return true
     if (role === 'julia' || role === 'mariana') return n.roles.includes(role)
-    return n.roles.includes('admin')
+    return n.roles.includes('admin') || n.roles.includes(role)
   })
 }
 

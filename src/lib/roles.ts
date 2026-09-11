@@ -14,6 +14,12 @@ export function isFinanceRestricted(role: Role): boolean {
   return role === 'julia' || role === 'mariana'
 }
 
+// FDMC Hub: sub-área interna só do Gustavo e do Gabriel (financeiro, tarefas
+// e reuniões próprios do FDMC, separados da OWL) — ninguém mais deve ver.
+export function canAccessFdmc(role: Role): boolean {
+  return role === 'gustavo' || role === 'gabriel'
+}
+
 export const ROLE_NAME: Record<Role, string> = {
   gustavo: 'Gustavo',
   gabriel: 'Gabriel',

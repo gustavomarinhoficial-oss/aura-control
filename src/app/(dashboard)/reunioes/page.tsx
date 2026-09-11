@@ -190,7 +190,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
   )
 }
 
-export default function ReunioesPage() {
+export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' } = {}) {
   const role = useRole()
   const isJulia = role === 'julia'
   const searchParams = useSearchParams()
@@ -211,7 +211,7 @@ export default function ReunioesPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const [meetingsRes, clientsRes, leadsRes, membersRes] = await Promise.all([
-      fetch('/api/meetings').then(r => r.json()).catch(() => []),
+      fetch(`/api/meetings?workspace=${workspace}`).then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
       fetch('/api/leads').then(r => r.json()).catch(() => []),
       fetch('/api/members').then(r => r.json()).catch(() => []),
@@ -221,7 +221,7 @@ export default function ReunioesPage() {
     setLeads(Array.isArray(leadsRes) ? leadsRes : [])
     setMembers(Array.isArray(membersRes) ? membersRes : [])
     setLoading(false)
-  }, [])
+  }, [workspace])
 
   useEffect(() => { load() }, [load])
 
@@ -252,7 +252,7 @@ export default function ReunioesPage() {
 
   async function createMeeting(data: MeetingFormData) {
     setSaving(true); setError('')
-    const res = await fetch('/api/meetings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    const res = await fetch('/api/meetings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, workspace }) })
     if (!res.ok) { setError('Erro ao criar reunião'); setSaving(false); return }
     setShowNew(false); setSaving(false); load()
   }
@@ -353,7 +353,7 @@ export default function ReunioesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Reuniões</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{workspace === 'fdmc' ? 'Reuniões — FDMC' : 'Reuniões'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {upcoming.length} próxima{upcoming.length !== 1 ? 's' : ''}
           </p>
@@ -423,4 +423,8 @@ export default function ReunioesPage() {
       )}
     </div>
   )
+}
+
+export default function ReunioesPage() {
+  return <ReunioesView workspace="owl" />
 }

@@ -44,7 +44,7 @@ const getDashboardSummary: OmarTool = {
     const [clientsRes, servicesRes, tasksRes] = await Promise.all([
       supabase.from('clients').select('id, status'),
       supabase.from('services').select('amount').eq('active', true).eq('type', 'recorrente'),
-      supabase.from('tasks').select('id, title, status, priority, due_date, task_assignees(members(name))').neq('status', 'concluido'),
+      supabase.from('tasks').select('id, title, status, priority, due_date, task_assignees(members(name))').eq('workspace', 'owl').neq('status', 'concluido'),
     ])
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -125,6 +125,7 @@ const listTasks: OmarTool = {
     let query = supabase
       .from('tasks')
       .select('id, title, description, status, priority, due_date, clients(name), task_assignees(members(name))')
+      .eq('workspace', 'owl')
       .order('due_date', { ascending: true, nullsFirst: false })
       .limit(50)
 
@@ -177,6 +178,7 @@ const listMeetings: OmarTool = {
     let query = supabase
       .from('meetings')
       .select('id, title, meeting_date, start_time, location, notes, status, clients(name), leads(company_name), meeting_attendees(members(name))')
+      .eq('workspace', 'owl')
       .order('meeting_date', { ascending: true })
       .limit(50)
 
@@ -558,9 +560,9 @@ const getWeekOverview: OmarTool = {
     const to = (input.date_to as string) || bounds.to
 
     const [tasksRes, contentRes, meetingsRes] = await Promise.all([
-      supabase.from('tasks').select('id, title, status, priority, due_date, clients(name), task_assignees(members(name))').gte('due_date', from).lte('due_date', to),
+      supabase.from('tasks').select('id, title, status, priority, due_date, clients(name), task_assignees(members(name))').eq('workspace', 'owl').gte('due_date', from).lte('due_date', to),
       supabase.from('content_posts').select('id, title, platform, status, scheduled_date, clients(name)').gte('scheduled_date', from).lte('scheduled_date', to),
-      supabase.from('meetings').select('id, title, meeting_date, start_time, status, clients(name), leads(company_name), meeting_attendees(members(name))').gte('meeting_date', from).lte('meeting_date', to),
+      supabase.from('meetings').select('id, title, meeting_date, start_time, status, clients(name), leads(company_name), meeting_attendees(members(name))').eq('workspace', 'owl').gte('meeting_date', from).lte('meeting_date', to),
     ])
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

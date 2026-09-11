@@ -163,7 +163,7 @@ function TaskChecklist({ taskId }: { taskId: string }) {
   )
 }
 
-export default function TarefasPage() {
+export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' } = {}) {
   const role = useRole()
   const isJulia = role === 'julia'
   const searchParams = useSearchParams()
@@ -185,7 +185,7 @@ export default function TarefasPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const [tasksRes, clientsRes, leadsRes, membersRes] = await Promise.all([
-      fetch('/api/tasks').then(r => r.json()).catch(() => []),
+      fetch(`/api/tasks?workspace=${workspace}`).then(r => r.json()).catch(() => []),
       fetch('/api/clients').then(r => r.json()).catch(() => []),
       fetch('/api/leads').then(r => r.json()).catch(() => []),
       fetch('/api/members').then(r => r.json()).catch(() => []),
@@ -195,7 +195,7 @@ export default function TarefasPage() {
     setLeads(Array.isArray(leadsRes) ? leadsRes : [])
     setMembers(Array.isArray(membersRes) ? membersRes : [])
     setLoading(false)
-  }, [])
+  }, [workspace])
 
   useEffect(() => { load() }, [load])
 
@@ -267,20 +267,22 @@ export default function TarefasPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Tarefas</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{workspace === 'fdmc' ? 'Tarefas — FDMC' : 'Tarefas'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {counts.open} abertas · {counts.concluido} concluídas
             {overdueCount > 0 && <span className="text-[#ef4444] ml-2">· {overdueCount} atrasadas</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowImport(true)}
-            className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm font-medium px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-          >
-            <Upload size={14} />
-            <span className="hidden sm:inline">Importar</span>
-          </button>
+          {workspace === 'owl' && (
+            <button
+              onClick={() => setShowImport(true)}
+              className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm font-medium px-3 py-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <Upload size={14} />
+              <span className="hidden sm:inline">Importar</span>
+            </button>
+          )}
           <button
             onClick={() => setShowNew(true)}
             className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -458,6 +460,7 @@ export default function TarefasPage() {
           clients={clients}
           leads={leads}
           members={members}
+          workspace={workspace}
           onClose={() => setShowNew(false)}
           onCreated={() => { setShowNew(false); load() }}
         />
@@ -484,10 +487,11 @@ export default function TarefasPage() {
   )
 }
 
-function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
+function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }: {
   clients: Client[]
   leads: Lead[]
   members: Member[]
+  workspace: 'owl' | 'fdmc'
   onClose: () => void
   onCreated: () => void
 }) {
@@ -511,7 +515,7 @@ function NewTaskModal({ clients, leads, members, onClose, onCreated }: {
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: description || null, client_id, lead_id, is_global, assignee_ids: assigneeIds, priority, due_date }),
+      body: JSON.stringify({ title, description: description || null, client_id, lead_id, is_global, assignee_ids: assigneeIds, priority, due_date, workspace }),
     })
     if (!res.ok) { setError('Erro ao criar tarefa'); setSaving(false); return }
     onCreated()
@@ -862,4 +866,8 @@ function ImportModal({ onClose, onImported }: { onClose: () => void; onImported:
       </div>
     </div>
   )
+}
+
+export default function TarefasPage() {
+  return <TarefasView workspace="owl" />
 }

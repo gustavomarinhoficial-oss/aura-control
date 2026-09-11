@@ -44,7 +44,7 @@ interface Metrics {
 
 async function computeMetrics(weekStart: string, weekEnd: string, clientId: string | null): Promise<Metrics> {
   const db = createServiceClient()
-  let taskQuery = db.from('tasks').select('id, status').gte('due_date', weekStart).lte('due_date', weekEnd)
+  let taskQuery = db.from('tasks').select('id, status').eq('workspace', 'owl').gte('due_date', weekStart).lte('due_date', weekEnd)
   let contentQuery = db.from('content_posts').select('id, status').gte('scheduled_date', weekStart).lte('scheduled_date', weekEnd)
   let chargeQuery = db.from('charges').select('id, amount, paid_at').gte('due_date', weekStart).lte('due_date', weekEnd)
 

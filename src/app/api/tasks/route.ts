@@ -8,10 +8,12 @@ export async function GET(request: Request) {
   const supabase = createServiceClient()
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('client_id')
+  const workspace = searchParams.get('workspace') === 'fdmc' ? 'fdmc' : 'owl'
 
   let query = supabase
     .from('tasks')
     .select(SELECT_WITH_ASSIGNEES)
+    .eq('workspace', workspace)
     .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 
@@ -24,6 +26,7 @@ export async function GET(request: Request) {
       let q2 = supabase
         .from('tasks')
         .select('*, clients(id, name), leads(id, company_name)')
+        .eq('workspace', workspace)
         .order('due_date', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false })
       if (clientId) q2 = q2.eq('client_id', clientId)
@@ -49,6 +52,7 @@ export async function POST(request: Request) {
     status: body.status || 'pendente',
     priority: body.priority || 'media',
     due_date: body.due_date || null,
+    workspace: body.workspace === 'fdmc' ? 'fdmc' : 'owl',
   }
 
   const { data: task, error } = await supabase.from('tasks').insert(insert).select('*, clients(id, name), leads(id, company_name)').single()

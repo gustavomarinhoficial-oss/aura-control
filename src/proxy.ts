@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getRole, BLOCKED_FOR_JULIA, BLOCKED_FOR_MARIANA } from '@/lib/roles'
+import { getRole, canAccessFdmc, BLOCKED_FOR_JULIA, BLOCKED_FOR_MARIANA } from '@/lib/roles'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -69,6 +69,17 @@ export async function proxy(request: NextRequest) {
   // Controle de acesso: Julia não acessa rotas bloqueadas
   if (user) {
     const role = getRole(user.user_metadata)
+
+    // FDMC Hub é privado — só Gustavo e Gabriel acessam as páginas /fdmc/* e
+    // a API /api/fdmc/*. Ninguém mais (nem admin/Thomas) deve ver esses dados.
+    if (!canAccessFdmc(role) && (pathname.startsWith('/fdmc') || pathname.startsWith('/api/fdmc'))) {
+      if (pathname.startsWith('/api/fdmc')) {
+        return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+      }
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
 
     if (role === 'julia') {
       const isBlocked = BLOCKED_FOR_JULIA.some(

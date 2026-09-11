@@ -13,10 +13,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('client_id')
   const onlyToday = searchParams.get('today') === 'true'
+  const workspace = searchParams.get('workspace') === 'fdmc' ? 'fdmc' : 'owl'
 
   let query = supabase
     .from('meetings')
     .select(SELECT_WITH_ATTENDEES)
+    .eq('workspace', workspace)
     .order('meeting_date', { ascending: true })
     .order('start_time', { ascending: true, nullsFirst: false })
 
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
     location: body.location || null,
     notes: body.notes || null,
     status: body.status || 'agendada',
+    workspace: body.workspace === 'fdmc' ? 'fdmc' : 'owl',
   }
 
   const { data: meeting, error } = await supabase.from('meetings').insert(insert).select('*, clients(id, name), leads(id, company_name)').single()

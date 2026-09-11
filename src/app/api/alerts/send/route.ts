@@ -87,6 +87,7 @@ export async function POST(request: Request) {
   let baseQuery = supabase
     .from('tasks')
     .select('id,title,due_date,status,priority,client_id')
+    .eq('workspace', 'owl')
     .in('status', ['pendente', 'em_andamento'])
     .order('due_date', { ascending: true, nullsFirst: false })
 
