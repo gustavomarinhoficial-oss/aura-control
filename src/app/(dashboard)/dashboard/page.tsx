@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts'
-import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, Bell, Clock, X, Kanban, Pencil, Check, CalendarDays, Layers, ImageIcon, AlertTriangle, Eye, EyeOff } from 'lucide-react'
+import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, Bell, Clock, X, Kanban, Pencil, Check, CalendarDays, Layers, ImageIcon, AlertTriangle, Eye, EyeOff, Download, Sun } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, type Role } from '@/lib/roles'
@@ -26,8 +26,8 @@ interface AlertData {
 }
 interface ContentPost {
   id: string; client_id: string; title: string; platform: string; status: string
-  scheduled_date: string | null; published_at: string | null
-  media_url: string | null; responsible: string | null
+  scheduled_date: string | null; scheduled_time: string | null; published_at: string | null
+  media_url: string | null; media_urls?: string[] | null; responsible: string | null
   result: Record<string, number>
   clients?: { id: string; name: string } | null
 }
@@ -54,6 +54,129 @@ const STAGE_META: Record<string, { label: string; color: string }> = {
   proposta:   { label: 'Proposta enviada', color: '#f59e0b' },
   negociacao: { label: 'Negociação',       color: '#f97316' },
   fechado:    { label: 'Fechado',          color: '#22c55e' },
+}
+
+// gera uma cor de accent consistente por nome do cliente (mesmo hash usado no Cronograma)
+function clientColor(name: string): string {
+  const colors = ['#efefef', '#2563eb', '#059669', '#d97706', '#dc2626', '#db2777', '#0891b2', '#65a30d']
+  let hash = 0
+  for (const c of name) hash = (hash * 31 + c.charCodeAt(0)) & 0xffffffff
+  return colors[Math.abs(hash) % colors.length]
+}
+
+const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv']
+function isVideoUrl(url: string): boolean {
+  const ext = url.split('?')[0].split('.').pop()?.toLowerCase()
+  return !!ext && VIDEO_EXTS.includes(ext)
+}
+// Fragmento de mídia (#t=0.1) força o navegador a desenhar o frame de 0.1s
+// como still, em vez de tela preta antes de tocar.
+function videoPosterSrc(url: string): string {
+  return `${url}#t=0.1`
+}
+
+function greetingWord(): string {
+  const h = new Date().getHours()
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
+}
+
+// ── "Bom dia" — posts que precisam ir ao ar hoje, em todas as empresas ────────
+function TodayPostsCard({ posts }: { posts: ContentPost[] }) {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const todays = posts
+    .filter(p => p.scheduled_date === todayStr && p.status !== 'publicado')
+    .sort((a, b) => (a.scheduled_time ?? '99:99').localeCompare(b.scheduled_time ?? '99:99'))
+
+  async function downloadMedia(url: string, id: string) {
+    setDownloadingId(id)
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = url.split('/').pop()?.split('?')[0] || 'arquivo'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(blobUrl)
+    } catch {
+      window.open(url, '_blank')
+    }
+    setDownloadingId(null)
+  }
+
+  return (
+    <div className="bg-gradient-to-br from-[#efefef]/10 via-[#1a1a1a] to-[#1a1a1a] border border-[#efefef]/25 rounded-2xl p-5 md:p-6">
+      <div className="flex items-center gap-2">
+        <Sun size={16} className="text-[#efefef]" />
+        <h2 className="text-base font-semibold">{greetingWord()}!</h2>
+      </div>
+
+      {todays.length === 0 ? (
+        <p className="text-sm text-muted-foreground mt-1.5">Nenhum post pra sair hoje. 🎉</p>
+      ) : (
+        <>
+          <p className="text-sm text-muted-foreground mt-1.5 mb-4">
+            {todays.length} post{todays.length !== 1 ? 's' : ''} pra ir ao ar hoje, em todas as empresas — em ordem de horário:
+          </p>
+          <div className="space-y-2">
+            {todays.map(post => {
+              const media = post.media_urls?.[0] ?? post.media_url
+              const video = media ? isVideoUrl(media) : false
+              const accent = post.clients ? clientColor(post.clients.name) : '#6b7280'
+              const platformColor = PLATFORM_COLOR[post.platform] ?? '#6b7280'
+              return (
+                <div key={post.id} className="flex items-center gap-3 bg-[#111111] border border-[#2a2a2a] rounded-xl p-3">
+                  {media ? (
+                    video ? (
+                      <video src={videoPosterSrc(media)} className="w-12 h-12 rounded-lg object-cover shrink-0" muted playsInline preload="metadata" />
+                    ) : (
+                      <img src={media} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                    )
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: platformColor + '22' }}>
+                      <ImageIcon size={18} style={{ color: platformColor }} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                      {post.scheduled_time && (
+                        <span className="text-[10px] font-semibold text-[#efefef]">{post.scheduled_time.slice(0, 5)}</span>
+                      )}
+                      {post.clients && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: accent + '22', color: accent }}>
+                          {post.clients.name}
+                        </span>
+                      )}
+                      <span className="text-[10px]" style={{ color: platformColor }}>
+                        {PLATFORM_LABEL[post.platform] ?? post.platform}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium truncate">{post.title}</p>
+                  </div>
+                  {media && (
+                    <button
+                      onClick={() => downloadMedia(media, post.id)}
+                      disabled={downloadingId === post.id}
+                      title="Baixar"
+                      className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-[#efefef] hover:bg-[#efefef]/10 transition-colors disabled:opacity-50"
+                    >
+                      <Download size={14} />
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
 }
 
 // ── KpiCard (reused) ───────────────────────────────────────────────────────────
@@ -420,6 +543,8 @@ function GabrielDashboard() {
 
   return (
     <div className="space-y-8">
+      <TodayPostsCard posts={posts} />
+
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1"><CeoBriefingHeader /></div>
         <Link href="/conteudo" className="text-xs text-[#34d399] hover:opacity-80 flex items-center gap-1 transition-opacity shrink-0 mt-1">
@@ -909,6 +1034,8 @@ function JuliaDashboard() {
 
   return (
     <div className="space-y-8">
+      <TodayPostsCard posts={posts} />
+
       <CeoBriefingHeader />
 
       <TodayMeetingsCard />
