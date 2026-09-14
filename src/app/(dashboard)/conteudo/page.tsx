@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 
 // â"€â"€ tipos â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null; project_sharing_enabled?: boolean }
+interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null; project_sharing_enabled?: boolean; priority?: number | null }
 
 interface ContentPost {
   id: string
@@ -1732,7 +1732,10 @@ export default function ConteudoPage() {
     const res = await fetch('/api/clients').catch(() => null)
     if (!res?.ok) return
     const data = await res.json()
-    setClients(Array.isArray(data) ? data : [])
+    const sorted = Array.isArray(data)
+      ? [...data].sort((a: Client, b: Client) => (a.priority ?? 999) - (b.priority ?? 999))
+      : []
+    setClients(sorted)
   }, [])
 
   const loadPosts = useCallback(async (clientId: string) => {
