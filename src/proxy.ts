@@ -111,5 +111,8 @@ export const config = {
   // Além do _next e favicon, exclui qualquer arquivo estático servido direto
   // de /public (logo, ícones, fontes...) — sem isso, pedir esses arquivos sem
   // sessão (ex: logo na tela de login) caía no redirect pra /login e quebrava.
-  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|css|js)$).*)'],
+  // Também exclui manifest.webmanifest e as rotas geradas /icon e /apple-icon
+  // (usadas pelo "Adicionar à tela de início") — sem extensão no caminho,
+  // então não batiam na regra de extensões acima e caíam no mesmo problema.
+  matcher: ['/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest$|icon$|apple-icon$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|css|js)$).*)'],
 }
