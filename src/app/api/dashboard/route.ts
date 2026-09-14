@@ -22,6 +22,20 @@ export async function GET() {
     supabase.from('services').select('amount').eq('active', false).eq('type', 'recorrente').gte('ended_at', monthStart).lte('ended_at', monthEnd),
   ])
 
+  // Antes essas consultas falhando silenciosamente virava um dashboard com
+  // tudo zerado (MRR, receita, etc) sem avisar nada -- parecia dado real e
+  // nao era. Se alguma falhar (ex: banco acordando de uma pausa por
+  // inatividade), devolve erro de verdade em vez de fingir que esta tudo a zero.
+  const failed = [
+    ['clients', clientsRes], ['services', servicesRes], ['charges (mes)', chargesMonthRes],
+    ['charges (atraso)', overdueRes], ['charges (proximas)', upcomingRes],
+    ['client_status_history', churnedClientsRes], ['services (churn)', churnedServicesRes],
+  ].find(([, res]) => (res as { error: unknown }).error)
+  if (failed) {
+    const [label, res] = failed as [string, { error: { message: string } }]
+    return NextResponse.json({ error: `Falha ao consultar ${label}: ${res.error.message}` }, { status: 500 })
+  }
+
   const activeClients = (clientsRes.data ?? []).filter(c => c.status === 'ativo').length
   const mrr = (servicesRes.data ?? []).reduce((sum, s) => sum + Number(s.amount), 0)
 
@@ -33,24 +47,28 @@ export async function GET() {
   const receivedMonth = charges.filter(c => c.paid_at).reduce((sum, c) => sum + Number(c.amount), 0)
   const overdueCount = (overdueRes.data ?? []).length
 
-  // Receita realizada por mÃªs nos Ãºltimos 6 meses
-  const chartData = []
-  for (let i = 5; i >= 0; i--) {
+  // Receita realizada por mÃªs nos Ãºltimos 6 meses -- consultas em paralelo
+  // (antes eram sequenciais, uma esperando a outra, deixando essa rota lenta)
+  const last6Months = Array.from({ length: 6 }, (_, idx) => {
+    const i = 5 - idx
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
     const mStart = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
     const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0]
-    const { data } = await supabase
-      .from('charges')
-      .select('amount')
-      .not('paid_at', 'is', null)
-      .gte('paid_at', mStart)
-      .lte('paid_at', mEnd)
-
-    chartData.push({
-      month: d.toLocaleDateString('pt-BR', { month: 'short' }),
-      value: (data ?? []).reduce((sum, c) => sum + Number(c.amount), 0),
-    })
+    return { d, mStart, mEnd }
+  })
+  const monthResults = await Promise.all(
+    last6Months.map(({ mStart, mEnd }) =>
+      supabase.from('charges').select('amount').not('paid_at', 'is', null).gte('paid_at', mStart).lte('paid_at', mEnd)
+    )
+  )
+  const failedMonth = monthResults.find(res => res.error)
+  if (failedMonth) {
+    return NextResponse.json({ error: `Falha ao consultar gráfico de receita: ${failedMonth.error!.message}` }, { status: 500 })
   }
+  const chartData = last6Months.map(({ d }, idx) => ({
+    month: d.toLocaleDateString('pt-BR', { month: 'short' }),
+    value: (monthResults[idx].data ?? []).reduce((sum, c) => sum + Number(c.amount), 0),
+  }))
 
   return NextResponse.json({
     activeClients,

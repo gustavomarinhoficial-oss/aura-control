@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart, BarChart, Bar, CartesianGrid } from 'recharts'
 import { Users, TrendingUp, DollarSign, AlertCircle, ArrowUpRight, CheckSquare, Bell, Clock, X, Kanban, Pencil, Check, CalendarDays, Layers, ImageIcon, AlertTriangle, Eye, EyeOff, Download, Sun } from 'lucide-react'
@@ -265,6 +265,7 @@ function GustavoDashboard() {
   const [leads, setLeads]       = useState<Lead[]>([])
   const [dismissed, setDismissed] = useState(false)
   const [loading, setLoading]   = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [hideNums, setHideNums] = useState(false)
   const [editorialAlerts, setEditorialAlerts] = useState<{ id: string; clientName: string; daysLeft: number; valid_until: string; client_id: string }[]>([])
 
@@ -278,9 +279,15 @@ function GustavoDashboard() {
     localStorage.setItem('aura_hideNums', next ? '1' : '0')
   }
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true)
+    setLoadError('')
     Promise.all([
-      fetch('/api/dashboard').then(r => r.json()).catch(() => null),
+      fetch('/api/dashboard').then(async r => {
+        const body = await r.json().catch(() => null)
+        if (!r.ok) throw new Error(body?.error ?? 'Erro ao carregar o resumo do dashboard')
+        return body as DashboardData
+      }),
       fetch('/api/tasks').then(r => r.json()).catch(() => []),
       fetch('/api/alerts').then(r => r.json()).catch(() => ({ overdue: [], upcoming: [], renewals: [] })),
       fetch('/api/leads').then(r => r.json()).catch(() => []),
@@ -304,10 +311,27 @@ function GustavoDashboard() {
         setEditorialAlerts(expiring)
       }
       setLoading(false)
+    }).catch(err => {
+      setLoadError(err instanceof Error ? err.message : 'Erro ao carregar o dashboard')
+      setLoading(false)
     })
   }, [])
 
+  useEffect(() => { load() }, [load])
+
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" /></div>
+
+  if (loadError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3 text-center bg-[#1a1a1a] border border-[#ef4444]/30 rounded-xl">
+      <AlertCircle size={24} className="text-[#ef4444]" strokeWidth={1.5} />
+      <div>
+        <p className="text-sm font-medium">Não deu pra carregar o dashboard</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{loadError}</p>
+      </div>
+      <button onClick={load} className="text-xs text-[#efefef] hover:opacity-80 transition-opacity mt-1">Tentar de novo</button>
+    </div>
+  )
+
   if (!data) return null
 
   const hasChartData  = data.chartData.some(d => d.value > 0)
