@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, X, Trash2, Wallet, TrendingUp, TrendingDown, Target, Pencil, Check } from 'lucide-react'
+import { Plus, X, Trash2, Wallet, TrendingUp, TrendingDown, Target, Pencil, Check, List, PiggyBank } from 'lucide-react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 
 interface CashMovement {
@@ -32,6 +32,40 @@ function addMonths(dateStr: string, n: number): string {
 const EMPTY_FORM = { type: 'aporte', direction: 'entrada' as 'entrada' | 'saida', amount: '', date: new Date().toISOString().split('T')[0], note: '' }
 
 export default function CaixaPage() {
+  const [activeTab, setActiveTab] = useState<'caixa' | 'antecipada'>('caixa')
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">Caixa</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {activeTab === 'antecipada' ? 'Receita adiantada por clientes, separada do caixa da empresa' : 'Reserva financeira da empresa — lançado manualmente'}
+          </p>
+        </div>
+        <div className="flex items-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-1 gap-1">
+          <button
+            onClick={() => setActiveTab('caixa')}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'caixa' ? 'bg-[#efefef] text-[#111111]' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <List size={13} /> Caixa da empresa
+          </button>
+          <button
+            onClick={() => setActiveTab('antecipada')}
+            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'antecipada' ? 'bg-[#efefef] text-[#111111]' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <PiggyBank size={13} /> Receita antecipada
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'caixa' ? <CaixaTab /> : <AntecipadaTab />}
+    </div>
+  )
+}
+
+// ── Caixa da empresa (reserva geral) ──────────────────────────────────────────
+function CaixaTab() {
   const [movements, setMovements] = useState<CashMovement[]>([])
   const [charges, setCharges] = useState<Charge[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -126,11 +160,7 @@ export default function CaixaPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Caixa</h1>
-          <p className="text-sm text-muted-foreground mt-1">Reserva financeira da empresa — lançado manualmente</p>
-        </div>
+      <div className="flex justify-end">
         <button
           onClick={() => { setShowNew(true); setForm({ ...EMPTY_FORM }); setFormError('') }}
           className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -301,6 +331,222 @@ export default function CaixaPage() {
               <label className="block text-xs text-muted-foreground mb-1.5">Nota (opcional)</label>
               <textarea rows={2} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                 placeholder="Contexto do movimento..."
+                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] resize-none placeholder:text-muted-foreground" />
+            </div>
+
+            {formError && <p className="text-xs text-[#ef4444]">{formError}</p>}
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowNew(false)} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
+              <button onClick={addMovement} disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50">
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Receita antecipada (reserva separada) ─────────────────────────────────────
+interface AdvanceMovement {
+  id: string
+  date: string
+  type: 'deposito' | 'rendimento' | 'retirada'
+  amount: number
+  note: string | null
+  created_at: string
+}
+
+const ADVANCE_TYPE_META: Record<AdvanceMovement['type'], { label: string; defaultDirection: 'entrada' | 'saida' }> = {
+  deposito:   { label: 'Depósito (cliente pagou antecipado)', defaultDirection: 'entrada' },
+  rendimento: { label: 'Rendimento',                          defaultDirection: 'entrada' },
+  retirada:   { label: 'Retirada',                            defaultDirection: 'saida' },
+}
+
+const EMPTY_ADVANCE_FORM = { type: 'deposito' as AdvanceMovement['type'], direction: 'entrada' as 'entrada' | 'saida', amount: '', date: new Date().toISOString().split('T')[0], note: '' }
+
+function AntecipadaTab() {
+  const [movements, setMovements] = useState<AdvanceMovement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showNew, setShowNew] = useState(false)
+  const [form, setForm] = useState({ ...EMPTY_ADVANCE_FORM })
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState('')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch('/api/advance-revenue').then(r => r.json()).catch(() => [])
+    setMovements(Array.isArray(res) ? res : [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  const balance = movements.reduce((sum, m) => sum + Number(m.amount), 0)
+  const totalDeposito = movements.filter(m => m.type === 'deposito').reduce((s, m) => s + Number(m.amount), 0)
+  const totalRendimento = movements.filter(m => m.type === 'rendimento').reduce((s, m) => s + Number(m.amount), 0)
+
+  async function addMovement() {
+    setFormError('')
+    const amountNum = parseFloat(form.amount.replace(',', '.'))
+    if (!amountNum || amountNum <= 0) { setFormError('Informe um valor maior que zero'); return }
+    setSaving(true)
+    const signed = form.direction === 'saida' ? -Math.abs(amountNum) : Math.abs(amountNum)
+    const res = await fetch('/api/advance-revenue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: form.type, amount: signed, date: form.date, note: form.note || null }),
+    })
+    if (res.ok) {
+      const created = await res.json()
+      setMovements(ms => [created, ...ms])
+      setForm({ ...EMPTY_ADVANCE_FORM })
+      setShowNew(false)
+    } else {
+      const err = await res.json().catch(() => ({}))
+      setFormError(err.error ?? 'Erro ao salvar')
+    }
+    setSaving(false)
+  }
+
+  async function deleteMovement(id: string) {
+    if (!confirm('Apagar esse movimento?')) return
+    await fetch(`/api/advance-revenue/${id}`, { method: 'DELETE' })
+    setMovements(ms => ms.filter(m => m.id !== id))
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <button
+          onClick={() => { setShowNew(true); setForm({ ...EMPTY_ADVANCE_FORM }); setFormError('') }}
+          className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <Plus size={14} /> Novo movimento
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center h-40">
+          <div className="w-5 h-5 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <PiggyBank size={14} className="text-[#efefef]" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Saldo guardado</span>
+              </div>
+              <p className="text-2xl font-bold">{formatBRL(balance)}</p>
+            </div>
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet size={14} className="text-[#60a5fa]" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total depositado</span>
+              </div>
+              <p className="text-2xl font-bold text-[#60a5fa]">{formatBRL(totalDeposito)}</p>
+            </div>
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={14} className="text-[#22c55e]" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total em rendimento</span>
+              </div>
+              <p className="text-2xl font-bold text-[#22c55e]">{formatBRL(totalRendimento)}</p>
+            </div>
+          </div>
+
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2a2a2a]">
+              <h2 className="text-sm font-medium">Movimentações</h2>
+            </div>
+            {movements.length === 0 ? (
+              <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">Nenhum movimento lançado ainda</div>
+            ) : (
+              <div className="divide-y divide-[#2a2a2a]">
+                {movements.map(m => {
+                  const positive = Number(m.amount) >= 0
+                  return (
+                    <div key={m.id} className="flex items-center justify-between px-5 py-3 gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {positive ? <TrendingUp size={15} className="text-[#22c55e] shrink-0" /> : <TrendingDown size={15} className="text-[#ef4444] shrink-0" />}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{ADVANCE_TYPE_META[m.type]?.label ?? m.type}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground">{formatDate(m.date)}</p>
+                            {m.note && <p className="text-xs text-muted-foreground truncate">· {m.note}</p>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className={`text-sm font-semibold ${positive ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                          {positive ? '+' : ''}{formatBRL(Number(m.amount))}
+                        </span>
+                        <button onClick={() => deleteMovement(m.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {showNew && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false) }}>
+          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Novo movimento — receita antecipada</h2>
+              <button onClick={() => setShowNew(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+            </div>
+
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1.5">Tipo</label>
+              <select
+                value={form.type}
+                onChange={e => { const type = e.target.value as AdvanceMovement['type']; setForm(f => ({ ...f, type, direction: ADVANCE_TYPE_META[type].defaultDirection })) }}
+                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]"
+              >
+                {Object.entries(ADVANCE_TYPE_META).map(([key, meta]) => <option key={key} value={key}>{meta.label}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1.5">Direção</label>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setForm(f => ({ ...f, direction: 'entrada' }))}
+                  className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${form.direction === 'entrada' ? 'bg-[#22c55e]/15 border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2a2a2a] text-muted-foreground'}`}>
+                  <TrendingUp size={13} /> Entrada
+                </button>
+                <button type="button" onClick={() => setForm(f => ({ ...f, direction: 'saida' }))}
+                  className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${form.direction === 'saida' ? 'bg-[#ef4444]/15 border-[#ef4444]/40 text-[#ef4444]' : 'border-[#2a2a2a] text-muted-foreground'}`}>
+                  <TrendingDown size={13} /> Saída
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
+                <input autoFocus type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1.5">Data</label>
+                <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]" />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1.5">Nota (opcional)</label>
+              <textarea rows={2} value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+                placeholder="Ex: qual cliente, referente a qual mês..."
                 className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] resize-none placeholder:text-muted-foreground" />
             </div>
 
