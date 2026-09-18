@@ -7,6 +7,7 @@ const EMPTY_EXTRAS = {
   tone_of_voice: '', avoid_topics: '', brand_colors: '', brand_manual_url: '',
   products_services: '', recurring_promos: '', responsible_contacts: [],
   content_pillars: '', content_goal: '', instagram_notes: '',
+  default_content_mix: {},
 }
 
 // Segunda camada de checagem além do proxy — esta rota carrega senhas/acessos
@@ -46,6 +47,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     content_pillars: body.content_pillars ?? '',
     content_goal: body.content_goal ?? '',
     instagram_notes: body.instagram_notes ?? '',
+    default_content_mix: body.default_content_mix ?? {},
     updated_at: new Date().toISOString(),
   }
 

@@ -40,6 +40,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const counts = (body.counts ?? {}) as { reels?: number; feed?: number; carrossel?: number }
   const focus = ((body.focus as string) || '').trim()
   const avoid = ((body.avoid as string) || '').trim()
+  const weekdaysInput = (Array.isArray(body.weekdays) ? body.weekdays : [0, 1, 2, 3, 4, 5, 6]) as number[]
+  const weekdays = weekdaysInput.filter(d => Number.isInteger(d) && d >= 0 && d <= 6)
 
   const total = (counts.reels || 0) + (counts.feed || 0) + (counts.carrossel || 0)
   if (!/^\d{4}-\d{2}$/.test(month || '') || total <= 0) {
@@ -127,10 +129,16 @@ Responda APENAS com um JSON válido neste formato exato:
 
     const [year, mon] = month.split('-').map(Number)
     const daysInMonth = new Date(year, mon, 0).getDate()
-    const step = daysInMonth / posts.length
+    const allDays = Array.from({ length: daysInMonth }, (_, i) => i + 1)
+    const eligibleDays = weekdays.length > 0
+      ? allDays.filter(d => weekdays.includes(new Date(year, mon - 1, d).getDay()))
+      : allDays
+    const dayPool = eligibleDays.length > 0 ? eligibleDays : allDays
+    const step = dayPool.length / posts.length
 
     const rows = posts.map((p, i) => {
-      const day = Math.min(daysInMonth, Math.max(1, Math.round(i * step) + 1))
+      const idx = Math.min(dayPool.length - 1, Math.max(0, Math.round(i * step)))
+      const day = dayPool[idx]
       return {
         client_id: id,
         title: p.title,
@@ -146,6 +154,11 @@ Responda APENAS com um JSON válido neste formato exato:
 
     const { data: inserted, error } = await supabase.from('content_posts').insert(rows).select('id')
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    await supabase.from('client_extras').upsert({
+      client_id: id,
+      default_content_mix: { reels: counts.reels || 0, feed: counts.feed || 0, carrossel: counts.carrossel || 0, weekdays },
+    }, { onConflict: 'client_id' })
 
     return NextResponse.json({ created: inserted?.length ?? 0 })
   } catch (err) {

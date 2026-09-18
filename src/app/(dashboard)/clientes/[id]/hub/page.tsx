@@ -32,6 +32,7 @@ interface HubData {
   social_media: SocialEntry[]
   links: LinkEntry[]
   passwords: PasswordEntry[]
+  default_content_mix: { reels?: number; feed?: number; carrossel?: number; weekdays?: number[] }
 }
 
 const EMPTY: HubData = {
@@ -39,12 +40,25 @@ const EMPTY: HubData = {
   tone_of_voice: '', avoid_topics: '', content_pillars: '', content_goal: '',
   brand_colors: '', brand_manual_url: '', products_services: '', recurring_promos: '',
   responsible_contacts: [], instagram_notes: '', social_media: [], links: [], passwords: [],
+  default_content_mix: {},
 }
 
 const SOCIAL_PLATFORMS = ['Instagram', 'Facebook', 'LinkedIn', 'TikTok', 'YouTube', 'Twitter/X', 'Pinterest', 'Outro']
 
 const CONTENT_TYPE_META: Record<'reels' | 'feed' | 'carrossel', string> = {
   reels: 'Reels', feed: 'Estático', carrossel: 'Carrossel',
+}
+
+const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
+
+function splitQuotaEvenly(quota: number) {
+  const base = Math.floor(quota / 3)
+  const remainder = quota - base * 3
+  const counts = { reels: base, feed: base, carrossel: base }
+  const order: Array<'reels' | 'feed' | 'carrossel'> = ['reels', 'feed', 'carrossel']
+  for (let i = 0; i < remainder; i++) counts[order[i]] += 1
+  return counts
 }
 
 function nextMonthValue() {
@@ -109,7 +123,8 @@ export default function ClientHubPage() {
   const [revealedPasswords, setRevealedPasswords] = useState<Set<number>>(new Set())
 
   const [genMonth, setGenMonth] = useState(nextMonthValue())
-  const [genCounts, setGenCounts] = useState({ reels: 8, feed: 10, carrossel: 7 })
+  const [genCounts, setGenCounts] = useState({ reels: 0, feed: 0, carrossel: 0 })
+  const [genWeekdays, setGenWeekdays] = useState<number[]>(ALL_WEEKDAYS)
   const [genFocus, setGenFocus] = useState('')
   const [genAvoid, setGenAvoid] = useState('')
   const [generating, setGenerating] = useState(false)
@@ -123,6 +138,15 @@ export default function ClientHubPage() {
     ])
     setClientName(clientRes?.name ?? '')
     setData({ ...EMPTY, ...extrasRes })
+
+    const mix = extrasRes?.default_content_mix
+    const mixTotal = (mix?.reels || 0) + (mix?.feed || 0) + (mix?.carrossel || 0)
+    if (mixTotal > 0) {
+      setGenCounts({ reels: mix.reels || 0, feed: mix.feed || 0, carrossel: mix.carrossel || 0 })
+      setGenWeekdays(Array.isArray(mix.weekdays) && mix.weekdays.length > 0 ? mix.weekdays : ALL_WEEKDAYS)
+    } else if (clientRes?.monthly_content_quota) {
+      setGenCounts(splitQuotaEvenly(clientRes.monthly_content_quota))
+    }
     setLoading(false)
   }, [id])
 
@@ -137,6 +161,10 @@ export default function ClientHubPage() {
     setData(d => ({ ...d, [key]: value }))
   }
 
+  function toggleWeekday(day: number) {
+    setGenWeekdays(w => w.includes(day) ? w.filter(d => d !== day) : [...w, day].sort())
+  }
+
   async function generateCalendar() {
     setGenerating(true)
     setGenResult(null)
@@ -144,7 +172,7 @@ export default function ClientHubPage() {
       const res = await fetch(`/api/clients/${id}/generate-calendar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month: genMonth, counts: genCounts, focus: genFocus, avoid: genAvoid }),
+        body: JSON.stringify({ month: genMonth, counts: genCounts, weekdays: genWeekdays, focus: genFocus, avoid: genAvoid }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -212,6 +240,26 @@ export default function ClientHubPage() {
           ))}
         </div>
 
+        <div>
+          <label className="block text-[10px] text-muted-foreground mb-1.5">Dias da semana permitidos</label>
+          <div className="flex gap-1.5 flex-wrap">
+            {WEEKDAY_LABELS.map((label, day) => (
+              <button
+                key={day}
+                type="button"
+                onClick={() => toggleWeekday(day)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                  genWeekdays.includes(day)
+                    ? 'bg-[#efefef] text-[#111111] border-[#efefef]'
+                    : 'bg-[#111111] text-muted-foreground border-[#2a2a2a] hover:text-foreground'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-[10px] text-muted-foreground mb-1.5">Foco do mês (promoção, campanha, lançamento...)</label>
@@ -233,15 +281,18 @@ export default function ClientHubPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={generateCalendar}
-            disabled={generating || totalGen === 0}
+            disabled={generating || totalGen === 0 || genWeekdays.length === 0}
             className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] disabled:opacity-50 disabled:cursor-not-allowed text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
             {generating ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
             {generating ? 'Gerando...' : `Gerar ${totalGen} posts`}
           </button>
+          {genWeekdays.length === 0 && (
+            <p className="text-xs text-[#ef4444]">Selecione ao menos um dia da semana.</p>
+          )}
           {genResult && (
             <p className={`text-xs ${genResult.ok ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>{genResult.message}</p>
           )}
