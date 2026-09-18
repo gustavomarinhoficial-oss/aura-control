@@ -1,5 +1,13 @@
-﻿import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createServiceClient, requireUser, unauthorized } from '@/lib/supabase/server'
+
+const EMPTY_EXTRAS = {
+  responsavel: '', objectives: '', social_media: [], links: [], passwords: [],
+  mission: '', positioning: '', target_audience: '', competitors: '',
+  tone_of_voice: '', avoid_topics: '', brand_colors: '', brand_manual_url: '',
+  products_services: '', recurring_promos: '', responsible_contacts: [],
+  content_pillars: '', content_goal: '', instagram_notes: '',
+}
 
 // Segunda camada de checagem além do proxy — esta rota carrega senhas/acessos
 // dos clientes, então confere sessão de novo aqui dentro (defesa em profundidade).
@@ -8,7 +16,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const { id } = await params
   const supabase = createServiceClient()
   const { data } = await supabase.from('client_extras').select('*').eq('client_id', id).single()
-  return NextResponse.json(data ?? { client_id: id, responsavel: '', objectives: '', social_media: [], links: [], passwords: [] })
+  return NextResponse.json(data ?? { client_id: id, ...EMPTY_EXTRAS })
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +32,20 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     social_media: body.social_media ?? [],
     links: body.links ?? [],
     passwords: body.passwords ?? [],
+    mission: body.mission ?? '',
+    positioning: body.positioning ?? '',
+    target_audience: body.target_audience ?? '',
+    competitors: body.competitors ?? '',
+    tone_of_voice: body.tone_of_voice ?? '',
+    avoid_topics: body.avoid_topics ?? '',
+    brand_colors: body.brand_colors ?? '',
+    brand_manual_url: body.brand_manual_url ?? '',
+    products_services: body.products_services ?? '',
+    recurring_promos: body.recurring_promos ?? '',
+    responsible_contacts: body.responsible_contacts ?? [],
+    content_pillars: body.content_pillars ?? '',
+    content_goal: body.content_goal ?? '',
+    instagram_notes: body.instagram_notes ?? '',
     updated_at: new Date().toISOString(),
   }
 

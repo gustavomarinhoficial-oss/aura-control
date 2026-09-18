@@ -11,7 +11,7 @@ import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
   Mail, Phone, Calendar, FileText, TrendingUp, DollarSign, AlertCircle,
   MessageCircle, Copy, Trash2, Clock, Upload, Download, File,
-  Eye, EyeOff, Link, AtSign, Globe, Lock, User2, Folder, ChevronLeft
+  Eye, Folder, ChevronLeft, Sparkles
 } from 'lucide-react'
 import type { Client, Service, ClientStatusHistory, Charge, Task } from '@/lib/supabase/types'
 
@@ -76,7 +76,7 @@ export default function ClientProfilePage() {
   const [editingService, setEditingService] = useState<string | null>(null)
   const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: '' })
   const [savingEditService, setSavingEditService] = useState(false)
-  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'dados' | 'editorial' | 'relatorios'>('visao')
+  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'editorial' | 'relatorios'>('visao')
   const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   type FileEntry = { name: string; metadata?: { size?: number } }
@@ -107,15 +107,6 @@ export default function ClientProfilePage() {
   const [editorialPdfUrl, setEditorialPdfUrl] = useState<string | null>(null)
   const editorialInputRef = useRef<HTMLInputElement>(null)
 
-  type SocialEntry = { platform: string; handle: string }
-  type LinkEntry = { label: string; url: string }
-  type PasswordEntry = { label: string; username: string; password: string; url: string }
-  type ClientExtras = { responsavel: string; objectives: string; social_media: SocialEntry[]; links: LinkEntry[]; passwords: PasswordEntry[] }
-  const EMPTY_EXTRAS: ClientExtras = { responsavel: '', objectives: '', social_media: [], links: [], passwords: [] }
-  const [extras, setExtras] = useState<ClientExtras>(EMPTY_EXTRAS)
-  const [extrasSaving, setExtrasSaving] = useState(false)
-  const [revealedPasswords, setRevealedPasswords] = useState<Set<number>>(new Set())
-  const SOCIAL_PLATFORMS = ['Instagram', 'Facebook', 'LinkedIn', 'TikTok', 'YouTube', 'Twitter/X', 'Pinterest', 'Outro']
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -224,22 +215,8 @@ export default function ClientProfilePage() {
     await loadFiles()
   }
 
-  const loadExtras = useCallback(async () => {
-    const res = await fetch(`/api/clients/${id}/extras`).then(r => r.json()).catch(() => EMPTY_EXTRAS)
-    setExtras({ responsavel: res.responsavel ?? '', objectives: res.objectives ?? '', social_media: res.social_media ?? [], links: res.links ?? [], passwords: res.passwords ?? [] })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
-
-  async function saveExtras(override?: Partial<typeof EMPTY_EXTRAS>) {
-    setExtrasSaving(true)
-    const payload = override ? { ...extras, ...override } : extras
-    await fetch(`/api/clients/${id}/extras`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    setExtrasSaving(false)
-  }
-
   useEffect(() => { load() }, [load])
   useEffect(() => { loadFiles() }, [loadFiles])
-  useEffect(() => { loadExtras() }, [loadExtras])
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab === 'editorial') setActiveTab('editorial')
@@ -433,22 +410,30 @@ export default function ClientProfilePage() {
               <p className="text-xs text-muted-foreground mt-0.5">Cliente desde {formatDate(client.started_at)}</p>
             </div>
           </div>
-          {!isJulia && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setEditing(true)}
-                className="flex items-center gap-2 border border-[#2a2a2a] text-sm px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition-colors text-muted-foreground hover:text-foreground"
-              >
-                <Edit2 size={13} /> Editar
-              </button>
-              <button
-                onClick={() => setShowDelete(true)}
-                className="flex items-center gap-2 border border-[#ef4444]/30 text-sm px-3 py-2 rounded-lg hover:bg-[#ef4444]/10 transition-colors text-[#ef4444]/70 hover:text-[#ef4444]"
-              >
-                <Trash2 size={13} /> Excluir
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push(`/clientes/${id}/hub`)}
+              className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-3 py-2 rounded-lg transition-colors"
+            >
+              <Sparkles size={13} /> Hub da marca
+            </button>
+            {!isJulia && (
+              <>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex items-center gap-2 border border-[#2a2a2a] text-sm px-3 py-2 rounded-lg hover:bg-[#1a1a1a] transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <Edit2 size={13} /> Editar
+                </button>
+                <button
+                  onClick={() => setShowDelete(true)}
+                  className="flex items-center gap-2 border border-[#ef4444]/30 text-sm px-3 py-2 rounded-lg hover:bg-[#ef4444]/10 transition-colors text-[#ef4444]/70 hover:text-[#ef4444]"
+                >
+                  <Trash2 size={13} /> Excluir
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -488,7 +473,7 @@ export default function ClientProfilePage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit overflow-x-auto max-w-full">
-        {(([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['dados', 'Dados'], ['editorial', 'Editorial']] as const)
+        {(([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['editorial', 'Editorial']] as const)
           .filter(([tab]) => !isJulia || (tab !== 'servicos' && tab !== 'financeiro'))
         ).map(([tab, lbl]) => (
           <button
@@ -1158,223 +1143,6 @@ export default function ClientProfilePage() {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Tab: Dados */}
-      {activeTab === 'dados' && (
-        <div className="space-y-5">
-
-          {/* Objetivos */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <FileText size={14} className="text-muted-foreground" />
-              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Objetivos do cliente</h3>
-            </div>
-            <textarea
-              value={extras.objectives}
-              onChange={e => setExtras(x => ({ ...x, objectives: e.target.value }))}
-              onBlur={() => saveExtras()}
-              rows={4}
-              placeholder="Metas, expectativas e resultados esperados..."
-              className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50 resize-none"
-            />
-          </div>
-
-          {/* Redes Sociais */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AtSign size={14} className="text-muted-foreground" />
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Redes Sociais</h3>
-              </div>
-              <button
-                onClick={() => setExtras(x => ({ ...x, social_media: [...x.social_media, { platform: 'Instagram', handle: '' }] }))}
-                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
-              >
-                <Plus size={12} /> Adicionar
-              </button>
-            </div>
-            {extras.social_media.length === 0 && (
-              <p className="text-xs text-muted-foreground/60">Nenhuma rede social cadastrada</p>
-            )}
-            <div className="space-y-2">
-              {extras.social_media.map((s, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <select
-                    value={s.platform}
-                    onChange={e => {
-                      const arr = [...extras.social_media]; arr[i] = { ...arr[i], platform: e.target.value }
-                      setExtras(x => ({ ...x, social_media: arr }))
-                    }}
-                    onBlur={() => saveExtras()}
-                    className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-[#efefef] transition-colors w-36 shrink-0"
-                  >
-                    {SOCIAL_PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  <input
-                    value={s.handle}
-                    onChange={e => {
-                      const arr = [...extras.social_media]; arr[i] = { ...arr[i], handle: e.target.value }
-                      setExtras(x => ({ ...x, social_media: arr }))
-                    }}
-                    onBlur={() => saveExtras()}
-                    placeholder="@usuario ou URL"
-                    className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                  />
-                  <button
-                    onClick={() => { const arr = extras.social_media.filter((_, j) => j !== i); setExtras(x => ({ ...x, social_media: arr })); saveExtras({ social_media: arr }) }}
-                    className="text-muted-foreground hover:text-[#ef4444] transition-colors p-1"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Links úteis */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Globe size={14} className="text-muted-foreground" />
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Links úteis</h3>
-              </div>
-              <button
-                onClick={() => setExtras(x => ({ ...x, links: [...x.links, { label: '', url: '' }] }))}
-                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
-              >
-                <Plus size={12} /> Adicionar
-              </button>
-            </div>
-            {extras.links.length === 0 && (
-              <p className="text-xs text-muted-foreground/60">Nenhum link cadastrado</p>
-            )}
-            <div className="space-y-2">
-              {extras.links.map((lk, i) => (
-                <div key={i} className="flex gap-2 items-center">
-                  <input
-                    value={lk.label}
-                    onChange={e => { const arr = [...extras.links]; arr[i] = { ...arr[i], label: e.target.value }; setExtras(x => ({ ...x, links: arr })) }}
-                    onBlur={() => saveExtras()}
-                    placeholder="Rótulo (ex: Site)"
-                    className="w-32 shrink-0 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                  />
-                  <input
-                    value={lk.url}
-                    onChange={e => { const arr = [...extras.links]; arr[i] = { ...arr[i], url: e.target.value }; setExtras(x => ({ ...x, links: arr })) }}
-                    onBlur={() => saveExtras()}
-                    placeholder="https://..."
-                    className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                  />
-                  <button
-                    onClick={() => { navigator.clipboard.writeText(lk.url) }}
-                    title="Copiar link"
-                    className="text-muted-foreground hover:text-[#efefef] transition-colors p-1"
-                  >
-                    <Copy size={14} />
-                  </button>
-                  <button
-                    onClick={() => { const arr = extras.links.filter((_, j) => j !== i); setExtras(x => ({ ...x, links: arr })); saveExtras({ links: arr }) }}
-                    className="text-muted-foreground hover:text-[#ef4444] transition-colors p-1"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Senhas / Acessos — visível pra todo mundo, inclusive Julia/Mariana
-              (não é dado financeiro, é operacional: login de ferramentas do cliente) */}
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lock size={14} className="text-muted-foreground" />
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Senhas / Acessos</h3>
-              </div>
-              <button
-                onClick={() => setExtras(x => ({ ...x, passwords: [...x.passwords, { label: '', username: '', password: '', url: '' }] }))}
-                className="flex items-center gap-1 text-xs text-[#efefef] hover:text-[#efefef] transition-colors"
-              >
-                <Plus size={12} /> Adicionar
-              </button>
-            </div>
-            {extras.passwords.length === 0 && (
-              <p className="text-xs text-muted-foreground/60">Nenhum acesso cadastrado</p>
-            )}
-            <div className="space-y-3">
-              {extras.passwords.map((pw, i) => (
-                <div key={i} className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      value={pw.label}
-                      onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], label: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
-                      onBlur={() => saveExtras()}
-                      placeholder="Rótulo (ex: Google Ads)"
-                      className="flex-1 min-w-0 bg-transparent border-b border-[#2a2a2a] pb-1 text-sm font-medium focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                    />
-                    <button
-                      onClick={() => { const arr = extras.passwords.filter((_, j) => j !== i); setExtras(x => ({ ...x, passwords: arr })); saveExtras({ passwords: arr }) }}
-                      className="text-muted-foreground hover:text-[#ef4444] transition-colors p-0.5"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="min-w-0">
-                      <label className="block text-[10px] text-muted-foreground mb-1">Usuário / Email</label>
-                      <div className="flex items-center gap-1">
-                        <input
-                          value={pw.username}
-                          onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], username: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
-                          onBlur={() => saveExtras()}
-                          placeholder="usuario@email.com"
-                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                        />
-                        <button onClick={() => navigator.clipboard.writeText(pw.username)} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"><Copy size={12} /></button>
-                      </div>
-                    </div>
-                    <div className="min-w-0">
-                      <label className="block text-[10px] text-muted-foreground mb-1">Senha</label>
-                      <div className="flex items-center gap-1">
-                        <input
-                          type={revealedPasswords.has(i) ? 'text' : 'password'}
-                          value={pw.password}
-                          onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], password: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
-                          onBlur={() => saveExtras()}
-                          placeholder="••••••••"
-                          className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                        />
-                        <button
-                          onClick={() => setRevealedPasswords(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n })}
-                          className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"
-                        >
-                          {revealedPasswords.has(i) ? <EyeOff size={12} /> : <Eye size={12} />}
-                        </button>
-                        <button onClick={() => navigator.clipboard.writeText(pw.password)} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"><Copy size={12} /></button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <label className="block text-[10px] text-muted-foreground mb-1">URL (opcional)</label>
-                    <div className="flex items-center gap-1">
-                      <input
-                        value={pw.url}
-                        onChange={e => { const arr = [...extras.passwords]; arr[i] = { ...arr[i], url: e.target.value }; setExtras(x => ({ ...x, passwords: arr })) }}
-                        onBlur={() => saveExtras()}
-                        placeholder="https://..."
-                        className="flex-1 min-w-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-md px-2 py-1.5 text-xs focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
-                      />
-                      <button onClick={() => navigator.clipboard.writeText(pw.url)} className="text-muted-foreground hover:text-[#efefef] transition-colors p-1 shrink-0"><Copy size={12} /></button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {extrasSaving && <p className="text-[10px] text-muted-foreground">Salvando...</p>}
-          </div>
-
         </div>
       )}
 

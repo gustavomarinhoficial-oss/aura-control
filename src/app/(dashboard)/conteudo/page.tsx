@@ -1,10 +1,11 @@
 ﻿'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Plus, X, ChevronLeft, ChevronRight, ChevronDown, List, CalendarDays,
   Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
-  Download, Play, ExternalLink, Link2,
+  Download, Play, ExternalLink, Link2, Sparkles,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { effectiveUnlockedMonth, nextMonthStr } from '@/lib/utils/contentUnlock'
@@ -1716,6 +1717,7 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
 
 // ── ConteudoPage ─────────────────────────────────────────────────────────────
 export default function ConteudoPage() {
+  const router = useRouter()
   const [clients, setClients]         = useState<Client[]>([])
   const [posts, setPosts]             = useState<ContentPost[]>([])
   const [loading, setLoading]         = useState(true)
@@ -1826,13 +1828,22 @@ export default function ConteudoPage() {
             </div>
             <div className="flex items-center gap-2">
               {!isAllClients && activeClientObj && (
-                <button
-                  onClick={() => setShowShare(true)}
-                  className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm px-4 py-2.5 rounded-xl transition-colors font-medium text-muted-foreground hover:text-foreground"
-                >
-                  <Share2 size={15} />
-                  <span className="hidden sm:inline">Compartilhar</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => router.push(`/clientes/${activeClientObj.id}/hub`)}
+                    className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm px-4 py-2.5 rounded-xl transition-colors font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <Sparkles size={15} />
+                    <span className="hidden sm:inline">Hub da marca</span>
+                  </button>
+                  <button
+                    onClick={() => setShowShare(true)}
+                    className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm px-4 py-2.5 rounded-xl transition-colors font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    <Share2 size={15} />
+                    <span className="hidden sm:inline">Compartilhar</span>
+                  </button>
+                </>
               )}
               <button
                 onClick={() => setShowNew(true)}

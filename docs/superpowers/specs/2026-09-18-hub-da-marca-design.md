@@ -29,8 +29,7 @@ A tabela `client_extras` já existe (usada hoje pela aba "Dados": `responsavel`,
 | `tone_of_voice` | text | Voz & Estilo |
 | `avoid_topics` | text | Voz & Estilo (o que nunca falar/mostrar) |
 | `brand_colors` | text | Identidade visual (paleta, texto livre tipo "#111111, dourado") |
-| `brand_manual_url` | text | Identidade visual (link do PDF, via upload) |
-| `logo_url` | text | Identidade visual (link da imagem, via upload) |
+| `brand_manual_url` | text | Identidade visual (link opcional, se o manual/logo estiver fora daqui — Google Drive, Canva etc.) |
 | `products_services` | text | Produto/Serviço |
 | `recurring_promos` | text | Operação |
 | `responsible_contacts` | jsonb | Operação (lista de `{name, role, contact}`, mesmo padrão de `social_media`) |
@@ -40,7 +39,7 @@ A tabela `client_extras` já existe (usada hoje pela aba "Dados": `responsavel`,
 
 Todas as colunas são opcionais (nullable) — a equipe preenche o que souber, sem bloqueio. A rota `/api/clients/[id]/extras` (GET/PUT) é a mesma de hoje, só o payload cresce pra incluir os campos novos.
 
-Upload de manual de marca e logo reaproveita o mesmo mecanismo de Storage já usado na aba "Documentos"/"Editorial" (bucket existente, sem infraestrutura nova).
+Arquivos de logo e manual de marca em si continuam vivendo na pasta "Identidade visual" que já existe na aba Documentos (mesmo mecanismo de Storage de sempre) — o Hub não reinventa upload de arquivo, só linka pra lá; `brand_manual_url` é só pra quem prefere manter isso num link externo (Drive, Canva).
 
 ---
 
@@ -53,7 +52,7 @@ Página nova e dedicada (não mais uma aba entre as 9 que já existem em `/clien
 3. **Sobre a marca** — missão, posicionamento
 4. **Público-alvo & Concorrência**
 5. **Voz & Estilo** — tom de voz, o que evitar, pilares de conteúdo + objetivo do momento
-6. **Identidade visual** — paleta, upload de manual de marca e logo
+6. **Identidade visual** — paleta, link opcional pra manual de marca externo, e atalho pra pasta "Identidade visual" que já existe na aba Documentos (onde ficam os arquivos de logo/manual em si)
 7. **Produto/Serviço** — portfólio principal
 8. **Operação** — promoções recorrentes, responsáveis no local
 9. **Redes sociais, Links e Senhas** — migrado da aba "Dados" (ver seção 4)
