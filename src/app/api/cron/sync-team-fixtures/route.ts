@@ -207,6 +207,7 @@ async function run() {
 
   let created = 0
   let updated = 0
+  let reconciled = 0
 
   for (const fixture of upcoming) {
     const brasilia = toBrasilia(fixture.dateUtc)
@@ -214,21 +215,63 @@ async function run() {
     const scheduled_time = fixture.timeKnown ? brasilia.time : null
     const title = `Jogo: ${fixture.home} x ${fixture.away}`
     const notes = [`Sincronizado automaticamente via ${fixture.source}`, fixture.competition, fixture.venue].filter(Boolean).join(' — ')
+    // Time que ancora a busca de reconciliação abaixo — sempre um dos 4 que a
+    // gente acompanha, então o nome é estável entre ESPN e TheSportsDB
+    // (diferente do adversário, que pode vir formatado diferente em cada fonte).
+    const anchorTeam = TEAM_NAMES.find(t => t === fixture.home || t === fixture.away) ?? fixture.home
 
     for (const client of clients) {
-      const { data: existing } = await supabase
+      let { data: existing } = await supabase
         .from('content_posts')
         .select('id')
         .eq('client_id', client.id)
         .eq('external_event_id', fixture.externalId)
         .maybeSingle()
 
+      // Não achou pelo id externo exato? Pode ser o MESMO jogo que uma fonte
+      // diferente já tinha criado antes (ex: TheSportsDB criou primeiro, e
+      // agora a ESPN também passou a cobrir e virou a fonte preferida em
+      // mergeFixtures — o id externo muda, mas o jogo é o mesmo). Sem essa
+      // segunda checagem, isso duplicava o post toda vez que a fonte "vencedora"
+      // mudava de um sync pro outro. Reconhece pelo mesmo cliente + mesmo time
+      // no título, dentro de uma janela de busca larga (3 dias, pra pegar o
+      // caso de fonte sem horário confirmado relatando a data errada em até
+      // um dia) — mas só reconcilia de fato com o candidato cuja data fica a
+      // no máximo 1 dia de distância e sem empate, senão pode ser um jogo
+      // seguinte do mesmo time (ex: Botafogo joga dia 16 e de novo dia 19) e
+      // aí é mais seguro criar um registro novo do que grudar no jogo errado.
+      if (!existing) {
+        const targetDate = scheduled_date
+        const windowStart = new Date(new Date(fixture.dateUtc).getTime() - 3 * 86400000).toISOString().split('T')[0]
+        const windowEnd = new Date(new Date(fixture.dateUtc).getTime() + 3 * 86400000).toISOString().split('T')[0]
+        const { data: candidates } = await supabase
+          .from('content_posts')
+          .select('id, scheduled_date')
+          .eq('client_id', client.id)
+          .ilike('title', `%${anchorTeam}%`)
+          .gte('scheduled_date', windowStart)
+          .lte('scheduled_date', windowEnd)
+
+        if (candidates && candidates.length > 0) {
+          const withDistance = candidates
+            .map(c => ({ ...c, distance: Math.abs((new Date(c.scheduled_date).getTime() - new Date(targetDate).getTime()) / 86400000) }))
+            .sort((a, b) => a.distance - b.distance)
+          const [closest, secondClosest] = withDistance
+          const isUniqueMatch = closest.distance <= 1 && (!secondClosest || secondClosest.distance > closest.distance)
+          if (isUniqueMatch) {
+            existing = closest
+            reconciled++
+          }
+        }
+      }
+
       if (existing) {
-        // Só corrige data/hora (ex: jogo adiado) — não mexe em título, legenda
-        // ou status, caso a equipe já tenha avançado esse post no fluxo
+        // Só corrige data/hora e o id externo (pra próxima sincronização já
+        // cair no match exato) — não mexe em título, legenda ou status, caso
+        // a equipe já tenha avançado esse post no fluxo
         await supabase
           .from('content_posts')
-          .update({ scheduled_date, scheduled_time, updated_at: new Date().toISOString() })
+          .update({ scheduled_date, scheduled_time, external_event_id: fixture.externalId, updated_at: new Date().toISOString() })
           .eq('id', existing.id)
         updated++
       } else {
@@ -248,7 +291,7 @@ async function run() {
     }
   }
 
-  return NextResponse.json({ created, updated, sourceErrors })
+  return NextResponse.json({ created, updated, reconciled, sourceErrors })
 }
 
 // Vercel Cron dispara via GET
