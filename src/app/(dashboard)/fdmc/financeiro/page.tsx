@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, X, Trash2, TrendingUp, TrendingDown, Wallet, List, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, X, Trash2, TrendingUp, TrendingDown, Wallet, List, ChevronLeft, ChevronRight, Check, Pencil } from 'lucide-react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 
 interface FdmcEntry {
@@ -10,6 +10,7 @@ interface FdmcEntry {
   description: string
   amount: number
   entry_date: string
+  paid_at: string | null
   notes: string | null
   created_at: string
 }
@@ -77,12 +78,12 @@ function LancamentosTab() {
   const [entries, setEntries] = useState<FdmcEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ ...EMPTY_FORM })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
+  const [editingEntry, setEditingEntry] = useState<FdmcEntry | null>(null)
+  const [paying, setPaying] = useState<string | null>(null)
 
   const monthStr = `${year}-${String(month).padStart(2, '0')}`
   const monthName = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const defaultNewDate = monthStr === todayStr.slice(0, 7) ? todayStr : `${monthStr}-01`
 
   function prevMonth() { if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1) }
   function nextMonth() { if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1) }
@@ -96,40 +97,29 @@ function LancamentosTab() {
 
   useEffect(() => { load() }, [load])
 
-  async function addEntry() {
-    setError('')
-    if (!form.description.trim()) { setError('Informe uma descrição'); return }
-    const amountNum = parseFloat(form.amount.replace(',', '.'))
-    if (!amountNum || amountNum <= 0) { setError('Informe um valor maior que zero'); return }
-    setSaving(true)
-    const res = await fetch('/api/fdmc/entries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, amount: amountNum }),
-    })
-    if (res.ok) {
-      setShowNew(false)
-      setForm({ ...EMPTY_FORM })
-      load()
-    } else {
-      const err = await res.json().catch(() => ({}))
-      setError(err.error ?? 'Erro ao salvar')
-    }
-    setSaving(false)
-  }
-
   async function deleteEntry(id: string) {
     if (!confirm('Apagar esse lançamento?')) return
     setEntries(es => es.filter(e => e.id !== id))
     await fetch(`/api/fdmc/entries/${id}`, { method: 'DELETE' })
   }
 
+  async function markPaid(id: string, isPaid: boolean) {
+    setPaying(id)
+    await fetch(`/api/fdmc/entries/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: isPaid ? 'unpay' : 'pay' }),
+    })
+    setPaying(null)
+    load()
+  }
+
   const receitas = entries.filter(e => e.type === 'receita')
   const despesas = entries.filter(e => e.type === 'despesa')
-  const recebido = receitas.filter(e => e.entry_date <= todayStr).reduce((s, e) => s + Number(e.amount), 0)
-  const aReceber = receitas.filter(e => e.entry_date > todayStr).reduce((s, e) => s + Number(e.amount), 0)
-  const pago = despesas.filter(e => e.entry_date <= todayStr).reduce((s, e) => s + Number(e.amount), 0)
-  const aPagar = despesas.filter(e => e.entry_date > todayStr).reduce((s, e) => s + Number(e.amount), 0)
+  const recebido = receitas.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  const aReceber = receitas.filter(e => !e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  const pago = despesas.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  const aPagar = despesas.filter(e => !e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
   const saldo = recebido - pago
 
   return (
@@ -141,7 +131,7 @@ function LancamentosTab() {
           <button onClick={nextMonth} className="p-2 hover:bg-[#222222] rounded-r-lg transition-colors"><ChevronRight size={14} /></button>
         </div>
         <button
-          onClick={() => { setShowNew(true); setForm({ ...EMPTY_FORM, entry_date: monthStr === todayStr.slice(0, 7) ? todayStr : `${monthStr}-01` }); setError('') }}
+          onClick={() => setShowNew(true)}
           className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} /> Novo lançamento
@@ -190,7 +180,8 @@ function LancamentosTab() {
               <div className="divide-y divide-[#2a2a2a]">
                 {entries.map(e => {
                   const positive = e.type === 'receita'
-                  const pending = e.entry_date > todayStr
+                  const isPaid = !!e.paid_at
+                  const isOverdue = !isPaid && e.entry_date < todayStr
                   return (
                     <div key={e.id} className="flex items-center justify-between px-5 py-3 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
@@ -199,18 +190,25 @@ function LancamentosTab() {
                           <p className="text-sm font-medium truncate">{e.description}</p>
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-xs text-muted-foreground">{formatDate(e.entry_date)}</p>
-                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${pending ? 'text-muted-foreground bg-[#2a2a2a]' : 'text-[#22c55e] bg-[#22c55e]/10'}`}>
-                              {pending ? (positive ? 'A receber' : 'A pagar') : (positive ? 'Recebido' : 'Pago')}
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${isPaid ? 'text-[#22c55e] bg-[#22c55e]/10' : isOverdue ? 'text-[#ef4444] bg-[#ef4444]/10' : 'text-muted-foreground bg-[#2a2a2a]'}`}>
+                              {isPaid ? (positive ? 'Recebido' : 'Pago') : isOverdue ? 'Atrasado' : (positive ? 'A receber' : 'A pagar')}
                             </span>
                             {e.notes && <p className="text-xs text-muted-foreground truncate">· {e.notes}</p>}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className={`text-sm font-semibold ${positive ? 'text-[#22c55e]' : 'text-[#ef4444]'} ${pending ? 'opacity-60' : ''}`}>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-sm font-semibold ${positive ? 'text-[#22c55e]' : 'text-[#ef4444]'} ${isPaid ? '' : 'opacity-60'}`}>
                           {positive ? '+' : '-'}{formatBRL(Number(e.amount))}
                         </span>
-                        <button onClick={() => deleteEntry(e.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors">
+                        <button onClick={() => markPaid(e.id, isPaid)} disabled={paying === e.id}
+                          className={`flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-lg transition-colors ${isPaid ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
+                          <Check size={12} />{isPaid ? 'Desfazer' : positive ? 'Marcar recebido' : 'Marcar pago'}
+                        </button>
+                        <button onClick={() => setEditingEntry(e)} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+                          <Pencil size={13} />
+                        </button>
+                        <button onClick={() => deleteEntry(e.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors p-1">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -224,65 +222,110 @@ function LancamentosTab() {
       )}
 
       {showNew && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false) }}>
-          <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Novo lançamento</h2>
-              <button onClick={() => setShowNew(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
-            </div>
+        <EntryModal defaultDate={defaultNewDate} onClose={() => setShowNew(false)} onSaved={() => { setShowNew(false); load() }} />
+      )}
+      {editingEntry && (
+        <EntryModal initial={editingEntry} onClose={() => setEditingEntry(null)} onSaved={() => { setEditingEntry(null); load() }} />
+      )}
+    </div>
+  )
+}
 
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1.5">Tipo</label>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setForm(f => ({ ...f, type: 'receita' }))}
-                  className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${form.type === 'receita' ? 'bg-[#22c55e]/15 border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2a2a2a] text-muted-foreground'}`}>
-                  <TrendingUp size={13} /> Receita
-                </button>
-                <button type="button" onClick={() => setForm(f => ({ ...f, type: 'despesa' }))}
-                  className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${form.type === 'despesa' ? 'bg-[#ef4444]/15 border-[#ef4444]/40 text-[#ef4444]' : 'border-[#2a2a2a] text-muted-foreground'}`}>
-                  <TrendingDown size={13} /> Despesa
-                </button>
-              </div>
-            </div>
+// ── Modal de lançamento (criação e edição) ────────────────────────────────────
+function EntryModal({ initial, defaultDate, onClose, onSaved }: {
+  initial?: FdmcEntry
+  defaultDate?: string
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState(initial ? {
+    type: initial.type,
+    description: initial.description,
+    amount: String(initial.amount),
+    entry_date: initial.entry_date,
+    notes: initial.notes ?? '',
+  } : { ...EMPTY_FORM, entry_date: defaultDate ?? EMPTY_FORM.entry_date })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1.5">Descrição</label>
-              <input autoFocus value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Ex: Pagamento de cliente, aluguel..."
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
-            </div>
+  async function save() {
+    setError('')
+    if (!form.description.trim()) { setError('Informe uma descrição'); return }
+    const amountNum = parseFloat(form.amount.replace(',', '.'))
+    if (!amountNum || amountNum <= 0) { setError('Informe um valor maior que zero'); return }
+    setSaving(true)
+    const res = await fetch(initial ? `/api/fdmc/entries/${initial.id}` : '/api/fdmc/entries', {
+      method: initial ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, amount: amountNum }),
+    })
+    if (res.ok) {
+      onSaved()
+    } else {
+      const err = await res.json().catch(() => ({}))
+      setError(err.error ?? 'Erro ao salvar')
+      setSaving(false)
+    }
+  }
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
-                <input type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
-              </div>
-              <div>
-                <label className="block text-xs text-muted-foreground mb-1.5">Data</label>
-                <input type="date" value={form.entry_date} onChange={e => setForm(f => ({ ...f, entry_date: e.target.value }))}
-                  className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]" />
-              </div>
-            </div>
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">{initial ? 'Editar lançamento' : 'Novo lançamento'}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+        </div>
 
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1.5">Nota (opcional)</label>
-              <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="Contexto do lançamento..."
-                className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] resize-none placeholder:text-muted-foreground" />
-            </div>
-
-            {error && <p className="text-xs text-[#ef4444]">{error}</p>}
-
-            <div className="flex gap-3">
-              <button onClick={() => setShowNew(false)} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
-              <button onClick={addEntry} disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50">
-                {saving ? 'Salvando...' : 'Salvar'}
-              </button>
-            </div>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">Tipo</label>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setForm(f => ({ ...f, type: 'receita' }))}
+              className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${form.type === 'receita' ? 'bg-[#22c55e]/15 border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2a2a2a] text-muted-foreground'}`}>
+              <TrendingUp size={13} /> Receita
+            </button>
+            <button type="button" onClick={() => setForm(f => ({ ...f, type: 'despesa' }))}
+              className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${form.type === 'despesa' ? 'bg-[#ef4444]/15 border-[#ef4444]/40 text-[#ef4444]' : 'border-[#2a2a2a] text-muted-foreground'}`}>
+              <TrendingDown size={13} /> Despesa
+            </button>
           </div>
         </div>
-      )}
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">Descrição</label>
+          <input autoFocus value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder="Ex: Pagamento de cliente, aluguel..."
+            className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
+            <input type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Data</label>
+            <input type="date" value={form.entry_date} onChange={e => setForm(f => ({ ...f, entry_date: e.target.value }))}
+              className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">Nota (opcional)</label>
+          <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            placeholder="Contexto do lançamento..."
+            className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] resize-none placeholder:text-muted-foreground" />
+        </div>
+
+        {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
+          <button onClick={save} disabled={saving} className="flex-1 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            {saving ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
