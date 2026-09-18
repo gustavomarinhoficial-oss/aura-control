@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, X, Trash2, TrendingUp, TrendingDown, Wallet, List } from 'lucide-react'
+import { Plus, X, Trash2, TrendingUp, TrendingDown, Wallet, List, ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 
 interface FdmcEntry {
@@ -70,6 +70,10 @@ export default function FdmcFinanceiroPage() {
 
 // ── Lançamentos (receita/despesa solta) ──────────────────────────────────────
 function LancamentosTab() {
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+  const [year, setYear] = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth() + 1)
   const [entries, setEntries] = useState<FdmcEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
@@ -77,12 +81,18 @@ function LancamentosTab() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const monthStr = `${year}-${String(month).padStart(2, '0')}`
+  const monthName = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  function prevMonth() { if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1) }
+  function nextMonth() { if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1) }
+
   const load = useCallback(async () => {
     setLoading(true)
-    const res = await fetch('/api/fdmc/entries').then(r => r.json()).catch(() => [])
+    const res = await fetch(`/api/fdmc/entries?month=${monthStr}`).then(r => r.json()).catch(() => [])
     setEntries(Array.isArray(res) ? res : [])
     setLoading(false)
-  }, [])
+  }, [monthStr])
 
   useEffect(() => { load() }, [load])
 
@@ -114,15 +124,24 @@ function LancamentosTab() {
     await fetch(`/api/fdmc/entries/${id}`, { method: 'DELETE' })
   }
 
-  const totalReceitas = entries.filter(e => e.type === 'receita').reduce((s, e) => s + Number(e.amount), 0)
-  const totalDespesas = entries.filter(e => e.type === 'despesa').reduce((s, e) => s + Number(e.amount), 0)
-  const saldo = totalReceitas - totalDespesas
+  const receitas = entries.filter(e => e.type === 'receita')
+  const despesas = entries.filter(e => e.type === 'despesa')
+  const recebido = receitas.filter(e => e.entry_date <= todayStr).reduce((s, e) => s + Number(e.amount), 0)
+  const aReceber = receitas.filter(e => e.entry_date > todayStr).reduce((s, e) => s + Number(e.amount), 0)
+  const pago = despesas.filter(e => e.entry_date <= todayStr).reduce((s, e) => s + Number(e.amount), 0)
+  const aPagar = despesas.filter(e => e.entry_date > todayStr).reduce((s, e) => s + Number(e.amount), 0)
+  const saldo = recebido - pago
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg">
+          <button onClick={prevMonth} className="p-2 hover:bg-[#222222] rounded-l-lg transition-colors"><ChevronLeft size={14} /></button>
+          <span className="text-xs px-3 capitalize min-w-[130px] text-center">{monthName}</span>
+          <button onClick={nextMonth} className="p-2 hover:bg-[#222222] rounded-r-lg transition-colors"><ChevronRight size={14} /></button>
+        </div>
         <button
-          onClick={() => { setShowNew(true); setForm({ ...EMPTY_FORM }); setError('') }}
+          onClick={() => { setShowNew(true); setForm({ ...EMPTY_FORM, entry_date: monthStr === todayStr.slice(0, 7) ? todayStr : `${monthStr}-01` }); setError('') }}
           className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} /> Novo lançamento
@@ -139,23 +158,25 @@ function LancamentosTab() {
             <div className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <Wallet size={14} className="text-[#efefef]" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">Saldo</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Saldo do mês</span>
               </div>
               <p className="text-2xl font-bold">{formatBRL(saldo)}</p>
             </div>
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp size={14} className="text-[#22c55e]" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total receitas</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Faturamento</span>
               </div>
-              <p className="text-2xl font-bold text-[#22c55e]">{formatBRL(totalReceitas)}</p>
+              <p className="text-2xl font-bold text-[#22c55e]">{formatBRL(recebido)}</p>
+              {aReceber > 0 && <p className="text-[11px] text-muted-foreground mt-1">{formatBRL(aReceber)} a receber</p>}
             </div>
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingDown size={14} className="text-[#ef4444]" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total despesas</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Despesas</span>
               </div>
-              <p className="text-2xl font-bold text-[#ef4444]">{formatBRL(totalDespesas)}</p>
+              <p className="text-2xl font-bold text-[#ef4444]">{formatBRL(pago)}</p>
+              {aPagar > 0 && <p className="text-[11px] text-muted-foreground mt-1">{formatBRL(aPagar)} a pagar</p>}
             </div>
           </div>
 
@@ -164,25 +185,29 @@ function LancamentosTab() {
               <h2 className="text-sm font-medium">Lançamentos</h2>
             </div>
             {entries.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">Nenhum lançamento ainda</div>
+              <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">Nenhum lançamento nesse mês</div>
             ) : (
               <div className="divide-y divide-[#2a2a2a]">
                 {entries.map(e => {
                   const positive = e.type === 'receita'
+                  const pending = e.entry_date > todayStr
                   return (
                     <div key={e.id} className="flex items-center justify-between px-5 py-3 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {positive ? <TrendingUp size={15} className="text-[#22c55e] shrink-0" /> : <TrendingDown size={15} className="text-[#ef4444] shrink-0" />}
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{e.description}</p>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-xs text-muted-foreground">{formatDate(e.entry_date)}</p>
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${pending ? 'text-muted-foreground bg-[#2a2a2a]' : 'text-[#22c55e] bg-[#22c55e]/10'}`}>
+                              {pending ? (positive ? 'A receber' : 'A pagar') : (positive ? 'Recebido' : 'Pago')}
+                            </span>
                             {e.notes && <p className="text-xs text-muted-foreground truncate">· {e.notes}</p>}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <span className={`text-sm font-semibold ${positive ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
+                        <span className={`text-sm font-semibold ${positive ? 'text-[#22c55e]' : 'text-[#ef4444]'} ${pending ? 'opacity-60' : ''}`}>
                           {positive ? '+' : '-'}{formatBRL(Number(e.amount))}
                         </span>
                         <button onClick={() => deleteEntry(e.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors">
