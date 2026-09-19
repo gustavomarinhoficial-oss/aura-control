@@ -123,10 +123,12 @@ export interface Task {
 }
 
 export type MeetingStatus = 'agendada' | 'realizada' | 'cancelada'
+export type MeetingType = 'reuniao' | 'captacao'
 
 export interface Meeting {
   id: string
   title: string
+  type: MeetingType
   client_id: string | null
   lead_id: string | null
   meeting_date: string

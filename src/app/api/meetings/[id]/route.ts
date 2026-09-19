@@ -11,6 +11,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const update: Record<string, unknown> = {}
   if (body.title !== undefined) update.title = body.title
+  if (body.type !== undefined) update.type = body.type === 'captacao' ? 'captacao' : 'reuniao'
   if (body.client_id !== undefined) update.client_id = body.client_id || null
   if (body.lead_id !== undefined) update.lead_id = body.lead_id || null
   if (body.meeting_date !== undefined) update.meeting_date = body.meeting_date

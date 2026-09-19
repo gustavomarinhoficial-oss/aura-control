@@ -36,6 +36,7 @@ export async function POST(request: Request) {
 
   const insert: Record<string, unknown> = {
     title: body.title,
+    type: body.type === 'captacao' ? 'captacao' : 'reuniao',
     client_id: body.client_id || null,
     lead_id: body.lead_id || null,
     meeting_date: body.meeting_date,

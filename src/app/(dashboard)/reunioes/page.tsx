@@ -4,19 +4,24 @@ import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
-  AlertCircle, ChevronDown, ChevronRight, CalendarClock,
+  AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { leadOptionValue, decodeEntitySelect } from '@/lib/utils/entitySelect'
 import { useRole } from '@/lib/hooks/useRole'
 import { JULIA_TASK_MEMBERS } from '@/lib/roles'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
-import type { Meeting, MeetingStatus, Member } from '@/lib/supabase/types'
+import type { Meeting, MeetingStatus, MeetingType, Member } from '@/lib/supabase/types'
 
 const statusConfig: Record<MeetingStatus, { label: string; icon: React.ElementType; color: string }> = {
   agendada:  { label: 'Agendada',  icon: Clock,        color: 'text-[#f59e0b]' },
   realizada: { label: 'Realizada', icon: CheckCircle2, color: 'text-[#22c55e]' },
   cancelada: { label: 'Cancelada', icon: XCircle,       color: 'text-muted-foreground' },
+}
+
+const typeConfig: Record<MeetingType, { label: string; icon: React.ElementType; color: string }> = {
+  reuniao:  { label: 'Reunião',  icon: Users, color: '#efefef' },
+  captacao: { label: 'Captação', icon: Video, color: '#8b5cf6' },
 }
 
 interface Client { id: string; name: string }
@@ -79,6 +84,7 @@ function AttendeeMultiSelect({ members, value, onChange }: { members: Member[]; 
 
 interface MeetingFormData {
   title: string
+  type: MeetingType
   client_id: string | null
   lead_id: string | null
   meeting_date: string
@@ -99,6 +105,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
   error: string
 }) {
   const [title, setTitle] = useState(initial?.title ?? '')
+  const [type, setType] = useState<MeetingType>(initial?.type ?? 'reuniao')
   const [entityValue, setEntityValue] = useState(initial?.lead_id ? leadOptionValue(initial.lead_id) : (initial?.client_id ?? ''))
   const [date, setDate] = useState(initial?.meeting_date ?? localDateStr(new Date()))
   const [time, setTime] = useState(initial?.start_time?.slice(0, 5) ?? '')
@@ -112,6 +119,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
     const { client_id, lead_id } = decodeEntitySelect(entityValue)
     onSubmit({
       title: title.trim(),
+      type,
       client_id,
       lead_id,
       meeting_date: date,
@@ -125,10 +133,30 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
   return (
     <form onSubmit={submit} className="space-y-4">
       <div>
+        <label className="block text-xs text-muted-foreground mb-1">Tipo</label>
+        <div className="flex gap-2">
+          {(Object.keys(typeConfig) as MeetingType[]).map(t => {
+            const cfg = typeConfig[t]
+            const active = type === t
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setType(t)}
+                style={active ? { borderColor: cfg.color + '66', backgroundColor: cfg.color + '15', color: cfg.color } : undefined}
+                className={`flex-1 flex items-center justify-center gap-1.5 text-sm py-2 rounded-lg border transition-colors ${active ? '' : 'border-[#2a2a2a] text-muted-foreground'}`}
+              >
+                <cfg.icon size={13} /> {cfg.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div>
         <label className="block text-xs text-muted-foreground mb-1">Título *</label>
         <input
           value={title} onChange={e => setTitle(e.target.value)}
-          placeholder="Ex: Reunião de alinhamento — Cliente X"
+          placeholder={type === 'captacao' ? 'Ex: Captação de conteúdo — Cliente X' : 'Ex: Reunião de alinhamento — Cliente X'}
           className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
         />
       </div>
@@ -277,6 +305,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
 
   function MeetingRow({ meeting }: { meeting: Meeting }) {
     const sc = statusConfig[meeting.status]
+    const tc = typeConfig[meeting.type ?? 'reuniao']
     return (
       <div
         id={`meeting-${meeting.id}`}
@@ -323,6 +352,11 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
                 <CalendarClock size={10} />
                 {formatDate(meeting.meeting_date)}{meeting.start_time && ` · ${meeting.start_time.slice(0, 5)}`}
               </span>
+              {meeting.type === 'captacao' && (
+                <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: tc.color, backgroundColor: tc.color + '1a' }}>
+                  <tc.icon size={10} /> Captação
+                </span>
+              )}
               {meeting.clients ? (
                 <span className="text-[11px] text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">{meeting.clients.name}</span>
               ) : meeting.leads && (
@@ -353,7 +387,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">{workspace === 'fdmc' ? 'Reuniões — FDMC' : 'Reuniões'}</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{workspace === 'fdmc' ? 'Reuniões e Captações — FDMC' : 'Reuniões e Captações'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {upcoming.length} próxima{upcoming.length !== 1 ? 's' : ''}
           </p>
@@ -363,7 +397,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
           className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} />
-          Nova reunião
+          Novo compromisso
         </button>
       </div>
 
@@ -375,8 +409,8 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
         <div className="flex flex-col items-center justify-center h-48 gap-3 text-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl">
           <CalendarClock size={28} className="text-muted-foreground" strokeWidth={1} />
           <div>
-            <p className="text-sm font-medium">Nenhuma reunião agendada</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Crie sua primeira reunião</p>
+            <p className="text-sm font-medium">Nenhum compromisso agendado</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Crie sua primeira reunião ou captação</p>
           </div>
         </div>
       ) : (
@@ -405,8 +439,8 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
       {showNew && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
-            <h2 className="text-base font-semibold mb-5">Nova reunião</h2>
-            <MeetingForm clients={clients} leads={leads} members={members} onSubmit={createMeeting} submitLabel="Criar reunião" saving={saving} error={error} />
+            <h2 className="text-base font-semibold mb-5">Novo compromisso</h2>
+            <MeetingForm clients={clients} leads={leads} members={members} onSubmit={createMeeting} submitLabel="Criar" saving={saving} error={error} />
             <button onClick={() => { setShowNew(false); setError('') }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-3 py-1">Cancelar</button>
           </div>
         </div>
@@ -415,7 +449,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
       {editing && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
-            <h2 className="text-base font-semibold mb-5">Editar reunião</h2>
+            <h2 className="text-base font-semibold mb-5">Editar compromisso</h2>
             <MeetingForm initial={editing} clients={clients} leads={leads} members={members} onSubmit={d => updateMeeting(editing.id, d)} submitLabel="Salvar" saving={saving} error={error} />
             <button onClick={() => { setEditing(null); setError('') }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-3 py-1">Cancelar</button>
           </div>
