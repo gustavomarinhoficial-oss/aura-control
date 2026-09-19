@@ -303,6 +303,30 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
     await fetch(`/api/meetings/${id}`, { method: 'DELETE' })
   }
 
+  function GroupedMeetings({ meetings: list }: { meetings: Meeting[] }) {
+    const reunioes = list.filter(m => m.type !== 'captacao')
+    const captacoes = list.filter(m => m.type === 'captacao')
+    if (reunioes.length === 0 || captacoes.length === 0) {
+      return <div className="space-y-2">{list.map(m => <MeetingRow key={m.id} meeting={m} />)}</div>
+    }
+    return (
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <p className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            <Users size={11} /> Reuniões
+          </p>
+          <div className="space-y-2">{reunioes.map(m => <MeetingRow key={m.id} meeting={m} />)}</div>
+        </div>
+        <div className="space-y-2">
+          <p className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider" style={{ color: typeConfig.captacao.color }}>
+            <Video size={11} /> Captações
+          </p>
+          <div className="space-y-2">{captacoes.map(m => <MeetingRow key={m.id} meeting={m} />)}</div>
+        </div>
+      </div>
+    )
+  }
+
   function MeetingRow({ meeting }: { meeting: Meeting }) {
     const sc = statusConfig[meeting.status]
     const tc = typeConfig[meeting.type ?? 'reuniao']
@@ -414,9 +438,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
-          {upcoming.map(m => <MeetingRow key={m.id} meeting={m} />)}
-        </div>
+        <GroupedMeetings meetings={upcoming} />
       )}
 
       {past.length > 0 && (
@@ -429,8 +451,8 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
             Reuniões anteriores ({past.length})
           </button>
           {showPast && (
-            <div className="space-y-2 opacity-70">
-              {past.map(m => <MeetingRow key={m.id} meeting={m} />)}
+            <div className="opacity-70">
+              <GroupedMeetings meetings={past} />
             </div>
           )}
         </div>
