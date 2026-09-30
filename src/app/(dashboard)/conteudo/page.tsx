@@ -1723,6 +1723,10 @@ export default function ConteudoPage() {
   const [loading, setLoading]         = useState(true)
   const [activeClient, setActiveClient] = useState<string>('todos')
   const [viewMode, setViewMode]       = useState<'calendario' | 'lista' | 'metricas'>('calendario')
+  const clientTabsRef = useRef<HTMLDivElement>(null)
+  function scrollClientTabs(dir: -1 | 1) {
+    clientTabsRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' })
+  }
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date()
     return { year: now.getFullYear(), month: now.getMonth() }
@@ -1856,50 +1860,74 @@ export default function ConteudoPage() {
           </div>
 
           {/* client tabs */}
-          <div className="flex items-center gap-1 mb-6 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-            {/* Todos */}
-            <button
-              onClick={() => setActiveClient('todos')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
-                isAllClients
-                  ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
-              }`}
+          <div className="flex items-center gap-2 mb-6">
+            <select
+              value={activeClient}
+              onChange={e => setActiveClient(e.target.value)}
+              className="shrink-0 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg pl-3 pr-8 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors max-w-[180px]"
             >
-              Todos
-              {isAllClients && (
-                <span className="text-[10px] bg-[#efefef]/20 text-[#efefef] px-1.5 py-0.5 rounded-full">
-                  {kpis.total}
-                </span>
-              )}
+              <option value="todos">Todos os clientes</option>
+              {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <button
+              onClick={() => scrollClientTabs(-1)}
+              className="shrink-0 p-1.5 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors"
+              aria-label="Rolar clientes para a esquerda"
+            >
+              <ChevronLeft size={14} />
             </button>
-            {/* one tab per client */}
-            {clients.map(client => {
-              const isActive = activeClient === client.id
-              const count = isAllClients
-                ? posts.filter(p => p.client_id === client.id).length
-                : (isActive ? posts.length : 0)
-              return (
-                <button
-                  key={client.id}
-                  onClick={() => setActiveClient(client.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
-                    isActive
-                      ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  {client.name}
-                  {(isActive || isAllClients) && count > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      isActive ? 'bg-[#efefef]/20 text-[#efefef]' : 'bg-[#2a2a2a] text-muted-foreground'
-                    }`}>
-                      {count}
-                    </span>
-                  )}
-                </button>
-              )
-            })}
+            <div ref={clientTabsRef} className="flex items-center gap-1 overflow-x-auto pb-1 scroll-smooth" style={{ scrollbarWidth: 'none' }}>
+              {/* Todos */}
+              <button
+                onClick={() => setActiveClient('todos')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
+                  isAllClients
+                    ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+                }`}
+              >
+                Todos
+                {isAllClients && (
+                  <span className="text-[10px] bg-[#efefef]/20 text-[#efefef] px-1.5 py-0.5 rounded-full">
+                    {kpis.total}
+                  </span>
+                )}
+              </button>
+              {/* one tab per client */}
+              {clients.map(client => {
+                const isActive = activeClient === client.id
+                const count = isAllClients
+                  ? posts.filter(p => p.client_id === client.id).length
+                  : (isActive ? posts.length : 0)
+                return (
+                  <button
+                    key={client.id}
+                    onClick={() => setActiveClient(client.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
+                      isActive
+                        ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+                    }`}
+                  >
+                    {client.name}
+                    {(isActive || isAllClients) && count > 0 && (
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        isActive ? 'bg-[#efefef]/20 text-[#efefef]' : 'bg-[#2a2a2a] text-muted-foreground'
+                      }`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <button
+              onClick={() => scrollClientTabs(1)}
+              className="shrink-0 p-1.5 rounded-lg border border-[#2a2a2a] text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors"
+              aria-label="Rolar clientes para a direita"
+            >
+              <ChevronRight size={14} />
+            </button>
           </div>
 
           {/* KPI cards */}
