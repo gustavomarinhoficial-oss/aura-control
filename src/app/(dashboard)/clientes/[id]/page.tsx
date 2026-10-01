@@ -1395,7 +1395,7 @@ export default function ClientProfilePage() {
                 <label className="block text-xs text-muted-foreground mb-1">Observações</label>
                 <textarea value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors resize-none" />
               </div>
-              <div className="pt-1 space-y-2">
+              <div className="pt-1">
                 <label className="flex items-center gap-2 text-xs cursor-pointer">
                   <input
                     type="checkbox"
@@ -1404,15 +1404,6 @@ export default function ClientProfilePage() {
                     className="accent-[#efefef]"
                   />
                   Cliente pode aprovar/reprovar posts no link público
-                </label>
-                <label className="flex items-center gap-2 text-xs cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!form.project_sharing_enabled}
-                    onChange={e => setForm(f => ({ ...f, project_sharing_enabled: e.target.checked }))}
-                    className="accent-[#efefef]"
-                  />
-                  Cliente pode ver o cronograma no link público
                 </label>
               </div>
             </div>

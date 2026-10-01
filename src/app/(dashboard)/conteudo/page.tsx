@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Plus, X, ChevronLeft, ChevronRight, ChevronDown, List, CalendarDays,
   Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
-  Download, Play, ExternalLink, Link2, Sparkles,
+  Download, Play, ExternalLink, Link2, Sparkles, ShieldCheck, ShieldOff,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { effectiveUnlockedMonth, nextMonthStr } from '@/lib/utils/contentUnlock'
@@ -15,7 +15,7 @@ import {
 } from 'recharts'
 
 // â"€â"€ tipos â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null; project_sharing_enabled?: boolean; priority?: number | null }
+interface Client { id: string; name: string; status: string; content_unlocked_month?: string | null; monthly_content_quota?: number | null; project_sharing_enabled?: boolean; content_approval_enabled?: boolean; priority?: number | null }
 
 interface ContentPost {
   id: string
@@ -1744,6 +1744,16 @@ export default function ConteudoPage() {
     setClients(sorted)
   }, [])
 
+  async function toggleApproval(c: Client) {
+    const next = !c.content_approval_enabled
+    setClients(cs => cs.map(x => x.id === c.id ? { ...x, content_approval_enabled: next } : x))
+    await fetch(`/api/clients/${c.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content_approval_enabled: next }),
+    })
+  }
+
   const loadPosts = useCallback(async (clientId: string) => {
     setLoading(true)
     const url = clientId === 'todos' ? '/api/content' : `/api/content?client_id=${clientId}`
@@ -1839,6 +1849,18 @@ export default function ConteudoPage() {
                   >
                     <Sparkles size={15} />
                     <span className="hidden sm:inline">Hub da marca</span>
+                  </button>
+                  <button
+                    onClick={() => toggleApproval(activeClientObj)}
+                    title={activeClientObj.content_approval_enabled ? 'Cliente pode aprovar/reprovar posts — clique pra desativar' : 'Cliente não pode aprovar/reprovar posts — clique pra ativar'}
+                    className={`flex items-center gap-2 border text-sm px-4 py-2.5 rounded-xl transition-colors font-medium ${
+                      activeClientObj.content_approval_enabled
+                        ? 'border-[#22c55e]/30 bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20'
+                        : 'border-[#2a2a2a] text-muted-foreground hover:bg-[#1a1a1a] hover:text-foreground'
+                    }`}
+                  >
+                    {activeClientObj.content_approval_enabled ? <ShieldCheck size={15} /> : <ShieldOff size={15} />}
+                    <span className="hidden sm:inline">Aprovação {activeClientObj.content_approval_enabled ? 'ativada' : 'desativada'}</span>
                   </button>
                   <button
                     onClick={() => setShowShare(true)}
