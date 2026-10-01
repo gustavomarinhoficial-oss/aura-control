@@ -45,6 +45,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       content_unlocked_month: body.content_unlocked_month !== undefined ? (body.content_unlocked_month || null) : undefined,
       monthly_content_quota: body.monthly_content_quota !== undefined ? (body.monthly_content_quota || null) : undefined,
       project_sharing_enabled: body.project_sharing_enabled,
+      content_approval_enabled: body.content_approval_enabled,
     })
     .eq('id', id)
     .select()

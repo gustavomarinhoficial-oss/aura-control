@@ -15,6 +15,8 @@ export interface Client {
   notes: string | null
   billing_day: number | null
   monthly_content_quota: number | null
+  project_sharing_enabled: boolean | null
+  content_approval_enabled: boolean | null
   created_at: string
 }
 
