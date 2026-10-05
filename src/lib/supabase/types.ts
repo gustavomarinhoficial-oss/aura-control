@@ -18,6 +18,7 @@ export interface Client {
   project_sharing_enabled: boolean | null
   content_approval_enabled: boolean | null
   traffic_sharing_enabled: boolean | null
+  meta_ad_account_id: string | null
   created_at: string
 }
 

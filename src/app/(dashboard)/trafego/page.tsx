@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  ChevronLeft, ChevronRight, Pencil, Share2, Check, ExternalLink, Copy, X, Plus, Trash2,
+  ChevronLeft, ChevronRight, Pencil, Share2, Check, ExternalLink, Copy, X, Plus, Trash2, RefreshCw,
   ClipboardPaste, AlertCircle, BarChart3, Eye, EyeOff,
 } from 'lucide-react'
 import { TrafficDashboard } from '@/components/domain/traffic/TrafficDashboard'
@@ -12,7 +12,7 @@ import {
 } from '@/lib/traffic/metrics'
 import { parseAdsExport, parseNum } from '@/lib/traffic/import'
 
-interface Client { id: string; name: string; status: string; priority?: number | null; traffic_sharing_enabled?: boolean | null }
+interface Client { id: string; name: string; status: string; priority?: number | null; traffic_sharing_enabled?: boolean | null; meta_ad_account_id?: string | null }
 
 const EMPTY_BUNDLE: TrafficBundle = { report: null, previous: null, history: [], periods: [] }
 
@@ -24,6 +24,9 @@ export default function TrafegoPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [accountDraft, setAccountDraft] = useState<string | null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -81,7 +84,41 @@ export default function TrafegoPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function saveAccount() {
+    if (!client || accountDraft === null) return
+    const value = accountDraft.replace(/^act_/, '').trim()
+    setClients(cs => cs.map(c => c.id === client.id ? { ...c, meta_ad_account_id: value || null } : c))
+    setAccountDraft(null)
+    setSyncMsg(null)
+    await fetch(`/api/clients/${client.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ meta_ad_account_id: value }),
+    })
+  }
+
+  async function syncNow() {
+    if (!client) return
+    setSyncing(true)
+    setSyncMsg(null)
+    const res = await fetch(`/api/clients/${client.id}/traffic/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: bundle.report?.period_start ?? null }),
+    }).catch(() => null)
+    const d = res ? await res.json().catch(() => ({})) : {}
+    if (res?.ok) {
+      setSyncMsg({ ok: true, text: `Atualizado com a Meta: ${d.campaigns} campanha${d.campaigns === 1 ? '' : 's'}.` })
+      loadReport(client.id, selectedStart)
+    } else {
+      setSyncMsg({ ok: false, text: d.error ?? 'Não consegui falar com a Meta.' })
+    }
+    setSyncing(false)
+  }
+
   function selectClient(id: string) {
+    setAccountDraft(null)
+    setSyncMsg(null)
     setLoading(true)
     setSelectedStart(null)
     setClientId(id)
@@ -193,6 +230,36 @@ export default function TrafegoPage() {
               </a>
             </>
           )}
+        </div>
+      )}
+
+      {client && (
+        <div className="flex items-center gap-2 flex-wrap bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-3">
+          <span className="text-xs text-muted-foreground">Conta de anúncios da Meta</span>
+          <input
+            value={accountDraft ?? client.meta_ad_account_id ?? ''}
+            onChange={e => setAccountDraft(e.target.value)}
+            placeholder="ID da conta (só números)"
+            inputMode="numeric"
+            className="bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-1.5 text-sm w-52 focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50"
+          />
+          {accountDraft !== null && (
+            <button onClick={saveAccount} className="bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+              Salvar
+            </button>
+          )}
+          {client.meta_ad_account_id && accountDraft === null && (
+            <button
+              onClick={syncNow}
+              disabled={syncing || !bundle.report}
+              title={bundle.report ? 'Puxa da Meta os números desse período' : 'Crie um período primeiro'}
+              className="flex items-center gap-1.5 border border-[#2a2a2a] hover:bg-[#222222] text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={12} className={syncing ? 'animate-spin' : ''} />
+              {syncing ? 'Sincronizando...' : 'Sincronizar com a Meta'}
+            </button>
+          )}
+          {syncMsg && <span className={`text-xs ${syncMsg.ok ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>{syncMsg.text}</span>}
         </div>
       )}
 

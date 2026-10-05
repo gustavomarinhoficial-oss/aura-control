@@ -47,6 +47,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       project_sharing_enabled: body.project_sharing_enabled,
       content_approval_enabled: body.content_approval_enabled,
       traffic_sharing_enabled: body.traffic_sharing_enabled,
+      meta_ad_account_id: body.meta_ad_account_id !== undefined ? (String(body.meta_ad_account_id ?? '').replace(/^act_/, '').trim() || null) : undefined,
     })
     .eq('id', id)
     .select()
