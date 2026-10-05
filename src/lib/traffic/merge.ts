@@ -8,6 +8,8 @@ export interface MetaInsightRow {
   impressions?: string
   reach?: string
   inline_link_clicks?: string
+  date_start?: string
+  date_stop?: string
 }
 
 const num = (v?: string) => {
@@ -41,8 +43,10 @@ export function buildReportUpdate(opts: {
   campaigns: MetaInsightRow[]
   daily: DailyRow[]
   liveSince: string
+  // false = descarta campanhas guardadas que a Meta não devolveu (usado em períodos personalizados)
+  keepUnseen?: boolean
 }): Pick<TrafficReport, 'spend' | 'impressions' | 'reach' | 'link_clicks' | 'campaigns'> {
-  const { existing, account, campaigns, daily, liveSince } = opts
+  const { existing, account, campaigns, daily, liveSince, keepUnseen = true } = opts
 
   // Primeiro e último dia com gasto de cada campanha.
   const span = new Map<string, { first: string; last: string }>()
@@ -85,8 +89,10 @@ export function buildReportUpdate(opts: {
   }
 
   // Campanhas lançadas à mão (ou que a Meta não devolveu agora) ficam como estão.
-  for (const old of previous) {
-    if (!old.id || !seen.has(old.id)) merged.push(old)
+  if (keepUnseen) {
+    for (const old of previous) {
+      if (!old.id || !seen.has(old.id)) merged.push(old)
+    }
   }
 
   return {

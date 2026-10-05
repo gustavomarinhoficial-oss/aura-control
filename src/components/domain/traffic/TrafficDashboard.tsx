@@ -7,7 +7,7 @@ import {
   Quote, Megaphone, Percent, ChevronRight, ChevronLeft, ArrowLeft, CalendarRange,
 } from 'lucide-react'
 import {
-  computeMetrics, pctChange, fmtInt, fmtBRL, fmtDec, fmtDayMonth, daysInclusive, periodStatus, todayStr,
+  computeMetrics, pctChange, fmtInt, fmtBRL, fmtDec, fmtDayMonth, fmtDayMonthYear, daysInclusive, periodStatus, todayStr,
   TRAFFIC_COLORS,
   type TrafficCampaign, type TrafficReport,
 } from '@/lib/traffic/metrics'
@@ -157,17 +157,32 @@ const TREND_METRICS = [
   { key: 'cpc', label: 'Custo por clique', color: '#fb923c', get: (r: TrafficReport) => computeMetrics(r).cpcLink ?? 0, fmt: fmtBRL },
 ]
 
-function Trend({ history }: { history: TrafficReport[] }) {
+type TrendKind = 'period' | 'day' | 'month'
+const MONTHS_PT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+function trendLabel(r: TrafficReport, kind: TrendKind) {
+  if (kind === 'month') {
+    const [y, m] = r.period_start.split('-')
+    return `${MONTHS_PT[Number(m) - 1]}/${y.slice(2)}`
+  }
+  return fmtDayMonth(r.period_start)
+}
+
+function Trend({ history, kind = 'period' }: { history: TrafficReport[]; kind?: TrendKind }) {
   const [key, setKey] = useState('reach')
   const metric = TREND_METRICS.find(m => m.key === key) ?? TREND_METRICS[0]
-  const data = history.map(r => ({ period: `${fmtDayMonth(r.period_start)}`, value: metric.get(r) }))
+  const data = history.map(r => ({ period: trendLabel(r, kind), value: metric.get(r) }))
+  const title = kind === 'day' ? 'Evolução dia a dia' : kind === 'month' ? 'Evolução mês a mês' : 'Evolução período a período'
+  const subtitle = kind === 'period'
+    ? 'Cada ponto é um período, identificado pelo dia em que ele começou.'
+    : 'Passe o dedo ou o mouse sobre o gráfico pra ver o valor de cada ponto.'
 
   return (
     <div className="rounded-2xl border border-[#232323] bg-[#141414] p-5">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Evolução período a período</h3>
-          <p className="text-xs text-[#7a7a7a] mt-1">Cada ponto é um período, identificado pelo dia em que ele começou.</p>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">{title}</h3>
+          <p className="text-xs text-[#7a7a7a] mt-1">{subtitle}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {TREND_METRICS.map(m => (
@@ -186,7 +201,7 @@ function Trend({ history }: { history: TrafficReport[] }) {
       </div>
       {history.length < 2 ? (
         <div className="flex h-40 items-center justify-center text-center text-xs text-[#7a7a7a] px-6">
-          A evolução aparece a partir do segundo período.
+          {kind === 'period' ? 'A evolução aparece a partir do segundo período.' : 'Poucos dados pra mostrar a evolução nesse período.'}
         </div>
       ) : (
         <div className="h-56" data-noswipe>
@@ -199,14 +214,14 @@ function Trend({ history }: { history: TrafficReport[] }) {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="#1f1f1f" vertical={false} />
-              <XAxis dataKey="period" tick={{ fill: '#7a7a7a', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} padding={{ left: 20, right: 20 }} />
+              <XAxis dataKey="period" tick={{ fill: '#7a7a7a', fontSize: 11 }} axisLine={false} tickLine={false} interval={kind === 'period' ? 0 : 'preserveStartEnd'} minTickGap={28} padding={{ left: 20, right: 20 }} />
               <YAxis hide domain={[0, (max: number) => max * 1.15]} />
               <Tooltip
                 cursor={{ stroke: '#333' }}
                 contentStyle={{ background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 12, fontSize: 12 }}
                 labelStyle={{ color: '#9ca3af' }}
                 itemStyle={{ color: '#fff' }}
-                labelFormatter={label => `Período iniciado em ${label}`}
+                labelFormatter={label => (kind === 'period' ? `Período iniciado em ${label}` : kind === 'day' ? `Dia ${label}` : `Mês ${label}`)}
                 formatter={(v) => [metric.fmt(Number(v)), metric.label] as [string, string]}
               />
               <Area type="monotone" dataKey="value" stroke={metric.color} strokeWidth={2.5} fill={`url(#grad-${metric.key})`} dot={{ r: 3, fill: metric.color, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -263,14 +278,20 @@ function StatusBadge({ c, periodRunning }: { c: TrafficCampaign; periodRunning: 
   )
 }
 
-function runText(c: TrafficCampaign, periodRunning: boolean): string | null {
+function runText(c: TrafficCampaign, periodRunning: boolean, custom = false): string | null {
+  // Em período livre só sabemos o que aconteceu dentro das datas escolhidas.
+  if (custom) {
+    if (c.start_date && c.end_date) return `Com veiculação de ${fmtDayMonth(c.start_date)} a ${fmtDayMonth(c.end_date)}`
+    if (c.start_date) return `Com veiculação desde ${fmtDayMonth(c.start_date)}`
+    return null
+  }
   if (c.start_date && c.end_date) return `Rodou de ${fmtDayMonth(c.start_date)} a ${fmtDayMonth(c.end_date)}`
   if (c.start_date) return `${periodRunning ? 'No ar desde' : 'Rodou a partir de'} ${fmtDayMonth(c.start_date)}`
   if (c.end_date) return `Encerrada em ${fmtDayMonth(c.end_date)}`
   return null
 }
 
-function Campaigns({ r, onSelect }: { r: TrafficReport; onSelect: (key: string) => void }) {
+function Campaigns({ r, onSelect, custom }: { r: TrafficReport; onSelect: (key: string) => void; custom: boolean }) {
   const [pick, setPick] = useState<(typeof CAMPAIGN_METRICS)[number]['key']>('link_clicks')
   const options = CAMPAIGN_METRICS.filter(m => r.campaigns.some(c => c[m.key] > 0))
   const metric = options.find(m => m.key === pick) ?? options[0] ?? CAMPAIGN_METRICS[0]
@@ -305,7 +326,7 @@ function Campaigns({ r, onSelect }: { r: TrafficReport; onSelect: (key: string) 
       <div className="space-y-1">
         {rows.map((c, i) => {
           const cm = computeMetrics(c)
-          const run = runText(c, running)
+          const run = runText(c, running, custom)
           return (
             <button
               key={`${c.id ?? c.name}-${i}`}
@@ -363,10 +384,12 @@ function findMatch(report: TrafficReport | null, c: TrafficCampaign): TrafficRep
   return m ? campaignAsReport(m, report) : null
 }
 
-export function TrafficDashboard({ report, previous, history }: {
+export function TrafficDashboard({ report, previous, history, custom = null }: {
   report: TrafficReport | null
   previous: TrafficReport | null
   history: TrafficReport[]
+  // Período livre escolhido por quem abriu a página (números buscados na hora).
+  custom?: { days: number; granularity: 'day' | 'month' } | null
 }) {
   const [scope, setScope] = useState('all')
   const topRef = useRef<HTMLDivElement>(null)
@@ -415,12 +438,16 @@ export function TrafficDashboard({ report, previous, history }: {
     el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
   }, [scope])
 
-  if (!report) {
+  if (!report || (custom && report.spend === 0 && report.impressions === 0)) {
     return (
       <div className="rounded-2xl border border-dashed border-[#2a2a2a] bg-[#141414] px-6 py-14 text-center">
         <BarChart3 size={28} className="mx-auto mb-3 text-[#4b4b4b]" strokeWidth={1.2} />
-        <p className="text-sm font-medium text-white">Ainda não há números para este período</p>
-        <p className="mt-1 text-xs text-[#7a7a7a]">Assim que forem atualizados, o relatório aparece aqui.</p>
+        <p className="text-sm font-medium text-white">
+          {custom ? 'Não houve campanhas rodando nesse período' : 'Ainda não há números para este período'}
+        </p>
+        <p className="mt-1 text-xs text-[#7a7a7a]">
+          {custom ? 'Escolha outras datas pra ver os resultados.' : 'Assim que forem atualizados, o relatório aparece aqui.'}
+        </p>
       </div>
     )
   }
@@ -436,7 +463,8 @@ export function TrafficDashboard({ report, previous, history }: {
     ? history.map(h => findMatch(h, selected)).filter((h): h is TrafficReport => h !== null)
     : history
   // Período em andamento tem números parciais: comparar com um período fechado seria injusto.
-  const comparePrev = status === 'closed' ? prevView : null
+  // Em período livre o anterior tem o mesmo tamanho, então a comparação é justa.
+  const comparePrev = custom || status === 'closed' ? prevView : null
 
   const m = computeMetrics(view)
   const pm = comparePrev ? computeMetrics(comparePrev) : null
@@ -460,7 +488,25 @@ export function TrafficDashboard({ report, previous, history }: {
         if (Math.abs(dx) > 70 && Math.abs(dy) < 45) go(dx < 0 ? 1 : -1)
       }}
     >
-      {status !== 'closed' && (
+      {custom && (
+        <div className="rounded-2xl border border-[#232323] bg-[#141414] px-4 py-3">
+          <div className="flex items-center gap-2 text-xs text-[#d4d4d4] flex-wrap">
+            {running ? (
+              <span className="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full" style={{ color: '#f87171', backgroundColor: '#ef44441f' }}>
+                <LiveDot size={6} /> AO VIVO
+              </span>
+            ) : (
+              <CalendarRange size={13} className="text-[#fbbf24]" />
+            )}
+            <span>
+              Período escolhido: <strong>{custom.days} {custom.days === 1 ? 'dia' : 'dias'}</strong>, de {fmtDayMonthYear(report.period_start)} a {fmtDayMonthYear(report.period_end)}.
+              {previous ? ` Comparado com os ${custom.days} ${custom.days === 1 ? 'dia' : 'dias'} anteriores.` : ''}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {!custom && status !== 'closed' && (
         <div className="rounded-2xl border border-[#232323] bg-[#141414] px-4 py-3">
           <div className="flex items-center gap-2 text-xs text-[#d4d4d4]">
             {running ? (
@@ -567,7 +613,7 @@ export function TrafficDashboard({ report, previous, history }: {
           </div>
           <p className="mt-1 text-xs text-[#9ca3af]">
             {[
-              runText(selected, running),
+              runText(selected, running, !!custom),
               report.spend > 0 ? `${fmtDec((selected.spend / report.spend) * 100)}% do investimento do período` : null,
             ].filter(Boolean).join(' · ')}
           </p>
@@ -634,8 +680,8 @@ export function TrafficDashboard({ report, previous, history }: {
       </div>
 
       <Funnel r={view} />
-      <Trend history={histView} />
-      {!selected && report.campaigns.length > 0 && <Campaigns r={report} onSelect={openCampaign} />}
+      {!(custom && selected) && <Trend history={histView} kind={custom ? custom.granularity : 'period'} />}
+      {!selected && report.campaigns.length > 0 && <Campaigns r={report} onSelect={openCampaign} custom={!!custom} />}
 
       {!selected && report.analysis && (
         <div className="relative rounded-2xl border border-[#232323] bg-gradient-to-br from-[#161616] to-[#121212] p-5">
