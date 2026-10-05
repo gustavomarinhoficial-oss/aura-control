@@ -16,6 +16,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   return NextResponse.json(bundle)
 }
 
+const isoDate = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
+
 const num = (v: unknown) => {
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : 0
@@ -29,7 +31,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const campaigns = (Array.isArray(body.campaigns) ? body.campaigns : [])
     .filter((c: { name?: string }) => c && typeof c.name === 'string' && c.name.trim())
     .map((c: Record<string, unknown>) => ({
+      ...(typeof c.id === 'string' && c.id ? { id: c.id } : {}),
       name: String(c.name).trim(),
+      start_date: isoDate(c.start_date),
+      end_date: isoDate(c.end_date),
+      note: typeof c.note === 'string' && c.note.trim() ? c.note.trim() : null,
       spend: num(c.spend),
       impressions: Math.round(num(c.impressions)),
       reach: Math.round(num(c.reach)),

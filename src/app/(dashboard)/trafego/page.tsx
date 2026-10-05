@@ -196,12 +196,16 @@ export default function TrafegoPage() {
 }
 
 // ── Modal de lançamento dos números do mês ───────────────────────────────────
-type CampaignForm = { name: string; spend: string; impressions: string; reach: string; link_clicks: string; results: string }
+type CampaignForm = {
+  id: string; name: string; spend: string; impressions: string; reach: string; link_clicks: string; results: string
+  start_date: string; end_date: string; note: string
+}
 
 const toStr = (n: number) => (n ? String(n).replace('.', ',') : '')
 const toForm = (c: TrafficCampaign): CampaignForm => ({
-  name: c.name, spend: toStr(c.spend), impressions: toStr(c.impressions), reach: toStr(c.reach),
+  id: c.id ?? '', name: c.name, spend: toStr(c.spend), impressions: toStr(c.impressions), reach: toStr(c.reach),
   link_clicks: toStr(c.link_clicks), results: toStr(c.results),
+  start_date: c.start_date ?? '', end_date: c.end_date ?? '', note: c.note ?? '',
 })
 
 const inputCls = 'w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50'
@@ -271,6 +275,7 @@ function ReportModal({ clientId, month, initial, onClose, onSaved }: {
         result_label: resultLabel,
         analysis,
         campaigns: campaigns.map(c => ({
+          id: c.id, start_date: c.start_date, end_date: c.end_date, note: c.note,
           name: c.name, spend: parseNum(c.spend), impressions: parseNum(c.impressions),
           reach: parseNum(c.reach), link_clicks: parseNum(c.link_clicks), results: parseNum(c.results),
         })),
@@ -355,7 +360,7 @@ function ReportModal({ clientId, month, initial, onClose, onSaved }: {
           <div className="flex items-center justify-between mb-2">
             <label className="text-[10px] text-muted-foreground">Campanhas (opcional)</label>
             <button
-              onClick={() => setCampaigns(cs => [...cs, { name: '', spend: '', impressions: '', reach: '', link_clicks: '', results: '' }])}
+              onClick={() => setCampaigns(cs => [...cs, { id: '', name: '', spend: '', impressions: '', reach: '', link_clicks: '', results: '', start_date: '', end_date: '', note: '' }])}
               className="flex items-center gap-1 text-xs text-[#efefef]"
             >
               <Plus size={12} /> Adicionar
@@ -381,6 +386,22 @@ function ReportModal({ clientId, month, initial, onClose, onSaved }: {
                     </div>
                   ))}
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[9px] text-muted-foreground mb-1">Começou a rodar em</label>
+                    <input type="date" value={c.start_date} onChange={e => setCampaign(i, { start_date: e.target.value })} className={`${inputCls} px-2 py-1.5 text-xs`} />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] text-muted-foreground mb-1">Encerrou em (vazio = no ar)</label>
+                    <input type="date" value={c.end_date} onChange={e => setCampaign(i, { end_date: e.target.value })} className={`${inputCls} px-2 py-1.5 text-xs`} />
+                  </div>
+                </div>
+                <input
+                  value={c.note}
+                  onChange={e => setCampaign(i, { note: e.target.value })}
+                  placeholder="Observação pro cliente (ex: foco ajustado, substituída pela nova versão em 28/09)"
+                  className={`${inputCls} px-2 py-1.5 text-xs`}
+                />
               </div>
             ))}
           </div>

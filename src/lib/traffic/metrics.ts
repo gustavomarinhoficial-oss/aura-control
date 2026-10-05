@@ -1,5 +1,9 @@
 export interface TrafficCampaign {
+  id?: string
   name: string
+  start_date?: string | null
+  end_date?: string | null
+  note?: string | null
   spend: number
   impressions: number
   reach: number
@@ -82,6 +86,11 @@ export function monthLabelShort(month: string): string {
   const [y, m] = month.split('-').map(Number)
   const mon = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
   return `${mon}/${String(y).slice(2)}`
+}
+
+export function fmtDayMonth(iso: string): string {
+  const [, m, d] = iso.split('-')
+  return `${d}/${m}`
 }
 
 export const fmtInt = (n: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Math.round(n))

@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { ArrowUpRight, ArrowDownRight, Minus, Eye, Users, MousePointerClick, Wallet, Target, BarChart3, Quote, Megaphone } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, Minus, Eye, Users, MousePointerClick, Wallet, Target, BarChart3, Quote, Megaphone, Percent } from 'lucide-react'
 import {
-  computeMetrics, pctChange, monthLabel, monthLabelShort, fmtInt, fmtBRL, fmtDec, TRAFFIC_COLORS,
+  computeMetrics, pctChange, monthLabel, monthLabelShort, fmtInt, fmtBRL, fmtDec, fmtDayMonth, TRAFFIC_COLORS,
   type TrafficReport,
 } from '@/lib/traffic/metrics'
 
@@ -221,8 +221,10 @@ const CAMPAIGN_METRICS = [
 ] as const
 
 function Campaigns({ r }: { r: TrafficReport }) {
-  const [key, setKey] = useState<(typeof CAMPAIGN_METRICS)[number]['key']>('link_clicks')
-  const metric = CAMPAIGN_METRICS.find(m => m.key === key) ?? CAMPAIGN_METRICS[0]
+  const [pick, setPick] = useState<(typeof CAMPAIGN_METRICS)[number]['key']>('link_clicks')
+  const options = CAMPAIGN_METRICS.filter(m => r.campaigns.some(c => c[m.key] > 0))
+  const metric = options.find(m => m.key === pick) ?? options[0] ?? CAMPAIGN_METRICS[0]
+  const key = metric.key
   const rows = [...r.campaigns].sort((a, b) => b[key] - a[key])
   const max = Math.max(1, ...rows.map(c => c[key]))
 
@@ -234,10 +236,10 @@ function Campaigns({ r }: { r: TrafficReport }) {
           <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Campanhas do mês</h3>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {CAMPAIGN_METRICS.map(m => (
+          {options.map(m => (
             <button
               key={m.key}
-              onClick={() => setKey(m.key)}
+              onClick={() => setPick(m.key)}
               className="text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors"
               style={key === m.key
                 ? { color: m.color, borderColor: m.color + '66', backgroundColor: m.color + '1a' }
@@ -249,22 +251,41 @@ function Campaigns({ r }: { r: TrafficReport }) {
         </div>
       </div>
       <div className="space-y-3.5">
-        {rows.map(c => {
+        {rows.map((c, i) => {
           const cm = computeMetrics(c)
+          const ended = !!c.end_date
           return (
-            <div key={c.name}>
+            <div key={`${c.id ?? c.name}-${i}`}>
               <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                <p className="text-sm font-medium text-white truncate">{c.name}</p>
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{c.name}</p>
+                  {(c.start_date || ended) && (
+                    <span
+                      className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+                      style={ended ? { color: '#fbbf24', backgroundColor: '#fbbf241f' } : { color: '#34d399', backgroundColor: '#34d3991f' }}
+                    >
+                      {ended ? 'Encerrada' : 'No ar'}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: metric.color }}>{metric.fmt(c[key])}</p>
               </div>
               <div className="h-2 rounded-full bg-[#1f1f1f] overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(c[key] / max) * 100}%`, backgroundColor: metric.color }} />
               </div>
+              {(c.start_date || c.end_date) && (
+                <p className="mt-1 text-[11px] text-[#9ca3af]">
+                  {c.start_date && c.end_date ? `Rodou de ${fmtDayMonth(c.start_date)} a ${fmtDayMonth(c.end_date)}`
+                    : c.start_date ? `No ar desde ${fmtDayMonth(c.start_date)}`
+                    : `Encerrada em ${fmtDayMonth(c.end_date as string)}`}
+                </p>
+              )}
               <p className="mt-1 text-[11px] text-[#7a7a7a]">
                 {fmtBRL(c.spend)} investidos
                 {cm.cpcLink !== null && ` · ${fmtBRL(cm.cpcLink)} por clique`}
-                {cm.costPerResult !== null && ` · ${fmtBRL(cm.costPerResult)} por resultado`}
+                {cm.costPerResult !== null && c.results > 0 && ` · ${fmtBRL(cm.costPerResult)} por resultado`}
               </p>
+              {c.note && <p className="mt-1 text-[11px] italic text-[#7a7a7a]">{c.note}</p>}
             </div>
           )
         })}
@@ -335,13 +356,22 @@ export function TrafficDashboard({ report, previous, history, month }: {
           value={m.cpm} format={fmtBRL}
           delta={<Delta cur={m.cpm} prev={pm?.cpm ?? null} good="down" compact />}
         />
-        <SmallCard
-          icon={Target} color={TRAFFIC_COLORS.results} label="Custo por resultado"
-          sub={report.results > 0 ? `${fmtInt(report.results)} ${label.toLowerCase()}` : undefined}
-          hint={report.results > 0 ? 'Quanto custou, em média, cada resultado conquistado.' : 'Resultados ainda não registrados.'}
-          value={m.costPerResult} format={fmtBRL}
-          delta={<Delta cur={m.costPerResult} prev={pm?.costPerResult ?? null} good="down" compact />}
-        />
+        {report.results > 0 ? (
+          <SmallCard
+            icon={Target} color={TRAFFIC_COLORS.results} label="Custo por resultado"
+            sub={`${fmtInt(report.results)} ${label.toLowerCase()}`}
+            hint="Quanto custou, em média, cada resultado conquistado."
+            value={m.costPerResult} format={fmtBRL}
+            delta={<Delta cur={m.costPerResult} prev={pm?.costPerResult ?? null} good="down" compact />}
+          />
+        ) : (
+          <SmallCard
+            icon={Percent} color={TRAFFIC_COLORS.clicks} label="Taxa de cliques"
+            hint="De cada 100 vezes que o anúncio apareceu, quantas viraram clique."
+            value={m.ctr} format={n => `${fmtDec(n, 2)}%`}
+            delta={<Delta cur={m.ctr} prev={pm?.ctr ?? null} good="up" compact />}
+          />
+        )}
       </div>
 
       <Funnel r={report} />
