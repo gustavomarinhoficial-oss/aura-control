@@ -7,28 +7,23 @@ import {
 } from 'lucide-react'
 import { TrafficDashboard } from '@/components/domain/traffic/TrafficDashboard'
 import {
-  currentMonthStr, monthLabel, monthTitle, fmtInt,
+  todayStr, addDays, endOfCycle, periodLabel, periodStatus, fmtInt,
   type TrafficBundle, type TrafficCampaign, type TrafficReport,
 } from '@/lib/traffic/metrics'
 import { parseAdsExport, parseNum } from '@/lib/traffic/import'
 
 interface Client { id: string; name: string; status: string; priority?: number | null; traffic_sharing_enabled?: boolean | null }
 
-function shiftMonth(month: string, delta: number): string {
-  const [y, m] = month.split('-').map(Number)
-  const d = new Date(y, m - 1 + delta, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-}
-
-const EMPTY_BUNDLE: TrafficBundle = { report: null, previous: null, history: [], months: [] }
+const EMPTY_BUNDLE: TrafficBundle = { report: null, previous: null, history: [], periods: [] }
 
 export default function TrafegoPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [clientId, setClientId] = useState('')
-  const [month, setMonth] = useState(currentMonthStr())
+  const [selectedStart, setSelectedStart] = useState<string | null>(null)
   const [bundle, setBundle] = useState<TrafficBundle>(EMPTY_BUNDLE)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [token, setToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -48,15 +43,16 @@ export default function TrafegoPage() {
       .catch(() => setLoading(false))
   }, [])
 
-  const loadReport = useCallback(async (id: string, m: string) => {
-    const res = await fetch(`/api/clients/${id}/traffic?month=${m}`).then(r => r.json()).catch(() => null)
+  const loadReport = useCallback(async (id: string, start: string | null) => {
+    const qs = start ? `?start=${start}` : ''
+    const res = await fetch(`/api/clients/${id}/traffic${qs}`).then(r => r.json()).catch(() => null)
     setBundle(res && !res.error ? res : EMPTY_BUNDLE)
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    if (clientId) loadReport(clientId, month)
-  }, [clientId, month, loadReport])
+    if (clientId) loadReport(clientId, selectedStart)
+  }, [clientId, selectedStart, loadReport])
 
   useEffect(() => {
     if (!clientId) return
@@ -87,14 +83,28 @@ export default function TrafegoPage() {
 
   function selectClient(id: string) {
     setLoading(true)
+    setSelectedStart(null)
     setClientId(id)
   }
 
-  function changeMonth(delta: number) {
-    setMonth(m => shiftMonth(m, delta))
+  const currentStart = bundle.report?.period_start ?? null
+  const periodIdx = bundle.periods.findIndex(p => p.start === currentStart)
+
+  // periods vem do mais novo pro mais antigo: "anterior" = índice maior.
+  function goPeriod(delta: -1 | 1) {
+    const target = bundle.periods[periodIdx + delta]
+    if (target) setSelectedStart(target.start)
   }
 
+  // Sugere o próximo período: começa no dia seguinte ao fim do último e dura um ciclo de 1 mês.
+  const lastEnd = bundle.periods[0]?.end ?? null
+  const newDefaults = (() => {
+    const start = lastEnd ? addDays(lastEnd, 1) : todayStr()
+    return { start, end: endOfCycle(start) }
+  })()
+
   const sharing = !!client?.traffic_sharing_enabled
+  const status = bundle.report ? periodStatus(bundle.report.period_start, bundle.report.period_end) : null
 
   return (
     <div className="space-y-6">
@@ -112,20 +122,45 @@ export default function TrafegoPage() {
             {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <div className="flex items-center gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg">
-            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-[#222222] rounded-l-lg transition-colors"><ChevronLeft size={14} /></button>
-            <span className="text-xs px-3 min-w-[130px] text-center">{monthTitle(month)}</span>
-            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-[#222222] rounded-r-lg transition-colors"><ChevronRight size={14} /></button>
+            <button
+              onClick={() => goPeriod(1)}
+              disabled={periodIdx < 0 || periodIdx >= bundle.periods.length - 1}
+              title="Período anterior"
+              className="p-2 hover:bg-[#222222] rounded-l-lg transition-colors disabled:opacity-30"
+            ><ChevronLeft size={14} /></button>
+            <span className="text-xs px-3 min-w-[190px] text-center flex items-center justify-center gap-1.5">
+              {status === 'running' && <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24]" title="Em andamento" />}
+              {bundle.report ? periodLabel(bundle.report.period_start, bundle.report.period_end) : 'Sem períodos'}
+            </span>
+            <button
+              onClick={() => goPeriod(-1)}
+              disabled={periodIdx <= 0}
+              title="Próximo período"
+              className="p-2 hover:bg-[#222222] rounded-r-lg transition-colors disabled:opacity-30"
+            ><ChevronRight size={14} /></button>
           </div>
         </div>
       </div>
 
       {client && (
         <div className="flex items-center gap-2 flex-wrap">
+          {bundle.report && (
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <Pencil size={14} /> Editar este período
+            </button>
+          )}
           <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            onClick={() => setCreating(true)}
+            className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
+              bundle.report
+                ? 'border border-[#2a2a2a] hover:bg-[#1a1a1a] text-muted-foreground hover:text-foreground'
+                : 'bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111]'
+            }`}
           >
-            <Pencil size={14} /> {bundle.report ? 'Editar números do mês' : 'Lançar números do mês'}
+            <Plus size={14} /> Novo período
           </button>
           <button
             onClick={toggleSharing}
@@ -177,18 +212,23 @@ export default function TrafegoPage() {
             <span>É assim que {client.name} vê o relatório{sharing ? '' : ' (quando você liberar o compartilhamento)'}.</span>
           </div>
           <div className="rounded-2xl bg-[#0d0d0d] border border-[#1f1f1f] p-4 sm:p-6">
-            <TrafficDashboard key={`${clientId}-${month}-${bundle.report?.updated_at ?? 'x'}`} report={bundle.report} previous={bundle.previous} history={bundle.history} month={month} />
+            <TrafficDashboard key={`${clientId}-${bundle.report?.period_start ?? 'x'}-${bundle.report?.updated_at ?? 'x'}`} report={bundle.report} previous={bundle.previous} history={bundle.history} />
           </div>
         </div>
       )}
 
-      {editing && client && (
+      {(editing || creating) && client && (
         <ReportModal
           clientId={client.id}
-          month={month}
-          initial={bundle.report}
-          onClose={() => setEditing(false)}
-          onSaved={() => { setEditing(false); loadReport(client.id, month) }}
+          initial={editing ? bundle.report : null}
+          defaults={newDefaults}
+          onClose={() => { setEditing(false); setCreating(false) }}
+          onSaved={(start: string) => {
+            setEditing(false)
+            setCreating(false)
+            if (start === selectedStart) loadReport(client.id, start)
+            else setSelectedStart(start)
+          }}
         />
       )}
     </div>
@@ -210,13 +250,15 @@ const toForm = (c: TrafficCampaign): CampaignForm => ({
 
 const inputCls = 'w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/50'
 
-function ReportModal({ clientId, month, initial, onClose, onSaved }: {
+function ReportModal({ clientId, initial, defaults, onClose, onSaved }: {
   clientId: string
-  month: string
   initial: TrafficReport | null
+  defaults: { start: string; end: string }
   onClose: () => void
-  onSaved: () => void
+  onSaved: (periodStart: string) => void
 }) {
+  const [periodStart, setPeriodStart] = useState(initial?.period_start ?? defaults.start)
+  const [periodEnd, setPeriodEnd] = useState(initial?.period_end ?? defaults.end)
   const [totals, setTotals] = useState({
     spend: toStr(initial?.spend ?? 0),
     impressions: toStr(initial?.impressions ?? 0),
@@ -261,12 +303,16 @@ function ReportModal({ clientId, month, initial, onClose, onSaved }: {
 
   async function save() {
     setError('')
+    if (!periodStart || !periodEnd) { setError('Informe o início e o fim do período'); return }
+    if (periodEnd < periodStart) { setError('O fim do período não pode ser antes do início'); return }
     setSaving(true)
     const res = await fetch(`/api/clients/${clientId}/traffic`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        month,
+        period_start: periodStart,
+        period_end: periodEnd,
+        original_start: initial?.period_start ?? null,
         spend: parseNum(totals.spend),
         impressions: parseNum(totals.impressions),
         reach: parseNum(totals.reach),
@@ -287,14 +333,15 @@ function ReportModal({ clientId, month, initial, onClose, onSaved }: {
       setSaving(false)
       return
     }
-    onSaved()
+    onSaved(periodStart)
   }
 
   async function remove() {
-    if (!confirm(`Apagar os números de ${monthLabel(month)}? O cliente deixa de ver esse mês.`)) return
+    if (!initial) return
+    if (!confirm(`Apagar os números do período ${periodLabel(initial.period_start, initial.period_end)}? O cliente deixa de ver esse período.`)) return
     setSaving(true)
-    await fetch(`/api/clients/${clientId}/traffic?month=${month}`, { method: 'DELETE' })
-    onSaved()
+    await fetch(`/api/clients/${clientId}/traffic?start=${initial.period_start}`, { method: 'DELETE' })
+    onSaved('')
   }
 
   const totalFields: Array<{ key: keyof typeof totals; label: string; placeholder: string }> = [
@@ -309,8 +356,19 @@ function ReportModal({ clientId, month, initial, onClose, onSaved }: {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Números de {monthLabel(month)}</h2>
+          <h2 className="text-sm font-semibold">{initial ? 'Editar período' : 'Novo período'}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] text-muted-foreground mb-1.5">Início do período</label>
+            <input type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-[10px] text-muted-foreground mb-1.5">Fim do período</label>
+            <input type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} className={inputCls} />
+          </div>
         </div>
 
         <div>

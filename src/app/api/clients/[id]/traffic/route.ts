@@ -1,22 +1,22 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { loadTrafficBundle } from '@/lib/traffic/server'
-import { currentMonthStr } from '@/lib/traffic/metrics'
 
-const MONTH_RE = /^\d{4}-\d{2}$/
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+// GET ?start=YYYY-MM-DD  → período que começa nesse dia (sem start: o que está rodando hoje)
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { searchParams } = new URL(request.url)
-  const month = searchParams.get('month') ?? currentMonthStr()
-  if (!MONTH_RE.test(month)) return NextResponse.json({ error: 'Mês inválido' }, { status: 400 })
+  const start = searchParams.get('start')
+  if (start && !DATE_RE.test(start)) return NextResponse.json({ error: 'Data inválida' }, { status: 400 })
 
   const supabase = createServiceClient()
-  const bundle = await loadTrafficBundle(supabase, id, month)
+  const bundle = await loadTrafficBundle(supabase, id, start)
   return NextResponse.json(bundle)
 }
 
-const isoDate = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
+const isoDate = (v: unknown) => (typeof v === 'string' && DATE_RE.test(v) ? v : null)
 
 const num = (v: unknown) => {
   const n = Number(v)
@@ -26,7 +26,11 @@ const num = (v: unknown) => {
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
-  if (!MONTH_RE.test(body.month ?? '')) return NextResponse.json({ error: 'Mês inválido' }, { status: 400 })
+
+  const periodStart = isoDate(body.period_start)
+  const periodEnd = isoDate(body.period_end)
+  if (!periodStart || !periodEnd) return NextResponse.json({ error: 'Informe o início e o fim do período' }, { status: 400 })
+  if (periodEnd < periodStart) return NextResponse.json({ error: 'O fim do período não pode ser antes do início' }, { status: 400 })
 
   const campaigns = (Array.isArray(body.campaigns) ? body.campaigns : [])
     .filter((c: { name?: string }) => c && typeof c.name === 'string' && c.name.trim())
@@ -45,7 +49,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const payload = {
     client_id: id,
-    month: body.month,
+    period_start: periodStart,
+    period_end: periodEnd,
     spend: num(body.spend),
     impressions: Math.round(num(body.impressions)),
     reach: Math.round(num(body.reach)),
@@ -58,24 +63,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const supabase = createServiceClient()
-  const { data, error } = await supabase
-    .from('traffic_reports')
-    .upsert(payload, { onConflict: 'client_id,month' })
-    .select()
-    .single()
+  const originalStart = isoDate(body.original_start)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Editando um período existente (inclusive mudando a data de início): atualiza a mesma linha.
+  const query = originalStart
+    ? supabase.from('traffic_reports').update(payload).eq('client_id', id).eq('period_start', originalStart)
+    : supabase.from('traffic_reports').upsert(payload, { onConflict: 'client_id,period_start' })
+
+  const { data, error } = await query.select().single()
+  if (error) {
+    const clash = error.code === '23505'
+    return NextResponse.json({ error: clash ? 'Já existe um período começando nesse dia' : error.message }, { status: clash ? 409 : 500 })
+  }
   return NextResponse.json(data)
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { searchParams } = new URL(request.url)
-  const month = searchParams.get('month') ?? ''
-  if (!MONTH_RE.test(month)) return NextResponse.json({ error: 'Mês inválido' }, { status: 400 })
+  const start = searchParams.get('start')
+  if (!start || !DATE_RE.test(start)) return NextResponse.json({ error: 'Data inválida' }, { status: 400 })
 
   const supabase = createServiceClient()
-  const { error } = await supabase.from('traffic_reports').delete().eq('client_id', id).eq('month', month)
+  const { error } = await supabase.from('traffic_reports').delete().eq('client_id', id).eq('period_start', start)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }

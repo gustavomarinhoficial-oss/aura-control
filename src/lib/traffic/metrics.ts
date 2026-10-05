@@ -14,7 +14,8 @@ export interface TrafficCampaign {
 export interface TrafficReport {
   id?: string
   client_id?: string
-  month: string
+  period_start: string
+  period_end: string
   spend: number
   impressions: number
   reach: number
@@ -26,11 +27,13 @@ export interface TrafficReport {
   updated_at?: string
 }
 
+export interface TrafficPeriod { start: string; end: string }
+
 export interface TrafficBundle {
   report: TrafficReport | null
   previous: TrafficReport | null
   history: TrafficReport[]
-  months: string[]
+  periods: TrafficPeriod[]
 }
 
 export const TRAFFIC_COLORS = {
@@ -61,36 +64,59 @@ export function pctChange(cur: number | null, prev: number | null): number | nul
   return ((cur - prev) / prev) * 100
 }
 
-export function prevMonthStr(month: string): string {
-  const [y, m] = month.split('-').map(Number)
-  const d = new Date(y, m - 2, 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+// ── datas (sempre "YYYY-MM-DD", fuso de São Paulo pro "hoje") ────────────────
+export function todayStr(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
-export function currentMonthStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+function parseIso(iso: string): Date {
+  return new Date(iso + 'T12:00:00')
 }
 
-export function monthLabel(month: string): string {
-  const [y, m] = month.split('-').map(Number)
-  return new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+function toIso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-export function monthTitle(month: string): string {
-  const l = monthLabel(month)
-  return l.charAt(0).toUpperCase() + l.slice(1)
+export function addDays(iso: string, n: number): string {
+  const d = parseIso(iso)
+  d.setDate(d.getDate() + n)
+  return toIso(d)
 }
 
-export function monthLabelShort(month: string): string {
-  const [y, m] = month.split('-').map(Number)
-  const mon = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
-  return `${mon}/${String(y).slice(2)}`
+// Mesmo dia do mês seguinte, menos 1 dia (ex: 15/09 → 14/10). Ciclo de 1 mês.
+export function endOfCycle(startIso: string): string {
+  const d = parseIso(startIso)
+  d.setMonth(d.getMonth() + 1)
+  d.setDate(d.getDate() - 1)
+  return toIso(d)
+}
+
+export function daysInclusive(startIso: string, endIso: string): number {
+  return Math.round((parseIso(endIso).getTime() - parseIso(startIso).getTime()) / 86400000) + 1
 }
 
 export function fmtDayMonth(iso: string): string {
   const [, m, d] = iso.split('-')
   return `${d}/${m}`
+}
+
+export function fmtDayMonthYear(iso: string): string {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+export function periodLabel(start: string, end: string): string {
+  return `${fmtDayMonthYear(start)} a ${fmtDayMonthYear(end)}`
+}
+
+export function periodChip(start: string, end: string): string {
+  return `${fmtDayMonth(start)} – ${fmtDayMonth(end)}`
+}
+
+export function periodStatus(start: string, end: string, today = todayStr()): 'future' | 'running' | 'closed' {
+  if (today < start) return 'future'
+  if (today <= end) return 'running'
+  return 'closed'
 }
 
 export const fmtInt = (n: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(Math.round(n))

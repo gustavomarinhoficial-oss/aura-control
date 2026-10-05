@@ -1,11 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
-import { ArrowUpRight, ArrowDownRight, Minus, Eye, Users, MousePointerClick, Wallet, Target, BarChart3, Quote, Megaphone, Percent } from 'lucide-react'
 import {
-  computeMetrics, pctChange, monthLabel, monthLabelShort, fmtInt, fmtBRL, fmtDec, fmtDayMonth, TRAFFIC_COLORS,
-  type TrafficReport,
+  ArrowUpRight, ArrowDownRight, Minus, Eye, Users, MousePointerClick, Wallet, Target, BarChart3,
+  Quote, Megaphone, Percent, ChevronRight, ArrowLeft, CalendarRange,
+} from 'lucide-react'
+import {
+  computeMetrics, pctChange, fmtInt, fmtBRL, fmtDec, fmtDayMonth, daysInclusive, periodStatus, todayStr,
+  TRAFFIC_COLORS,
+  type TrafficCampaign, type TrafficReport,
 } from '@/lib/traffic/metrics'
 
 function useCountUp(target: number, duration = 1000) {
@@ -43,7 +47,7 @@ function Delta({ cur, prev, good, compact }: { cur: number | null; prev: number 
     <span className="inline-flex items-center gap-0.5 text-[11px] font-medium px-1.5 py-0.5 rounded-full" style={{ color, backgroundColor: color + '1f' }}>
       <Icon size={11} />
       {fmtDec(Math.abs(change))}%
-      <span className={`opacity-70 font-normal ml-0.5 ${compact ? 'hidden sm:inline' : ''}`}>vs mês anterior</span>
+      <span className={`opacity-70 font-normal ml-0.5 ${compact ? 'hidden sm:inline' : ''}`}>vs período anterior</span>
     </span>
   )
 }
@@ -156,14 +160,14 @@ const TREND_METRICS = [
 function Trend({ history }: { history: TrafficReport[] }) {
   const [key, setKey] = useState('reach')
   const metric = TREND_METRICS.find(m => m.key === key) ?? TREND_METRICS[0]
-  const data = history.map(r => ({ month: monthLabelShort(r.month), value: metric.get(r) }))
+  const data = history.map(r => ({ period: `${fmtDayMonth(r.period_start)}`, value: metric.get(r) }))
 
   return (
     <div className="rounded-2xl border border-[#232323] bg-[#141414] p-5">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
         <div>
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Evolução mês a mês</h3>
-          <p className="text-xs text-[#7a7a7a] mt-1">Passe o dedo ou o mouse sobre o gráfico pra ver o valor de cada mês.</p>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Evolução período a período</h3>
+          <p className="text-xs text-[#7a7a7a] mt-1">Cada ponto é um período, identificado pelo dia em que ele começou.</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {TREND_METRICS.map(m => (
@@ -182,7 +186,7 @@ function Trend({ history }: { history: TrafficReport[] }) {
       </div>
       {history.length < 2 ? (
         <div className="flex h-40 items-center justify-center text-center text-xs text-[#7a7a7a] px-6">
-          A evolução aparece a partir do segundo mês de campanha.
+          A evolução aparece a partir do segundo período.
         </div>
       ) : (
         <div className="h-56">
@@ -195,13 +199,14 @@ function Trend({ history }: { history: TrafficReport[] }) {
                 </linearGradient>
               </defs>
               <CartesianGrid stroke="#1f1f1f" vertical={false} />
-              <XAxis dataKey="month" tick={{ fill: '#7a7a7a', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} padding={{ left: 20, right: 20 }} />
+              <XAxis dataKey="period" tick={{ fill: '#7a7a7a', fontSize: 11 }} axisLine={false} tickLine={false} interval={0} padding={{ left: 20, right: 20 }} />
               <YAxis hide domain={[0, (max: number) => max * 1.15]} />
               <Tooltip
                 cursor={{ stroke: '#333' }}
                 contentStyle={{ background: '#0d0d0d', border: '1px solid #2a2a2a', borderRadius: 12, fontSize: 12 }}
                 labelStyle={{ color: '#9ca3af' }}
                 itemStyle={{ color: '#fff' }}
+                labelFormatter={label => `Período iniciado em ${label}`}
                 formatter={(v) => [metric.fmt(Number(v)), metric.label] as [string, string]}
               />
               <Area type="monotone" dataKey="value" stroke={metric.color} strokeWidth={2.5} fill={`url(#grad-${metric.key})`} dot={{ r: 3, fill: metric.color, strokeWidth: 0 }} activeDot={{ r: 5 }} />
@@ -220,7 +225,27 @@ const CAMPAIGN_METRICS = [
   { key: 'reach', label: 'Alcance', color: TRAFFIC_COLORS.reach, fmt: fmtInt },
 ] as const
 
-function Campaigns({ r }: { r: TrafficReport }) {
+function StatusBadge({ c }: { c: TrafficCampaign }) {
+  if (!c.start_date && !c.end_date) return null
+  const ended = !!c.end_date
+  return (
+    <span
+      className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+      style={ended ? { color: '#fbbf24', backgroundColor: '#fbbf241f' } : { color: '#34d399', backgroundColor: '#34d3991f' }}
+    >
+      {ended ? 'Encerrada' : 'No ar'}
+    </span>
+  )
+}
+
+function runText(c: TrafficCampaign): string | null {
+  if (c.start_date && c.end_date) return `Rodou de ${fmtDayMonth(c.start_date)} a ${fmtDayMonth(c.end_date)}`
+  if (c.start_date) return `No ar desde ${fmtDayMonth(c.start_date)}`
+  if (c.end_date) return `Encerrada em ${fmtDayMonth(c.end_date)}`
+  return null
+}
+
+function Campaigns({ r, onSelect }: { r: TrafficReport; onSelect: (key: string) => void }) {
   const [pick, setPick] = useState<(typeof CAMPAIGN_METRICS)[number]['key']>('link_clicks')
   const options = CAMPAIGN_METRICS.filter(m => r.campaigns.some(c => c[m.key] > 0))
   const metric = options.find(m => m.key === pick) ?? options[0] ?? CAMPAIGN_METRICS[0]
@@ -230,10 +255,10 @@ function Campaigns({ r }: { r: TrafficReport }) {
 
   return (
     <div className="rounded-2xl border border-[#232323] bg-[#141414] p-5">
-      <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
         <div className="flex items-center gap-2">
           <Megaphone size={14} className="text-[#9ca3af]" />
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Campanhas do mês</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Campanhas do período</h3>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {options.map(m => (
@@ -250,43 +275,38 @@ function Campaigns({ r }: { r: TrafficReport }) {
           ))}
         </div>
       </div>
-      <div className="space-y-3.5">
+      <p className="text-xs text-[#7a7a7a] mb-4">Toque numa campanha pra ver os números só dela.</p>
+      <div className="space-y-1">
         {rows.map((c, i) => {
           const cm = computeMetrics(c)
-          const ended = !!c.end_date
+          const run = runText(c)
           return (
-            <div key={`${c.id ?? c.name}-${i}`}>
+            <button
+              key={`${c.id ?? c.name}-${i}`}
+              onClick={() => onSelect(c.id ?? c.name)}
+              className="group block w-full text-left rounded-xl px-3 py-3 -mx-3 hover:bg-[#1a1a1a] transition-colors"
+            >
               <div className="flex items-baseline justify-between gap-3 mb-1.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{c.name}</p>
-                  {(c.start_date || ended) && (
-                    <span
-                      className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-                      style={ended ? { color: '#fbbf24', backgroundColor: '#fbbf241f' } : { color: '#34d399', backgroundColor: '#34d3991f' }}
-                    >
-                      {ended ? 'Encerrada' : 'No ar'}
-                    </span>
-                  )}
+                  <StatusBadge c={c} />
                 </div>
-                <p className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: metric.color }}>{metric.fmt(c[key])}</p>
+                <div className="flex items-center gap-1 shrink-0">
+                  <p className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: metric.color }}>{metric.fmt(c[key])}</p>
+                  <ChevronRight size={14} className="text-[#4b4b4b] group-hover:text-white transition-colors" />
+                </div>
               </div>
               <div className="h-2 rounded-full bg-[#1f1f1f] overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${(c[key] / max) * 100}%`, backgroundColor: metric.color }} />
               </div>
-              {(c.start_date || c.end_date) && (
-                <p className="mt-1 text-[11px] text-[#9ca3af]">
-                  {c.start_date && c.end_date ? `Rodou de ${fmtDayMonth(c.start_date)} a ${fmtDayMonth(c.end_date)}`
-                    : c.start_date ? `No ar desde ${fmtDayMonth(c.start_date)}`
-                    : `Encerrada em ${fmtDayMonth(c.end_date as string)}`}
-                </p>
-              )}
+              {run && <p className="mt-1 text-[11px] text-[#9ca3af]">{run}</p>}
               <p className="mt-1 text-[11px] text-[#7a7a7a]">
                 {fmtBRL(c.spend)} investidos
                 {cm.cpcLink !== null && ` · ${fmtBRL(cm.cpcLink)} por clique`}
                 {cm.costPerResult !== null && c.results > 0 && ` · ${fmtBRL(cm.costPerResult)} por resultado`}
               </p>
               {c.note && <p className="mt-1 text-[11px] italic text-[#7a7a7a]">{c.note}</p>}
-            </div>
+            </button>
           )
         })}
       </div>
@@ -294,55 +314,171 @@ function Campaigns({ r }: { r: TrafficReport }) {
   )
 }
 
-export function TrafficDashboard({ report, previous, history, month }: {
+// Visão de uma campanha só: reaproveita os mesmos cards/funil/evolução,
+// calculados com os números dela.
+function campKey(c: TrafficCampaign) {
+  return c.id ?? c.name
+}
+
+function campaignAsReport(c: TrafficCampaign, base: TrafficReport): TrafficReport {
+  return {
+    period_start: base.period_start,
+    period_end: base.period_end,
+    spend: c.spend, impressions: c.impressions, reach: c.reach, link_clicks: c.link_clicks, results: c.results,
+    result_label: base.result_label,
+    campaigns: [c],
+    analysis: null,
+  }
+}
+
+function findMatch(report: TrafficReport | null, c: TrafficCampaign): TrafficReport | null {
+  if (!report) return null
+  const m = report.campaigns.find(x => (c.id && x.id === c.id) || x.name === c.name)
+  return m ? campaignAsReport(m, report) : null
+}
+
+export function TrafficDashboard({ report, previous, history }: {
   report: TrafficReport | null
   previous: TrafficReport | null
   history: TrafficReport[]
-  month: string
 }) {
+  const [scope, setScope] = useState('all')
+  const topRef = useRef<HTMLDivElement>(null)
+
+  // Tocar numa campanha lá embaixo na lista: sobe até os números dela.
+  function openCampaign(key: string) {
+    setScope(key)
+    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
+
   if (!report) {
     return (
       <div className="rounded-2xl border border-dashed border-[#2a2a2a] bg-[#141414] px-6 py-14 text-center">
         <BarChart3 size={28} className="mx-auto mb-3 text-[#4b4b4b]" strokeWidth={1.2} />
-        <p className="text-sm font-medium text-white">Ainda não há números de {monthLabel(month)}</p>
-        <p className="mt-1 text-xs text-[#7a7a7a]">Assim que o mês for atualizado, o relatório aparece aqui.</p>
+        <p className="text-sm font-medium text-white">Ainda não há números para este período</p>
+        <p className="mt-1 text-xs text-[#7a7a7a]">Assim que forem atualizados, o relatório aparece aqui.</p>
       </div>
     )
   }
 
-  const m = computeMetrics(report)
-  const pm = previous ? computeMetrics(previous) : null
-  const label = report.result_label || 'Resultados'
+  const today = todayStr()
+  const status = periodStatus(report.period_start, report.period_end, today)
+  const elapsed = status === 'running' ? daysInclusive(report.period_start, today) : 0
+  const total = daysInclusive(report.period_start, report.period_end)
+
+  const campaigns = [...report.campaigns].sort((a, b) => b.spend - a.spend)
+  const selected = scope === 'all' ? null : report.campaigns.find(c => campKey(c) === scope) ?? null
+
+  const view = selected ? campaignAsReport(selected, report) : report
+  const prevView = selected ? findMatch(previous, selected) : previous
+  const histView = selected
+    ? history.map(h => findMatch(h, selected)).filter((h): h is TrafficReport => h !== null)
+    : history
+  // Período em andamento tem números parciais: comparar com um período fechado seria injusto.
+  const comparePrev = status === 'closed' ? prevView : null
+
+  const m = computeMetrics(view)
+  const pm = comparePrev ? computeMetrics(comparePrev) : null
+  const label = view.result_label || 'Resultados'
 
   return (
-    <div className="space-y-4">
+    <div ref={topRef} className="space-y-4 scroll-mt-4">
+      {status !== 'closed' && (
+        <div className="rounded-2xl border border-[#232323] bg-[#141414] px-4 py-3">
+          <div className="flex items-center gap-2 text-xs text-[#d4d4d4]">
+            <CalendarRange size={13} className="text-[#fbbf24]" />
+            {status === 'running'
+              ? <span>Período em andamento — dia <strong>{elapsed}</strong> de {total}. Os números são parciais e continuam subindo até {fmtDayMonth(report.period_end)}.</span>
+              : <span>Este período ainda não começou.</span>}
+          </div>
+          {status === 'running' && (
+            <div className="mt-2 h-1.5 rounded-full bg-[#1f1f1f] overflow-hidden">
+              <div className="h-full rounded-full bg-[#fbbf24]" style={{ width: `${Math.min(100, (elapsed / total) * 100)}%` }} />
+            </div>
+          )}
+          <p className="mt-2 text-[11px] text-[#7a7a7a]">A comparação com o período anterior aparece quando este fechar.</p>
+        </div>
+      )}
+
+      {campaigns.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+          <button
+            onClick={() => setScope('all')}
+            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors"
+            style={scope === 'all'
+              ? { color: '#111111', backgroundColor: '#efefef', borderColor: '#efefef' }
+              : { color: '#9ca3af', borderColor: '#2a2a2a' }}
+          >
+            Visão geral
+          </button>
+          {campaigns.map(c => {
+            const active = scope === campKey(c)
+            return (
+              <button
+                key={campKey(c)}
+                onClick={() => setScope(campKey(c))}
+                className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap"
+                style={active
+                  ? { color: '#111111', backgroundColor: '#efefef', borderColor: '#efefef' }
+                  : { color: '#9ca3af', borderColor: '#2a2a2a' }}
+              >
+                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.end_date ? '#fbbf24' : '#34d399' }} />
+                {c.name}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {selected && (
+        <div className="rounded-2xl border border-[#232323] bg-gradient-to-br from-[#161616] to-[#121212] p-5">
+          <button
+            onClick={() => setScope('all')}
+            className="mb-3 flex items-center gap-1 text-[11px] text-[#9ca3af] hover:text-white transition-colors"
+          >
+            <ArrowLeft size={12} /> Voltar à visão geral
+          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-bold text-white">{selected.name}</h2>
+            <StatusBadge c={selected} />
+          </div>
+          <p className="mt-1 text-xs text-[#9ca3af]">
+            {[
+              runText(selected),
+              report.spend > 0 ? `${fmtDec((selected.spend / report.spend) * 100)}% do investimento do período` : null,
+            ].filter(Boolean).join(' · ')}
+          </p>
+          {selected.note && <p className="mt-2 text-xs italic text-[#9ca3af]">{selected.note}</p>}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <BigCard
           icon={Users} color={TRAFFIC_COLORS.reach} label="Pessoas alcançadas"
           hint="Pessoas diferentes que viram o seu anúncio."
-          value={report.reach} format={fmtInt}
-          delta={<Delta cur={report.reach} prev={previous?.reach ?? null} good="up" />}
+          value={view.reach} format={fmtInt}
+          delta={<Delta cur={view.reach} prev={comparePrev?.reach ?? null} good="up" />}
         />
         <BigCard
           icon={Eye} color={TRAFFIC_COLORS.impressions} label="Impressões"
           hint="Quantas vezes o anúncio foi exibido na tela."
-          value={report.impressions} format={fmtInt}
-          delta={<Delta cur={report.impressions} prev={previous?.impressions ?? null} good="up" />}
+          value={view.impressions} format={fmtInt}
+          delta={<Delta cur={view.impressions} prev={comparePrev?.impressions ?? null} good="up" />}
         />
         <BigCard
           icon={MousePointerClick} color={TRAFFIC_COLORS.clicks} label="Cliques no link"
           hint="Pessoas que clicaram pra conhecer mais."
-          value={report.link_clicks} format={fmtInt}
-          delta={<Delta cur={report.link_clicks} prev={previous?.link_clicks ?? null} good="up" />}
+          value={view.link_clicks} format={fmtInt}
+          delta={<Delta cur={view.link_clicks} prev={comparePrev?.link_clicks ?? null} good="up" />}
         />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <SmallCard
           icon={Wallet} color={TRAFFIC_COLORS.spend} label="Valor investido"
-          hint="Total aplicado na campanha no mês."
-          value={report.spend} format={fmtBRL}
-          delta={<Delta cur={report.spend} prev={previous?.spend ?? null} good="neutral" compact />}
+          hint="Total aplicado no período."
+          value={view.spend} format={fmtBRL}
+          delta={<Delta cur={view.spend} prev={comparePrev?.spend ?? null} good="neutral" compact />}
         />
         <SmallCard
           icon={MousePointerClick} color={TRAFFIC_COLORS.clicks} label="Custo por clique"
@@ -356,10 +492,10 @@ export function TrafficDashboard({ report, previous, history, month }: {
           value={m.cpm} format={fmtBRL}
           delta={<Delta cur={m.cpm} prev={pm?.cpm ?? null} good="down" compact />}
         />
-        {report.results > 0 ? (
+        {view.results > 0 ? (
           <SmallCard
             icon={Target} color={TRAFFIC_COLORS.results} label="Custo por resultado"
-            sub={`${fmtInt(report.results)} ${label.toLowerCase()}`}
+            sub={`${fmtInt(view.results)} ${label.toLowerCase()}`}
             hint="Quanto custou, em média, cada resultado conquistado."
             value={m.costPerResult} format={fmtBRL}
             delta={<Delta cur={m.costPerResult} prev={pm?.costPerResult ?? null} good="down" compact />}
@@ -374,14 +510,14 @@ export function TrafficDashboard({ report, previous, history, month }: {
         )}
       </div>
 
-      <Funnel r={report} />
-      <Trend history={history} />
-      {report.campaigns.length > 0 && <Campaigns r={report} />}
+      <Funnel r={view} />
+      <Trend history={histView} />
+      {!selected && report.campaigns.length > 0 && <Campaigns r={report} onSelect={openCampaign} />}
 
-      {report.analysis && (
+      {!selected && report.analysis && (
         <div className="relative rounded-2xl border border-[#232323] bg-gradient-to-br from-[#161616] to-[#121212] p-5">
           <Quote size={18} className="mb-2 text-[#4b4b4b]" />
-          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af] mb-2">Análise do mês</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-[#9ca3af] mb-2">Análise do período</h3>
           <p className="text-sm leading-relaxed text-[#d4d4d4] whitespace-pre-line">{report.analysis}</p>
         </div>
       )}
