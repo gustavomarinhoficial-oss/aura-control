@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import {
   ArrowUpRight, ArrowDownRight, Minus, Eye, Users, MousePointerClick, Wallet, Target, BarChart3,
-  Quote, Megaphone, Percent, ChevronRight, ArrowLeft, CalendarRange,
+  Quote, Megaphone, Percent, ChevronRight, ChevronLeft, ArrowLeft, CalendarRange,
 } from 'lucide-react'
 import {
   computeMetrics, pctChange, fmtInt, fmtBRL, fmtDec, fmtDayMonth, daysInclusive, periodStatus, todayStr,
@@ -189,7 +189,7 @@ function Trend({ history }: { history: TrafficReport[] }) {
           A evolução aparece a partir do segundo período.
         </div>
       ) : (
-        <div className="h-56">
+        <div className="h-56" data-noswipe>
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <defs>
@@ -225,22 +225,47 @@ const CAMPAIGN_METRICS = [
   { key: 'reach', label: 'Alcance', color: TRAFFIC_COLORS.reach, fmt: fmtInt },
 ] as const
 
-function StatusBadge({ c }: { c: TrafficCampaign }) {
-  if (!c.start_date && !c.end_date) return null
-  const ended = !!c.end_date
+// Bolinha vermelha piscando = a campanha está rodando agora.
+function LiveDot({ size = 8 }: { size?: number }) {
   return (
-    <span
-      className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
-      style={ended ? { color: '#fbbf24', backgroundColor: '#fbbf241f' } : { color: '#34d399', backgroundColor: '#34d3991f' }}
-    >
-      {ended ? 'Encerrada' : 'No ar'}
+    <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
+      <span className="absolute inset-0 rounded-full bg-[#ef4444] opacity-75 motion-safe:animate-ping" />
+      <span className="relative rounded-full bg-[#ef4444]" style={{ width: size, height: size }} />
     </span>
   )
 }
 
-function runText(c: TrafficCampaign): string | null {
+// "No ar agora" = período em andamento + campanha já começou e não foi encerrada.
+function isLive(c: TrafficCampaign, periodRunning: boolean): boolean {
+  return periodRunning && !!c.start_date && !c.end_date
+}
+
+function StatusBadge({ c, periodRunning }: { c: TrafficCampaign; periodRunning: boolean }) {
+  if (!c.start_date && !c.end_date) return null
+  if (isLive(c, periodRunning)) {
+    return (
+      <span
+        className="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full"
+        style={{ color: '#f87171', backgroundColor: '#ef44441f' }}
+      >
+        <LiveDot size={6} /> NO AR
+      </span>
+    )
+  }
+  const ended = !!c.end_date
+  return (
+    <span
+      className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full"
+      style={ended ? { color: '#fbbf24', backgroundColor: '#fbbf241f' } : { color: '#9ca3af', backgroundColor: '#9ca3af1f' }}
+    >
+      {ended ? 'Encerrada' : 'Ativa até o fim'}
+    </span>
+  )
+}
+
+function runText(c: TrafficCampaign, periodRunning: boolean): string | null {
   if (c.start_date && c.end_date) return `Rodou de ${fmtDayMonth(c.start_date)} a ${fmtDayMonth(c.end_date)}`
-  if (c.start_date) return `No ar desde ${fmtDayMonth(c.start_date)}`
+  if (c.start_date) return `${periodRunning ? 'No ar desde' : 'Rodou a partir de'} ${fmtDayMonth(c.start_date)}`
   if (c.end_date) return `Encerrada em ${fmtDayMonth(c.end_date)}`
   return null
 }
@@ -252,6 +277,7 @@ function Campaigns({ r, onSelect }: { r: TrafficReport; onSelect: (key: string) 
   const key = metric.key
   const rows = [...r.campaigns].sort((a, b) => b[key] - a[key])
   const max = Math.max(1, ...rows.map(c => c[key]))
+  const running = periodStatus(r.period_start, r.period_end) === 'running'
 
   return (
     <div className="rounded-2xl border border-[#232323] bg-[#141414] p-5">
@@ -279,7 +305,7 @@ function Campaigns({ r, onSelect }: { r: TrafficReport; onSelect: (key: string) 
       <div className="space-y-1">
         {rows.map((c, i) => {
           const cm = computeMetrics(c)
-          const run = runText(c)
+          const run = runText(c, running)
           return (
             <button
               key={`${c.id ?? c.name}-${i}`}
@@ -289,7 +315,7 @@ function Campaigns({ r, onSelect }: { r: TrafficReport; onSelect: (key: string) 
               <div className="flex items-baseline justify-between gap-3 mb-1.5">
                 <div className="flex items-center gap-2 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{c.name}</p>
-                  <StatusBadge c={c} />
+                  <StatusBadge c={c} periodRunning={running} />
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <p className="text-sm font-bold tabular-nums whitespace-nowrap" style={{ color: metric.color }}>{metric.fmt(c[key])}</p>
@@ -344,12 +370,50 @@ export function TrafficDashboard({ report, previous, history }: {
 }) {
   const [scope, setScope] = useState('all')
   const topRef = useRef<HTMLDivElement>(null)
+  const chipsRef = useRef<HTMLDivElement>(null)
+  const touchStart = useRef<{ x: number; y: number; skip: boolean } | null>(null)
+
+  const today = todayStr()
+  const status = report ? periodStatus(report.period_start, report.period_end, today) : 'closed'
+  const running = status === 'running'
+  // Campanhas no ar vêm primeiro; dentro de cada grupo, as que mais investiram.
+  const campaigns = report
+    ? [...report.campaigns].sort((a, b) => Number(isLive(b, running)) - Number(isLive(a, running)) || b.spend - a.spend)
+    : []
+  const selIdx = campaigns.findIndex(c => campKey(c) === scope)
+  const selected = selIdx >= 0 ? campaigns[selIdx] : null
+
+  function go(delta: 1 | -1) {
+    if (campaigns.length === 0) return
+    const from = selIdx < 0 ? (delta > 0 ? -1 : 0) : selIdx
+    setScope(campKey(campaigns[(from + delta + campaigns.length) % campaigns.length]))
+  }
 
   // Tocar numa campanha lá embaixo na lista: sobe até os números dela.
   function openCampaign(key: string) {
     setScope(key)
     requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
+
+  // Setas do teclado passam entre as campanhas; Esc volta pra visão geral.
+  useEffect(() => {
+    if (!selected) return
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      if (e.key === 'ArrowRight') go(1)
+      else if (e.key === 'ArrowLeft') go(-1)
+      else if (e.key === 'Escape') setScope('all')
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  // A campanha escolhida sempre fica visível na fileira de botões.
+  useEffect(() => {
+    const el = Array.from(chipsRef.current?.children ?? []).find(ch => (ch as HTMLElement).dataset.chip === scope)
+    el?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+  }, [scope])
 
   if (!report) {
     return (
@@ -361,13 +425,10 @@ export function TrafficDashboard({ report, previous, history }: {
     )
   }
 
-  const today = todayStr()
-  const status = periodStatus(report.period_start, report.period_end, today)
-  const elapsed = status === 'running' ? daysInclusive(report.period_start, today) : 0
+  const elapsed = running ? daysInclusive(report.period_start, today) : 0
   const total = daysInclusive(report.period_start, report.period_end)
-
-  const campaigns = [...report.campaigns].sort((a, b) => b.spend - a.spend)
-  const selected = scope === 'all' ? null : report.campaigns.find(c => campKey(c) === scope) ?? null
+  const liveList = campaigns.filter(c => isLive(c, running))
+  const otherList = campaigns.filter(c => !isLive(c, running))
 
   const view = selected ? campaignAsReport(selected, report) : report
   const prevView = selected ? findMatch(previous, selected) : previous
@@ -382,11 +443,33 @@ export function TrafficDashboard({ report, previous, history }: {
   const label = view.result_label || 'Resultados'
 
   return (
-    <div ref={topRef} className="space-y-4 scroll-mt-4">
+    <div
+      ref={topRef}
+      className="space-y-4 scroll-mt-4"
+      onTouchStart={e => {
+        const t = e.touches[0]
+        touchStart.current = { x: t.clientX, y: t.clientY, skip: !!(e.target as HTMLElement).closest('[data-noswipe]') }
+      }}
+      onTouchEnd={e => {
+        const s = touchStart.current
+        touchStart.current = null
+        if (!s || s.skip || !selected) return
+        const t = e.changedTouches[0]
+        const dx = t.clientX - s.x
+        const dy = t.clientY - s.y
+        if (Math.abs(dx) > 70 && Math.abs(dy) < 45) go(dx < 0 ? 1 : -1)
+      }}
+    >
       {status !== 'closed' && (
         <div className="rounded-2xl border border-[#232323] bg-[#141414] px-4 py-3">
           <div className="flex items-center gap-2 text-xs text-[#d4d4d4]">
-            <CalendarRange size={13} className="text-[#fbbf24]" />
+            {running ? (
+              <span className="shrink-0 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wide px-2 py-0.5 rounded-full" style={{ color: '#f87171', backgroundColor: '#ef44441f' }}>
+                <LiveDot size={6} /> AO VIVO
+              </span>
+            ) : (
+              <CalendarRange size={13} className="text-[#fbbf24]" />
+            )}
             {status === 'running'
               ? <span>Período em andamento — dia <strong>{elapsed}</strong> de {total}. Os números são parciais e continuam subindo até {fmtDayMonth(report.period_end)}.</span>
               : <span>Este período ainda não começou.</span>}
@@ -401,8 +484,9 @@ export function TrafficDashboard({ report, previous, history }: {
       )}
 
       {campaigns.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+        <div ref={chipsRef} data-noswipe className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
           <button
+            data-chip="all"
             onClick={() => setScope('all')}
             className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors"
             style={scope === 'all'
@@ -411,40 +495,79 @@ export function TrafficDashboard({ report, previous, history }: {
           >
             Visão geral
           </button>
-          {campaigns.map(c => {
-            const active = scope === campKey(c)
-            return (
-              <button
-                key={campKey(c)}
-                onClick={() => setScope(campKey(c))}
-                className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap"
-                style={active
-                  ? { color: '#111111', backgroundColor: '#efefef', borderColor: '#efefef' }
-                  : { color: '#9ca3af', borderColor: '#2a2a2a' }}
-              >
-                <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.end_date ? '#fbbf24' : '#34d399' }} />
-                {c.name}
-              </button>
-            )
-          })}
+          {[
+            { label: 'No ar agora', list: liveList, live: true },
+            { label: otherList.length > 0 && liveList.length > 0 ? 'Encerradas' : '', list: otherList, live: false },
+          ].filter(g => g.list.length > 0).map(g => (
+            <div key={g.label || 'campanhas'} className="contents">
+              <span className="shrink-0 mx-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#5a5a5a]">
+                <span className="h-4 w-px bg-[#2a2a2a]" />
+                {g.live && <LiveDot size={6} />}
+                {g.label}
+              </span>
+              {g.list.map(c => {
+                const active = scope === campKey(c)
+                const live = isLive(c, running)
+                return (
+                  <button
+                    key={campKey(c)}
+                    data-chip={campKey(c)}
+                    onClick={() => setScope(campKey(c))}
+                    className="shrink-0 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap"
+                    style={active
+                      ? { color: '#111111', backgroundColor: '#efefef', borderColor: '#efefef' }
+                      : live
+                        ? { color: '#fca5a5', borderColor: '#ef444455', backgroundColor: '#ef44440f' }
+                        : { color: '#9ca3af', borderColor: '#2a2a2a' }}
+                  >
+                    {live
+                      ? <LiveDot size={6} />
+                      : <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: c.end_date ? '#fbbf24' : '#6b7280' }} />}
+                    {c.name}
+                  </button>
+                )
+              })}
+            </div>
+          ))}
         </div>
       )}
 
       {selected && (
         <div className="rounded-2xl border border-[#232323] bg-gradient-to-br from-[#161616] to-[#121212] p-5">
-          <button
-            onClick={() => setScope('all')}
-            className="mb-3 flex items-center gap-1 text-[11px] text-[#9ca3af] hover:text-white transition-colors"
-          >
-            <ArrowLeft size={12} /> Voltar à visão geral
-          </button>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <button
+              onClick={() => setScope('all')}
+              className="flex items-center gap-1 text-[11px] text-[#9ca3af] hover:text-white transition-colors"
+            >
+              <ArrowLeft size={12} /> Voltar à visão geral
+            </button>
+            {campaigns.length > 1 && (
+              <div className="flex items-center gap-1 text-[11px] text-[#9ca3af]">
+                <button
+                  onClick={() => go(-1)}
+                  aria-label="Campanha anterior"
+                  className="p-1.5 rounded-lg border border-[#2a2a2a] hover:text-white hover:bg-[#1f1f1f] transition-colors"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="px-1.5 tabular-nums">{selIdx + 1} de {campaigns.length}</span>
+                <button
+                  onClick={() => go(1)}
+                  aria-label="Próxima campanha"
+                  className="p-1.5 rounded-lg border border-[#2a2a2a] hover:text-white hover:bg-[#1f1f1f] transition-colors"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-lg font-bold text-white">{selected.name}</h2>
-            <StatusBadge c={selected} />
+            <StatusBadge c={selected} periodRunning={running} />
           </div>
           <p className="mt-1 text-xs text-[#9ca3af]">
             {[
-              runText(selected),
+              runText(selected, running),
               report.spend > 0 ? `${fmtDec((selected.spend / report.spend) * 100)}% do investimento do período` : null,
             ].filter(Boolean).join(' · ')}
           </p>
