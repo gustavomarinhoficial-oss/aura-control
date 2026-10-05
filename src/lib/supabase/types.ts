@@ -17,6 +17,7 @@ export interface Client {
   monthly_content_quota: number | null
   project_sharing_enabled: boolean | null
   content_approval_enabled: boolean | null
+  traffic_sharing_enabled: boolean | null
   created_at: string
 }
 

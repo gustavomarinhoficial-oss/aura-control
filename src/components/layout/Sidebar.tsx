@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, canAccessFdmc, type Role } from '@/lib/roles'
 import { OwlMark } from '@/components/ui/OwlMark'
-import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet } from 'lucide-react'
+import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet, Megaphone } from 'lucide-react'
 
 const ALL_NAV = [
   { href: '/dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
@@ -14,6 +14,7 @@ const ALL_NAV = [
   { href: '/clientes',       label: 'Clientes',       icon: Users },
   { href: '/projetos',       label: 'Cronograma',     icon: Layers },
   { href: '/conteudo',       label: 'Conteúdo',       icon: Newspaper },
+  { href: '/trafego',       label: 'Tráfego',        icon: Megaphone },
   { href: '/influenciadores',label: 'Influenciadores',icon: Handshake },
   { href: '/ia',             label: 'Central IA',     icon: Brain },
   { href: '/financeiro',     label: 'Financeiro',     icon: DollarSign },
