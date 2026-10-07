@@ -30,7 +30,7 @@
     },
     {
       "path": "/api/cron/sync-traffic",
-      "schedule": "0 10,22 * * *"
+      "schedule": "0 10 * * *"
     }
   ]
 }

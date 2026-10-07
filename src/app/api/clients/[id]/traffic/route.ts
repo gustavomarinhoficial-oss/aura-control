@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { loadTrafficBundle } from '@/lib/traffic/server'
+import { refreshIfStale } from '@/lib/traffic/refresh'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -12,7 +13,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (start && !DATE_RE.test(start)) return NextResponse.json({ error: 'Data inválida' }, { status: 400 })
 
   const supabase = createServiceClient()
-  const bundle = await loadTrafficBundle(supabase, id, start)
+  const first = await loadTrafficBundle(supabase, id, start)
+  // Painel sempre mostra números frescos: se estão velhos, atualiza com a Meta antes de responder.
+  const { data: client } = await supabase.from('clients').select('meta_ad_account_id').eq('id', id).single()
+  const bundle = await refreshIfStale(supabase, id, client?.meta_ad_account_id, first)
   return NextResponse.json(bundle)
 }
 

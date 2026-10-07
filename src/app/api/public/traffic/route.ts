@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { loadTrafficBundle } from '@/lib/traffic/server'
+import { refreshIfStale } from '@/lib/traffic/refresh'
 import { MAX_LOOKBACK_DAYS, MAX_RANGE_DAYS, fetchCustomRange, metaConfigured } from '@/lib/traffic/meta'
 import { addDays, daysInclusive, todayStr, type TrafficReport } from '@/lib/traffic/metrics'
 
@@ -69,7 +70,9 @@ export async function GET(request: Request) {
   }
 
   const start = searchParams.get('start')
-  const bundle = await loadTrafficBundle(supabase, client.id, start && DATE_RE.test(start) ? start : null)
+  const first = await loadTrafficBundle(supabase, client.id, start && DATE_RE.test(start) ? start : null)
+  // Números velhos (mais de 30 min) do período em andamento: atualiza com a Meta antes de responder.
+  const bundle = await refreshIfStale(supabase, client.id, client.meta_ad_account_id, first)
 
   return NextResponse.json({ client: info, mode: 'period', canCustom, ...bundle })
 }
