@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { Loader2, CalendarRange, X, Check } from 'lucide-react'
+import { Loader2, CalendarRange } from 'lucide-react'
 import { TrafficDashboard } from '@/components/domain/traffic/TrafficDashboard'
+import { PeriodPicker } from '@/components/domain/traffic/PeriodPicker'
 import {
-  addDays, daysInclusive, fmtDayMonthYear, periodChip, periodLabel, periodStatus, todayStr,
+  addDays, fmtDayMonthYear, periodChip, periodLabel, periodStatus, todayStr,
   type TrafficBundle,
 } from '@/lib/traffic/metrics'
 
@@ -17,27 +18,6 @@ type Payload = TrafficBundle & {
   granularity?: 'day' | 'month'
 }
 
-const MAX_LOOKBACK_DAYS = 1095
-
-function buildPresets(today: string) {
-  const [y, m] = today.split('-').map(Number)
-  const firstThisMonth = `${y}-${String(m).padStart(2, '0')}-01`
-  const lastPrevMonth = addDays(firstThisMonth, -1)
-  const firstPrevMonth = `${lastPrevMonth.slice(0, 8)}01`
-  return [
-    { label: 'Últimos 7 dias', from: addDays(today, -6), to: today },
-    { label: 'Últimos 30 dias', from: addDays(today, -29), to: today },
-    { label: 'Últimos 90 dias', from: addDays(today, -89), to: today },
-    { label: 'Este mês', from: firstThisMonth, to: today },
-    { label: 'Mês passado', from: firstPrevMonth, to: lastPrevMonth },
-    { label: 'Este ano', from: `${y}-01-01`, to: today },
-    { label: 'Ano passado', from: `${y - 1}-01-01`, to: `${y - 1}-12-31` },
-  ]
-}
-
-const dateInputCls =
-  'w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#efefef] transition-colors [color-scheme:dark]'
-
 export default function PublicTrafficPage() {
   const { token } = useParams<{ token: string }>()
   const [data, setData] = useState<Payload | null>(null)
@@ -47,12 +27,10 @@ export default function PublicTrafficPage() {
 
   const [custom, setCustom] = useState<{ from: string; to: string } | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [fromInput, setFromInput] = useState('')
-  const [toInput, setToInput] = useState('')
   const [customError, setCustomError] = useState('')
 
   const today = todayStr()
-  const earliest = addDays(today, -MAX_LOOKBACK_DAYS)
+  const earliest = addDays(today, -1095)
 
   const fetchPeriod = useCallback(async (start?: string) => {
     const qs = new URLSearchParams({ token })
@@ -89,8 +67,6 @@ export default function PublicTrafficPage() {
     if (res?.ok) {
       setData(await res.json())
       setCustom({ from, to })
-      setFromInput(from)
-      setToInput(to)
       setPickerOpen(false)
     } else {
       const d = res ? await res.json().catch(() => ({})) : {}
@@ -123,11 +99,9 @@ export default function PublicTrafficPage() {
   const report = data.report
   const isCustom = data.mode === 'custom' && !!custom
   const canCustom = !!data.canCustom
-  const presets = buildPresets(today)
   const updated = !isCustom && report?.updated_at
     ? new Date(report.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : null
-  const inputDays = fromInput && toInput && fromInput <= toInput ? daysInclusive(fromInput, toInput) : null
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white">
@@ -178,72 +152,13 @@ export default function PublicTrafficPage() {
         )}
 
         {pickerOpen && canCustom && (
-          <div className="mt-3 rounded-2xl border border-[#232323] bg-[#141414] p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-medium uppercase tracking-wider text-[#9ca3af]">Escolha o período que quer ver</p>
-              <button onClick={() => setPickerOpen(false)} aria-label="Fechar" className="text-[#7a7a7a] hover:text-white transition-colors">
-                <X size={15} />
-              </button>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {presets.map(p => {
-                const active = isCustom && custom?.from === p.from && custom?.to === p.to
-                return (
-                  <button
-                    key={p.label}
-                    onClick={() => applyCustom(p.from, p.to)}
-                    disabled={switching}
-                    className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors disabled:opacity-50 ${
-                      active
-                        ? 'bg-[#efefef] text-[#111111] border-[#efefef]'
-                        : 'text-[#d4d4d4] border-[#2a2a2a] hover:border-[#efefef]'
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                )
-              })}
-            </div>
-
-            <p className="text-[11px] text-[#7a7a7a] mb-2">Ou escolha as datas no calendário:</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[10px] text-[#7a7a7a] mb-1">De</label>
-                <input
-                  type="date"
-                  value={fromInput}
-                  min={earliest}
-                  max={today}
-                  onChange={e => setFromInput(e.target.value)}
-                  className={dateInputCls}
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-[#7a7a7a] mb-1">Até</label>
-                <input
-                  type="date"
-                  value={toInput}
-                  min={earliest}
-                  max={today}
-                  onChange={e => setToInput(e.target.value)}
-                  className={dateInputCls}
-                />
-              </div>
-            </div>
-            <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <button
-                onClick={() => applyCustom(fromInput, toInput)}
-                disabled={switching || !fromInput || !toInput}
-                className="flex items-center gap-1.5 bg-[#efefef] hover:bg-[#d9d9d9] disabled:opacity-50 disabled:cursor-not-allowed text-[#111111] text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-              >
-                {switching ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                Ver período
-              </button>
-              {inputDays && <span className="text-[11px] text-[#7a7a7a]">{inputDays} {inputDays === 1 ? 'dia' : 'dias'} selecionados</span>}
-              {customError && <span className="text-xs text-[#f87171]">{customError}</span>}
-            </div>
-          </div>
+          <PeriodPicker
+            active={isCustom ? custom : null}
+            busy={switching}
+            error={customError}
+            onApply={applyCustom}
+            onClose={() => setPickerOpen(false)}
+          />
         )}
 
         <div className={`mt-5 transition-opacity ${switching ? 'opacity-50' : ''}`}>

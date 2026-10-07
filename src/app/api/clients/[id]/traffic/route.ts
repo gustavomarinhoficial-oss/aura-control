@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { loadTrafficBundle } from '@/lib/traffic/server'
-import { refreshIfStale } from '@/lib/traffic/refresh'
+import { buildCustomPayload, customAvailable } from '@/lib/traffic/custom'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
-// GET ?start=YYYY-MM-DD  → período que começa nesse dia (sem start: o que está rodando hoje)
+export const maxDuration = 30
+
+// GET ?start=YYYY-MM-DD       → período salvo que começa nesse dia (sem start: o que está rodando hoje)
+// GET ?from=...&to=...        → qualquer período escolhido no calendário (números buscados na Meta na hora)
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { searchParams } = new URL(request.url)
@@ -13,11 +16,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (start && !DATE_RE.test(start)) return NextResponse.json({ error: 'Data inválida' }, { status: 400 })
 
   const supabase = createServiceClient()
-  const first = await loadTrafficBundle(supabase, id, start)
-  // Painel sempre mostra números frescos: se estão velhos, atualiza com a Meta antes de responder.
   const { data: client } = await supabase.from('clients').select('meta_ad_account_id').eq('id', id).single()
-  const bundle = await refreshIfStale(supabase, id, client?.meta_ad_account_id, first)
-  return NextResponse.json(bundle)
+
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
+  if (from || to) {
+    const { status, body } = await buildCustomPayload(supabase, id, client?.meta_ad_account_id, from, to)
+    return NextResponse.json(body, { status })
+  }
+
+  const bundle = await loadTrafficBundle(supabase, id, start)
+  return NextResponse.json({ ...bundle, canCustom: customAvailable(client?.meta_ad_account_id) })
 }
 
 const isoDate = (v: unknown) => (typeof v === 'string' && DATE_RE.test(v) ? v : null)

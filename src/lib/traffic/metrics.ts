@@ -34,6 +34,8 @@ export interface TrafficBundle {
   previous: TrafficReport | null
   history: TrafficReport[]
   periods: TrafficPeriod[]
+  // true quando dá pra escolher qualquer período (cliente ligado à Meta)
+  canCustom?: boolean
 }
 
 export const TRAFFIC_COLORS = {

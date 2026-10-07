@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   ChevronLeft, ChevronRight, Pencil, Share2, Check, ExternalLink, Copy, X, Plus, Trash2, RefreshCw,
-  ClipboardPaste, AlertCircle, BarChart3, Eye, EyeOff,
+  ClipboardPaste, AlertCircle, BarChart3, Eye, EyeOff, CalendarRange,
 } from 'lucide-react'
 import { TrafficDashboard } from '@/components/domain/traffic/TrafficDashboard'
+import { PeriodPicker } from '@/components/domain/traffic/PeriodPicker'
 import {
   todayStr, addDays, endOfCycle, periodLabel, periodStatus, fmtInt,
   type TrafficBundle, type TrafficCampaign, type TrafficReport,
@@ -29,6 +30,11 @@ export default function TrafegoPage() {
   const [syncMsg, setSyncMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // Período livre escolhido no calendário (números buscados na Meta na hora)
+  const [customData, setCustomData] = useState<(TrafficBundle & { days: number; granularity: 'day' | 'month' }) | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [customBusy, setCustomBusy] = useState(false)
+  const [customError, setCustomError] = useState('')
 
   const client = clients.find(c => c.id === clientId)
 
@@ -116,7 +122,29 @@ export default function TrafegoPage() {
     setSyncing(false)
   }
 
+  async function applyCustom(from: string, to: string) {
+    if (!client) return
+    setCustomBusy(true)
+    setCustomError('')
+    const res = await fetch(`/api/clients/${client.id}/traffic?from=${from}&to=${to}`).catch(() => null)
+    const d = res ? await res.json().catch(() => ({})) : {}
+    if (res?.ok) {
+      setCustomData(d)
+      setPickerOpen(false)
+    } else {
+      setCustomError(d.error ?? 'Não consegui buscar os números agora.')
+    }
+    setCustomBusy(false)
+  }
+
+  function exitCustom() {
+    setCustomData(null)
+    setPickerOpen(false)
+    setCustomError('')
+  }
+
   function selectClient(id: string) {
+    exitCustom()
     setAccountDraft(null)
     setSyncMsg(null)
     setLoading(true)
@@ -129,6 +157,7 @@ export default function TrafegoPage() {
 
   // periods vem do mais novo pro mais antigo: "anterior" = índice maior.
   function goPeriod(delta: -1 | 1) {
+    exitCustom()
     const target = bundle.periods[periodIdx + delta]
     if (target) setSelectedStart(target.start)
   }
@@ -165,10 +194,20 @@ export default function TrafegoPage() {
               title="Período anterior"
               className="p-2 hover:bg-[#222222] rounded-l-lg transition-colors disabled:opacity-30"
             ><ChevronLeft size={14} /></button>
-            <span className="text-xs px-3 min-w-[190px] text-center flex items-center justify-center gap-1.5">
-              {status === 'running' && <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24]" title="Em andamento" />}
-              {bundle.report ? periodLabel(bundle.report.period_start, bundle.report.period_end) : 'Sem períodos'}
-            </span>
+            <button
+              onClick={() => bundle.canCustom && setPickerOpen(o => !o)}
+              disabled={!bundle.canCustom}
+              title={bundle.canCustom ? 'Clique pra escolher qualquer período no calendário' : 'Cadastre a conta de anúncios da Meta pra escolher qualquer período'}
+              className={`text-xs px-3 min-w-[190px] text-center flex items-center justify-center gap-1.5 py-2 transition-colors ${
+                bundle.canCustom ? 'hover:bg-[#222222] cursor-pointer' : 'cursor-default'
+              } ${customData ? 'text-[#efefef] font-medium' : ''}`}
+            >
+              {bundle.canCustom && <CalendarRange size={12} className="shrink-0" />}
+              {!customData && status === 'running' && <span className="h-1.5 w-1.5 rounded-full bg-[#fbbf24]" title="Em andamento" />}
+              {customData?.report
+                ? periodLabel(customData.report.period_start, customData.report.period_end)
+                : bundle.report ? periodLabel(bundle.report.period_start, bundle.report.period_end) : 'Sem períodos'}
+            </button>
             <button
               onClick={() => goPeriod(-1)}
               disabled={periodIdx <= 0}
@@ -179,9 +218,31 @@ export default function TrafegoPage() {
         </div>
       </div>
 
+      {pickerOpen && bundle.canCustom && (
+        <PeriodPicker
+          active={customData?.report ? { from: customData.report.period_start, to: customData.report.period_end } : null}
+          busy={customBusy}
+          error={customError}
+          onApply={applyCustom}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+
+      {customData && (
+        <div className="flex items-center gap-3 flex-wrap rounded-xl border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-xs">
+          <CalendarRange size={13} className="text-[#fbbf24] shrink-0" />
+          <span className="text-muted-foreground">
+            Você está vendo um período escolhido no calendário (números direto da Meta, não salvos).
+          </span>
+          <button onClick={exitCustom} className="font-medium text-[#efefef] hover:underline">
+            Voltar aos períodos salvos
+          </button>
+        </div>
+      )}
+
       {client && (
         <div className="flex items-center gap-2 flex-wrap">
-          {bundle.report && (
+          {bundle.report && !customData && (
             <button
               onClick={() => setEditing(true)}
               className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
@@ -279,7 +340,17 @@ export default function TrafegoPage() {
             <span>É assim que {client.name} vê o relatório{sharing ? '' : ' (quando você liberar o compartilhamento)'}.</span>
           </div>
           <div className="rounded-2xl bg-[#0d0d0d] border border-[#1f1f1f] p-4 sm:p-6">
-            <TrafficDashboard key={`${clientId}-${bundle.report?.period_start ?? 'x'}-${bundle.report?.updated_at ?? 'x'}`} report={bundle.report} previous={bundle.previous} history={bundle.history} />
+            {customData ? (
+              <TrafficDashboard
+                key={`${clientId}-custom-${customData.report?.period_start}-${customData.report?.period_end}`}
+                report={customData.report}
+                previous={customData.previous}
+                history={customData.history}
+                custom={{ days: customData.days, granularity: customData.granularity }}
+              />
+            ) : (
+              <TrafficDashboard key={`${clientId}-${bundle.report?.period_start ?? 'x'}-${bundle.report?.updated_at ?? 'x'}`} report={bundle.report} previous={bundle.previous} history={bundle.history} />
+            )}
           </div>
         </div>
       )}

@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { loadTrafficBundle } from '@/lib/traffic/server'
-import { refreshIfStale } from '@/lib/traffic/refresh'
-import { MAX_LOOKBACK_DAYS, MAX_RANGE_DAYS, fetchCustomRange, metaConfigured } from '@/lib/traffic/meta'
-import { addDays, daysInclusive, todayStr, type TrafficReport } from '@/lib/traffic/metrics'
+import { buildCustomPayload, customAvailable } from '@/lib/traffic/custom'
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -30,49 +28,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Relatório indisponível' }, { status: 403 })
   }
 
-  // Período livre só existe pra cliente ligado à Meta (os números vêm de lá, na hora).
-  const canCustom = !!client.meta_ad_account_id && metaConfigured()
+  const canCustom = customAvailable(client.meta_ad_account_id)
   const info = { id: client.id, name: client.name }
 
   const from = searchParams.get('from')
   const to = searchParams.get('to')
   if (from || to) {
-    if (!canCustom) return NextResponse.json({ error: 'Período livre indisponível' }, { status: 400 })
-    if (!from || !to || !DATE_RE.test(from) || !DATE_RE.test(to) || from > to) {
-      return NextResponse.json({ error: 'Período inválido' }, { status: 400 })
-    }
-    const today = todayStr()
-    const until = to > today ? today : to
-    const earliest = addDays(today, -MAX_LOOKBACK_DAYS)
-    const since = from < earliest ? earliest : from
-    if (since > until) return NextResponse.json({ error: 'Período inválido' }, { status: 400 })
-    if (daysInclusive(since, until) > MAX_RANGE_DAYS) {
-      return NextResponse.json({ error: 'Escolha no máximo 13 meses de uma vez.' }, { status: 400 })
-    }
-
-    const { data: stored } = await supabase.from('traffic_reports').select('*').eq('client_id', client.id)
-    try {
-      const result = await fetchCustomRange(client.meta_ad_account_id as string, since, until, (stored ?? []) as TrafficReport[])
-      const periods = (stored ?? [])
-        .map(r => ({ start: r.period_start as string, end: r.period_end as string }))
-        .sort((a, b) => b.start.localeCompare(a.start))
-      return NextResponse.json(
-        {
-          client: info, mode: 'custom', canCustom, days: daysInclusive(since, until), granularity: result.granularity,
-          report: result.report, previous: result.previous, history: result.timeline, periods,
-        },
-        // Evita martelar a Meta se várias pessoas abrirem o mesmo período.
-        { headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' } },
-      )
-    } catch {
-      return NextResponse.json({ error: 'Não consegui buscar os números agora. Tente de novo em instantes.' }, { status: 502 })
-    }
+    const { status, body } = await buildCustomPayload(supabase, client.id, client.meta_ad_account_id, from, to)
+    return NextResponse.json(
+      status === 200 ? { client: info, ...body } : body,
+      // Evita martelar a Meta se várias pessoas abrirem o mesmo período.
+      { status, headers: status === 200 ? { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300' } : undefined },
+    )
   }
 
   const start = searchParams.get('start')
-  const first = await loadTrafficBundle(supabase, client.id, start && DATE_RE.test(start) ? start : null)
-  // Números velhos (mais de 30 min) do período em andamento: atualiza com a Meta antes de responder.
-  const bundle = await refreshIfStale(supabase, client.id, client.meta_ad_account_id, first)
+  const bundle = await loadTrafficBundle(supabase, client.id, start && DATE_RE.test(start) ? start : null)
 
   return NextResponse.json({ client: info, mode: 'period', canCustom, ...bundle })
 }
