@@ -13,6 +13,7 @@ import {
   MessageCircle, Copy, Trash2, Clock, Upload, Download, File,
   Eye, Folder, ChevronLeft, Sparkles
 } from 'lucide-react'
+import { DiagnosticoTab } from '@/components/domain/onboarding/DiagnosticoTab'
 import type { Client, Service, ClientStatusHistory, Charge, Task } from '@/lib/supabase/types'
 
 interface EditorialLine {
@@ -76,7 +77,7 @@ export default function ClientProfilePage() {
   const [editingService, setEditingService] = useState<string | null>(null)
   const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: '' })
   const [savingEditService, setSavingEditService] = useState(false)
-  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'editorial' | 'relatorios'>('visao')
+  const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'editorial' | 'relatorios' | 'diagnostico'>('visao')
   const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
   const [loadingReports, setLoadingReports] = useState(false)
   type FileEntry = { name: string; metadata?: { size?: number } }
@@ -473,7 +474,7 @@ export default function ClientProfilePage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit overflow-x-auto max-w-full">
-        {(([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['historico', 'Histórico'], ['editorial', 'Editorial']] as const)
+        {(([['visao', 'Visão geral'], ['servicos', 'Serviços'], ['financeiro', 'Financeiro'], ['tarefas', 'Tarefas'], ['relatorios', 'Relatórios'], ['documentos', 'Documentos'], ['diagnostico', 'Diagnóstico'], ['historico', 'Histórico'], ['editorial', 'Editorial']] as const)
           .filter(([tab]) => !isJulia || (tab !== 'servicos' && tab !== 'financeiro'))
         ).map(([tab, lbl]) => (
           <button
@@ -1117,6 +1118,8 @@ export default function ClientProfilePage() {
           })()}
         </div>
       )}
+
+      {activeTab === 'diagnostico' && <DiagnosticoTab clientId={id} />}
 
       {/* Tab: Histórico */}
       {activeTab === 'historico' && (
