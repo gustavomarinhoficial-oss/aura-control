@@ -6,6 +6,7 @@ import {
   ClipboardPaste, AlertCircle, BarChart3, Eye, EyeOff, CalendarRange,
 } from 'lucide-react'
 import { TrafficDashboard } from '@/components/domain/traffic/TrafficDashboard'
+import { TokenWarning } from '@/components/domain/traffic/TokenWarning'
 import { PeriodPicker } from '@/components/domain/traffic/PeriodPicker'
 import {
   todayStr, addDays, endOfCycle, periodLabel, periodStatus, fmtInt,
@@ -174,6 +175,7 @@ export default function TrafegoPage() {
 
   return (
     <div className="space-y-6">
+      <TokenWarning />
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Tráfego pago</h1>
