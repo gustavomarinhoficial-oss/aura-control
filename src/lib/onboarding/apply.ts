@@ -98,6 +98,8 @@ export async function applyOnboarding(supabase: SupabaseClient, clientId: string
   }
   addLink('Site', s(a.site))
   addLink('Google Meu Negócio', s(a.gmn_link))
+  addLink('Logo principal', s(a.logo_alta_link))
+  addLink('Logo PNG', s(a.logo_png_link))
   addLink('Banco de fotos', s(a.banco_fotos_link))
   addLink('Banco de vídeos', s(a.banco_videos_link))
   addLink('Cardápio', s(a.cardapio_link))

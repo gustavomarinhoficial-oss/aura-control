@@ -25,6 +25,8 @@ export interface Field {
   folder?: 'identidade-visual' | 'outros'
   slot?: string
   multiple?: boolean
+  // obrigatório que pode ser cumprido por outro campo (ex.: arquivo OU link)
+  altKey?: string
   // campos de senha são mascarados no diagnóstico/exportações
   secret?: boolean
 }
@@ -358,11 +360,12 @@ export const SECTIONS: Section[] = [
     title: 'Materiais da empresa',
     subtitle: 'Logos e arquivos. Pra fotos e vídeos, um link do Drive resolve.',
     blocks: [
-      { key: 'logo_alta', label: 'Logo em alta resolução', type: 'file', required: true, folder: 'identidade-visual', slot: 'Logo colorida' },
-      { key: 'logo_png', label: 'Logo em PNG, sem fundo', type: 'file', required: true, folder: 'identidade-visual', slot: 'Logo PNG' },
+      { key: 'logo_alta', label: 'Logo principal', type: 'file', required: true, altKey: 'logo_alta_link', folder: 'identidade-visual', slot: 'Logo colorida', hint: 'O ideal é enviar o arquivo aqui. Se preferir, cole um link abaixo.' },
+      { key: 'logo_alta_link', label: 'Ou link da logo principal', type: 'url', placeholder: 'Link do Google Drive, Dropbox, etc.' },
+      { key: 'logo_png', label: 'Logo em PNG, sem fundo', type: 'file', required: true, altKey: 'logo_png_link', folder: 'identidade-visual', slot: 'Logo PNG', hint: 'O ideal é enviar o arquivo aqui. Se preferir, cole um link abaixo.' },
+      { key: 'logo_png_link', label: 'Ou link da logo em PNG', type: 'url', placeholder: 'Link do Google Drive, Dropbox, etc.' },
       { key: 'logo_vetor', label: 'Logo em vetor (se tiver)', type: 'file', folder: 'identidade-visual', slot: 'Logo vetor (AI/EPS/SVG)', hint: 'Arquivos AI, EPS, SVG ou PDF.' },
       { key: 'manual_marca', label: 'Manual da marca (se existir)', type: 'file', folder: 'identidade-visual', slot: 'Manual de marca' },
-      { key: 'paleta_arquivo', label: 'Paleta de cores (arquivo)', type: 'file', folder: 'identidade-visual', slot: 'Paleta de cores (hex/RGB/CMYK)' },
       { key: 'cores_texto', label: 'Cores da marca', type: 'text', placeholder: 'Ex: #111111, dourado, branco' },
       { key: 'fontes_texto', label: 'Fontes/tipografias usadas', type: 'text', placeholder: 'Nome das fontes' },
       { key: 'fontes_arquivo', label: 'Arquivos das fontes (se tiver)', type: 'file', multiple: true, folder: 'identidade-visual', slot: 'Tipografia' },
@@ -422,13 +425,18 @@ export function isFilled(v: unknown): boolean {
 }
 
 // Campos obrigatórios que estão visíveis e ainda vazios.
+// Campo obrigatório sem resposta (considera o campo alternativo, se houver).
+export function isUnanswered(f: Field, answers: Answers): boolean {
+  return !isFilled(answers[f.key]) && !(f.altKey && isFilled(answers[f.altKey]))
+}
+
 export function missingRequired(answers: Answers): { section: Section; field: Field }[] {
   const out: { section: Section; field: Field }[] = []
   for (const s of visibleSections(answers)) {
     for (const b of s.blocks) {
       if (!isField(b) || !b.required) continue
       if (!isVisible(b.showIf, answers)) continue
-      if (!isFilled(answers[b.key])) out.push({ section: s, field: b })
+      if (isUnanswered(b, answers)) out.push({ section: s, field: b })
     }
   }
   return out

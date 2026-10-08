@@ -8,7 +8,7 @@ import {
 import { OwlMark } from '@/components/ui/OwlMark'
 import { createClient } from '@/lib/supabase/client'
 import {
-  isField, isFilled, isVisible, missingRequired, visibleSections,
+  isField, isUnanswered, isVisible, missingRequired, visibleSections,
   type Answers, type Field, type Guide, type UploadedFile,
 } from '@/lib/onboarding/form'
 
@@ -124,7 +124,7 @@ export default function OnboardingPage() {
     if (!section) return []
     return section.blocks
       .filter(isField)
-      .filter(f => f.required && isVisible(f.showIf, answers) && !isFilled(answers[f.key]))
+      .filter(f => f.required && isVisible(f.showIf, answers) && isUnanswered(f, answers))
   }
 
   function next() {

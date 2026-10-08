@@ -25,7 +25,8 @@ export async function POST(request: Request) {
   if (!original) return NextResponse.json({ error: 'Nome do arquivo obrigatório' }, { status: 400 })
 
   const folder = field.folder ?? 'outros'
-  const safe = original.replace(/[^a-zA-Z0-9._\-À-ÿ]/g, '_')
+  // O Storage só aceita caracteres ASCII na chave: tira acentos e troca o resto por _.
+  const safe = original.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')
   const filename = `${Date.now()}_${slugify(field.slot ?? field.key)}_${safe}`
   const path = `${ctx.clientId}/${folder}/${filename}`
 
