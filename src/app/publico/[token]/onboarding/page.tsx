@@ -240,7 +240,10 @@ export default function OnboardingPage() {
 
   const missingAll = missingRequired(answers)
   const errs = showErrors ? new Set(sectionMissing().map(f => f.key)) : new Set<string>()
-  const totalSteps = sections.length + 1
+  // Começa já em ~12% (efeito de "já comecei"), sobe de forma constante e termina em 100%.
+  const pct = isReview ? 96 : Math.round(12 + (stepIdx / sections.length) * 80)
+  const minsLeft = Math.max(1, Math.round((sections.length - stepIdx) * 0.7))
+  const cheer = isReview ? 'Prontinho, é só conferir e enviar!' : stepIdx === 0 ? 'Começando: as primeiras são rápidas' : pct < 50 ? 'Indo bem, já pegou o ritmo' : pct < 80 ? 'Mais da metade!' : 'Quase lá!'
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white">
@@ -258,19 +261,18 @@ export default function OnboardingPage() {
           {clientName ? `Olá, ${clientName}!` : 'Olá!'}
         </h1>
         <p className="mt-1 text-sm text-[#9ca3af]">
-          Este formulário nos ajuda a conhecer o seu negócio e montar um plano sob medida. Suas respostas ficam salvas automaticamente: pode fechar e voltar quando quiser.
+          Leva uns 8 minutos e nos ajuda a montar um plano sob medida pro seu negócio. Salva sozinho: pode fechar e voltar quando quiser.
         </p>
 
-        {/* progresso */}
+        {/* progresso: barra única, % com "empurrãozinho" no começo e tempo restante que só diminui */}
         <div className="mt-6">
-          <div className="flex gap-1">
-            {Array.from({ length: totalSteps }).map((_, i) => (
-              <div key={i} className="h-1 flex-1 rounded-full transition-colors" style={{ backgroundColor: i <= stepIdx ? '#efefef' : '#262626' }} />
-            ))}
+          <div className="h-1.5 w-full rounded-full bg-[#262626] overflow-hidden">
+            <div className="h-full rounded-full bg-[#efefef] transition-all duration-500" style={{ width: `${pct}%` }} />
           </div>
-          <p className="mt-2 text-[11px] text-[#7a7a7a]">
-            Etapa {stepIdx + 1} de {totalSteps}{section ? ` · ${section.title}` : ' · Revisar e enviar'}
-          </p>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-[#7a7a7a]">
+            <span>{cheer}</span>
+            <span>{isReview ? 'Último passo' : `Faltam ~${minsLeft} min`}</span>
+          </div>
         </div>
 
         {/* seção atual */}
