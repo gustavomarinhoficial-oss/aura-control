@@ -8,6 +8,7 @@ import {
   Copy, X, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet,
   Clock, AlertCircle, Edit2, Tag
 } from 'lucide-react'
+import { FreelancerPackages } from '@/components/domain/financeiro/FreelancerPackages'
 import { NewChargeModal } from '@/components/domain/NewChargeModal'
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
@@ -38,6 +39,7 @@ interface HistoricoPoint { label: string; key: string; revenue: number; expenses
 const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   prolabore:  { label: 'Pró-labore',    color: '#efefef' },
   salario:    { label: 'Salário',       color: '#818cf8' },
+  freelancer: { label: 'Freelancer',    color: '#2dd4bf' },
   impostos:   { label: 'Impostos',      color: '#f59e0b' },
   aluguel:    { label: 'Aluguel',       color: '#60a5fa' },
   software:   { label: 'Software/Tools',color: '#34d399' },
@@ -164,8 +166,9 @@ function WhatsAppModal({ charge, onClose }: { charge: ChargeWithStatus; onClose:
 }
 
 // ── Expense modal ────────────────────────────────────────────────────────────
-function ExpenseModal({ initial, onClose, onSaved }: {
+function ExpenseModal({ initial, prefill, onClose, onSaved }: {
   initial?: Expense
+  prefill?: Expense
   onClose: () => void
   onSaved: () => void
 }) {
@@ -177,6 +180,15 @@ function ExpenseModal({ initial, onClose, onSaved }: {
     recurrent: initial.recurrent,
     recurrence_end_date: '',
     notes: initial.notes ?? '',
+  } : prefill ? {
+    // "Repetir despesa": copia tudo, mas é um lançamento novo, de hoje e sem recorrência.
+    description: prefill.description,
+    amount: String(prefill.amount),
+    category: prefill.category,
+    due_date: new Date().toISOString().split('T')[0],
+    recurrent: false,
+    recurrence_end_date: '',
+    notes: prefill.notes ?? '',
   } : { ...EMPTY_EXPENSE, due_date: new Date().toISOString().split('T')[0] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -221,7 +233,7 @@ function ExpenseModal({ initial, onClose, onSaved }: {
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">{initial ? 'Editar despesa' : 'Nova despesa'}</h2>
+          <h2 className="text-sm font-semibold">{initial ? 'Editar despesa' : prefill ? 'Repetir despesa' : 'Nova despesa'}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X size={15} /></button>
         </div>
 
@@ -348,6 +360,7 @@ export default function FinanceiroPage() {
   const [showNewCharge, setShowNewCharge] = useState(false)
   const [showNewExpense, setShowNewExpense] = useState(false)
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [repeatingExpense, setRepeatingExpense] = useState<Expense | null>(null)
   const [editingCharge, setEditingCharge] = useState<ChargeWithStatus | null>(null)
   const [confirmDeleteCharge, setConfirmDeleteCharge] = useState<ChargeWithStatus | null>(null)
 
@@ -731,6 +744,7 @@ export default function FinanceiroPage() {
       {/* ── Tab: Despesas ─────────────────────────────────────────────────── */}
       {tab === 'despesas' && (
         <div className="space-y-4">
+          <FreelancerPackages onExpenseLaunched={load} />
           {expenses.length === 0 && !loading && (
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl flex flex-col items-center justify-center h-40 gap-3 text-sm text-muted-foreground">
               <ArrowDownCircle size={24} className="opacity-30" />
@@ -782,6 +796,7 @@ export default function FinanceiroPage() {
                             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${isPaid ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
                             <Check size={12} />{isPaid ? 'Desfazer' : 'Marcar pago'}
                           </button>
+                          <button onClick={() => setRepeatingExpense(e)} title="Repetir despesa" className="text-muted-foreground/50 hover:text-foreground p-1.5 rounded-lg hover:bg-[#2a2a2a] transition-colors"><Copy size={12} /></button>
                           <button onClick={() => setEditingExpense(e)} className="text-muted-foreground/50 hover:text-foreground p-1.5 rounded-lg hover:bg-[#2a2a2a] transition-colors"><Edit2 size={12} /></button>
                           <button onClick={() => { if (confirm('Apagar esta despesa?')) deleteExpense(e.id) }} disabled={deletingExp === e.id}
                             className="text-muted-foreground/50 hover:text-[#ef4444] p-1.5 rounded-lg hover:bg-[#ef4444]/5 transition-colors"><Trash2 size={12} /></button>
@@ -890,6 +905,9 @@ export default function FinanceiroPage() {
       )}
       {showNewExpense && (
         <ExpenseModal onClose={() => setShowNewExpense(false)} onSaved={() => { setShowNewExpense(false); load() }} />
+      )}
+      {repeatingExpense && (
+        <ExpenseModal prefill={repeatingExpense} onClose={() => setRepeatingExpense(null)} onSaved={() => { setRepeatingExpense(null); load() }} />
       )}
       {editingExpense && (
         <ExpenseModal initial={editingExpense} onClose={() => setEditingExpense(null)} onSaved={() => { setEditingExpense(null); load() }} />

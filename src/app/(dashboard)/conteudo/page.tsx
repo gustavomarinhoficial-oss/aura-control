@@ -8,6 +8,7 @@ import {
   Download, Play, ExternalLink, Link2, Sparkles, ShieldCheck, ShieldOff,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
+import { VideoPackageCounter } from '@/components/domain/conteudo/VideoPackageCounter'
 import { effectiveUnlockedMonth, nextMonthStr } from '@/lib/utils/contentUnlock'
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -1831,6 +1832,7 @@ export default function ConteudoPage() {
 
   return (
     <>
+          <VideoPackageCounter />
 
           {/* header */}
           <div className="flex items-center justify-between mb-6">
