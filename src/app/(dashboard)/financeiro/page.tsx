@@ -192,6 +192,9 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
   } : { ...EMPTY_EXPENSE, due_date: new Date().toISOString().split('T')[0] })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Só ao criar: já registrar a despesa como paga (com a data do pagamento).
+  const [alreadyPaid, setAlreadyPaid] = useState(false)
+  const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0])
   const isRecurringEdit = !!initial?.recurrence_group
   const [effectiveDate, setEffectiveDate] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
   const amountChanged = initial ? Number(form.amount) !== initial.amount : false
@@ -223,6 +226,7 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
         ...form,
         amount: Number(form.amount),
         ...(isRecurringEdit && amountChanged ? { effective_date: effectiveDate } : {}),
+        ...(!initial && alreadyPaid ? { paid_at: new Date(paidDate + 'T12:00:00').toISOString() } : {}),
       }),
     })
     if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Erro'); setSaving(false); return }
@@ -266,6 +270,21 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
               ))}
             </select>
           </div>
+          {!initial && (
+            <div className="rounded-lg border border-[#2a2a2a] p-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={alreadyPaid} onChange={e => setAlreadyPaid(e.target.checked)} className="accent-[#22c55e]" />
+                Já está paga
+              </label>
+              {alreadyPaid && (
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Data do pagamento</label>
+                  <input type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)}
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Observações (opcional)</label>
             <input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
