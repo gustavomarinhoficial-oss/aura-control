@@ -10,10 +10,15 @@ interface Item { id: string; freelancer_name: string; total_videos: number; deli
 export function VideoPackageCounter() {
   const [items, setItems] = useState<Item[]>([])
   const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/freelancer-packages/progress').catch(() => null)
-    if (res?.ok) setItems(await res.json())
+    const res = await fetch('/api/freelancer-packages/progress', { cache: 'no-store' }).catch(() => null)
+    if (res?.ok) { setItems(await res.json()); setError('') }
+    else {
+      const d = res ? await res.json().catch(() => ({})) : {}
+      setError(d.error ?? 'Não consegui carregar o contador de vídeos.')
+    }
   }, [])
 
   useEffect(() => { load() }, [load])
@@ -29,6 +34,7 @@ export function VideoPackageCounter() {
     setBusy(null)
   }
 
+  if (error) return <p className="mb-4 text-xs text-[#ef4444]">Contador de vídeos: {error}</p>
   if (items.length === 0) return null
 
   return (
