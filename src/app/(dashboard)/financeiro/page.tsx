@@ -203,6 +203,8 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
   const isRecurringEdit = !!initial?.recurrence_group
   const [effectiveDate, setEffectiveDate] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
   const amountChanged = initial ? Number(form.amount) !== initial.amount : false
+  // Mudou o valor de uma despesa recorrente: por padrão vale só pra esta; propagar é opcional.
+  const [applyForward, setApplyForward] = useState(false)
   const [stopping, setStopping] = useState(false)
   const [stopFrom, setStopFrom] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
   const [stopSaving, setStopSaving] = useState(false)
@@ -230,7 +232,7 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
       body: JSON.stringify({
         ...form,
         amount: Number(form.amount),
-        ...(isRecurringEdit && amountChanged ? { effective_date: effectiveDate } : {}),
+        ...(isRecurringEdit && amountChanged && applyForward ? { effective_date: effectiveDate } : {}),
         ...(!initial && alreadyPaid ? { paid_at: new Date(paidDate + 'T12:00:00').toISOString() } : {}),
       }),
     })
@@ -346,11 +348,23 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
             </div>
           )}
           {isRecurringEdit && amountChanged && (
-            <div className="bg-[#efefef]/10 border border-[#efefef]/20 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-foreground">O valor mudou. A partir de quando vale o novo valor?</p>
-              <input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)}
-                className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
-              <p className="text-[11px] text-muted-foreground">Atualiza esta e todas as parcelas futuras ainda não pagas.</p>
+            <div className="bg-[#efefef]/10 border border-[#efefef]/20 rounded-lg p-3 space-y-2.5">
+              <p className="text-xs text-foreground">O valor mudou. Vale pra quais meses?</p>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input type="radio" checked={!applyForward} onChange={() => setApplyForward(false)} className="mt-1 accent-[#efefef]" />
+                <span>Só esta despesa<span className="block text-[11px] text-muted-foreground">Os outros meses continuam com o valor de antes.</span></span>
+              </label>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input type="radio" checked={applyForward} onChange={() => setApplyForward(true)} className="mt-1 accent-[#efefef]" />
+                <span>Esta e os próximos meses<span className="block text-[11px] text-muted-foreground">Reajuste: atualiza as parcelas futuras ainda não pagas.</span></span>
+              </label>
+              {applyForward && (
+                <div>
+                  <label className="block text-[11px] text-muted-foreground mb-1">A partir de</label>
+                  <input type="date" value={effectiveDate} onChange={e => setEffectiveDate(e.target.value)}
+                    className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+                </div>
+              )}
             </div>
           )}
         </div>

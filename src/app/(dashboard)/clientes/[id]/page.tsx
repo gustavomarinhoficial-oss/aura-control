@@ -75,7 +75,7 @@ export default function ClientProfilePage() {
   const [serviceError, setServiceError] = useState('')
   const [newService, setNewService] = useState({ name: '', type: 'recorrente', amount: '', recurrence: 'mensal', started_at: new Date().toISOString().split('T')[0], first_charge_date: '' })
   const [editingService, setEditingService] = useState<string | null>(null)
-  const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: '' })
+  const [editServiceForm, setEditServiceForm] = useState({ name: '', amount: '', recurrence: 'mensal', contract_end: '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: '', update_pending: true })
   const [savingEditService, setSavingEditService] = useState(false)
   const [activeTab, setActiveTab] = useState<'visao' | 'servicos' | 'financeiro' | 'tarefas' | 'documentos' | 'historico' | 'editorial' | 'relatorios' | 'diagnostico'>('visao')
   const [weeklyReports, setWeeklyReports] = useState<WeeklyReport[]>([])
@@ -307,7 +307,7 @@ export default function ClientProfilePage() {
 
   function startEditService(s: Service) {
     setEditingService(s.id)
-    setEditServiceForm({ name: s.name, amount: String(s.amount), recurrence: s.recurrence ?? 'mensal', contract_end: s.contract_end ?? '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: s.first_charge_date ?? '' })
+    setEditServiceForm({ name: s.name, amount: String(s.amount), recurrence: s.recurrence ?? 'mensal', contract_end: s.contract_end ?? '', effective_date: new Date().toISOString().split('T')[0], first_charge_date: s.first_charge_date ?? '', update_pending: true })
   }
 
   async function saveEditService(serviceId: string, originalAmount: number) {
@@ -322,7 +322,7 @@ export default function ClientProfilePage() {
         amount: newAmount,
         recurrence: editServiceForm.recurrence,
         contract_end: editServiceForm.contract_end || null,
-        effective_date: amountChanged ? editServiceForm.effective_date : undefined,
+        effective_date: amountChanged && editServiceForm.update_pending ? editServiceForm.effective_date : undefined,
         first_charge_date: editServiceForm.first_charge_date || null,
       }),
     })
@@ -664,10 +664,20 @@ export default function ClientProfilePage() {
                         )}
                       </div>
                       {parseFloat(editServiceForm.amount) !== Number(s.amount) && (
-                        <div className="bg-[#efefef]/10 border border-[#efefef]/30 rounded-lg px-4 py-3">
-                          <label className="block text-xs text-[#efefef] mb-1.5">Novo valor a partir de</label>
-                          <input type="date" value={editServiceForm.effective_date} onChange={e => setEditServiceForm(f => ({ ...f, effective_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
-                          <p className="text-[10px] text-muted-foreground mt-1.5">Cobranças pendentes a partir desta data serão atualizadas para o novo valor. As anteriores permanecem como estão.</p>
+                        <div className="bg-[#efefef]/10 border border-[#efefef]/30 rounded-lg px-4 py-3 space-y-2">
+                          <label className="flex items-start gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" checked={editServiceForm.update_pending} onChange={e => setEditServiceForm(f => ({ ...f, update_pending: e.target.checked }))} className="mt-1 accent-[#efefef]" />
+                            <span>Aplicar o novo valor nas cobranças já criadas
+                              <span className="block text-[11px] text-muted-foreground">Desmarque pra mudar só o valor das próximas cobranças geradas. Pra mexer num mês específico, edite a cobrança dele no Financeiro.</span>
+                            </span>
+                          </label>
+                          {editServiceForm.update_pending && (
+                            <div>
+                              <label className="block text-xs text-[#efefef] mb-1.5">Novo valor a partir de</label>
+                              <input type="date" value={editServiceForm.effective_date} onChange={e => setEditServiceForm(f => ({ ...f, effective_date: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+                              <p className="text-[10px] text-muted-foreground mt-1.5">Cobranças pendentes a partir desta data serão atualizadas. As anteriores permanecem como estão.</p>
+                            </div>
+                          )}
                         </div>
                       )}
                       <div className="flex gap-3 pt-1">
