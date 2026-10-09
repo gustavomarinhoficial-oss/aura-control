@@ -45,6 +45,9 @@ const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   software:   { label: 'Software/Tools',color: '#34d399' },
   marketing:  { label: 'Marketing',     color: '#f472b6' },
   pessoal:    { label: 'Pessoal',       color: '#fb923c' },
+  comida:     { label: 'Comida',        color: '#facc15' },
+  assinaturas:{ label: 'Assinaturas',   color: '#a78bfa' },
+  equipamentos:{ label: 'Equipamentos', color: '#38bdf8' },
   outro:      { label: 'Outro',         color: '#6b7280' },
 }
 
@@ -194,7 +197,9 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
   const [error, setError] = useState('')
   // Só ao criar: já registrar a despesa como paga (com a data do pagamento).
   const [alreadyPaid, setAlreadyPaid] = useState(false)
-  const [paidDate, setPaidDate] = useState(new Date().toISOString().split('T')[0])
+  const [paidDate, setPaidDate] = useState(form.due_date)
+  // Enquanto a data do pagamento não for mexida na mão, ela acompanha o vencimento.
+  const [paidTouched, setPaidTouched] = useState(false)
   const isRecurringEdit = !!initial?.recurrence_group
   const [effectiveDate, setEffectiveDate] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
   const amountChanged = initial ? Number(form.amount) !== initial.amount : false
@@ -257,7 +262,7 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Vencimento</label>
-              <input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
+              <input type="date" value={form.due_date} onChange={e => { const v = e.target.value; setForm(f => ({ ...f, due_date: v })); if (!paidTouched) setPaidDate(v) }}
                 className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
             </div>
           </div>
@@ -273,13 +278,13 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
           {!initial && (
             <div className="rounded-lg border border-[#2a2a2a] p-3 space-y-2">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={alreadyPaid} onChange={e => setAlreadyPaid(e.target.checked)} className="accent-[#22c55e]" />
+                <input type="checkbox" checked={alreadyPaid} onChange={e => { setAlreadyPaid(e.target.checked); if (e.target.checked && !paidTouched) setPaidDate(form.due_date) }} className="accent-[#22c55e]" />
                 Já está paga
               </label>
               {alreadyPaid && (
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">Data do pagamento</label>
-                  <input type="date" value={paidDate} onChange={e => setPaidDate(e.target.value)}
+                  <input type="date" value={paidDate} onChange={e => { setPaidDate(e.target.value); setPaidTouched(true) }}
                     className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                 </div>
               )}
