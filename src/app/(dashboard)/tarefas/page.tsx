@@ -236,6 +236,7 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
     ? tasks.filter(t => t.assignees?.some(a => JULIA_TASK_MEMBERS.includes(a.name)))
     : tasks
 
+  const fixedCount = baseTasks.filter(t => !t.due_date && t.status !== 'concluido').length
   const overdueCount = baseTasks.filter(t => t.due_date && t.due_date < today && t.status !== 'concluido').length
 
   const ownerFiltered = activeOwner === 'todos'
@@ -250,9 +251,10 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
   const openTasks = ownerFiltered
     .filter(t => t.status !== 'concluido')
     .sort((a, b) => {
+      // Sem prazo = tarefa fixa/diária: fica sempre no topo.
       if (!a.due_date && !b.due_date) return 0
-      if (!a.due_date) return 1
-      if (!b.due_date) return -1
+      if (!a.due_date) return -1
+      if (!b.due_date) return 1
       return a.due_date.localeCompare(b.due_date)
     })
   const doneTasks = ownerFiltered.filter(t => t.status === 'concluido')
@@ -270,6 +272,7 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
           <h1 className="text-xl font-semibold tracking-tight">{workspace === 'fdmc' ? 'Tarefas — FDMC' : 'Tarefas'}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {counts.open} abertas · {counts.concluido} concluídas
+            {fixedCount > 0 && <span className="text-[#efefef] ml-2">· {fixedCount} fixas (sem prazo)</span>}
             {overdueCount > 0 && <span className="text-[#ef4444] ml-2">· {overdueCount} atrasadas</span>}
           </p>
         </div>
@@ -419,6 +422,9 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
                         </span>
                       )}
                       <span className={`text-[11px] font-medium ${pc.color}`}>{pc.label}</span>
+                      {!task.due_date && task.status !== 'concluido' && (
+                        <span className="text-[11px] font-medium text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">Fixa · sem prazo</span>
+                      )}
                       {task.due_date && (
                         <span className={`flex items-center gap-1 text-[11px] ${isOverdue ? 'text-[#ef4444]' : 'text-muted-foreground'}`}>
                           {isOverdue && <AlertCircle size={10} />}
@@ -579,7 +585,7 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
               </select>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Prazo</label>
+              <label className="block text-xs text-muted-foreground mb-1">Prazo <span className="text-muted-foreground/60">(vazio = tarefa fixa, fica no topo)</span></label>
               <input
                 type="date"
                 name="due_date"
@@ -702,7 +708,7 @@ function EditTaskModal({ task, clients, leads, members, onClose, onSaved }: {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Prazo</label>
+              <label className="block text-xs text-muted-foreground mb-1">Prazo <span className="text-muted-foreground/60">(vazio = tarefa fixa, fica no topo)</span></label>
               <input type="date" value={form.due_date} onChange={e => set('due_date', e.target.value)} className={inputCls} />
             </div>
           </div>

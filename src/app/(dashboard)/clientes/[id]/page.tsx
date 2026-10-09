@@ -35,7 +35,7 @@ interface WeeklyReport {
   week_end: string
   summary: string
   data: {
-    atual: { tarefas_concluidas: number; tarefas_atrasadas: number; conteudos_publicados: number; conteudos_atrasados: number }
+    atual: { tarefas_concluidas: number; tarefas_atrasadas: number; conteudos_publicados: number; conteudos_atrasados: number; conteudos_publicados_mes?: number; meta_conteudo_mes?: number }
     anterior: { tarefas_concluidas: number; tarefas_atrasadas: number }
   }
 }
@@ -857,8 +857,11 @@ export default function ClientProfilePage() {
                     <p className="text-base font-semibold">{r.data.atual.tarefas_concluidas}</p>
                   </div>
                   <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3">
-                    <p className="text-[10px] text-muted-foreground mb-1">Tarefas atrasadas</p>
-                    <p className={`text-base font-semibold ${r.data.atual.tarefas_atrasadas > 0 ? 'text-[#ef4444]' : ''}`}>{r.data.atual.tarefas_atrasadas}</p>
+                    <p className="text-[10px] text-muted-foreground mb-1">Publicados no mês</p>
+                    <p className="text-base font-semibold">
+                      {r.data.atual.conteudos_publicados_mes ?? '—'}
+                      {r.data.atual.meta_conteudo_mes ? <span className="text-muted-foreground text-xs font-normal"> / {r.data.atual.meta_conteudo_mes}</span> : null}
+                    </p>
                   </div>
                   <div className="bg-[#111111] border border-[#2a2a2a] rounded-lg p-3">
                     <p className="text-[10px] text-muted-foreground mb-1">Conteúdo publicado</p>

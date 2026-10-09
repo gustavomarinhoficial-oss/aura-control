@@ -10,6 +10,7 @@ interface Metrics {
   tarefas_no_periodo: number
   tarefas_concluidas: number
   tarefas_atrasadas: number
+  conteudos_publicados_mes?: number
   conteudos_no_periodo: number
   conteudos_publicados: number
   conteudos_atrasados: number
@@ -196,7 +197,7 @@ export default function RelatoriosPage() {
             <>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatDelta label="Tarefas concluídas" atual={(activeReport.data as CompanyData).semana_atual.tarefas_concluidas} anterior={(activeReport.data as CompanyData).semana_anterior.tarefas_concluidas} />
-                <StatDelta label="Tarefas atrasadas" atual={(activeReport.data as CompanyData).semana_atual.tarefas_atrasadas} anterior={(activeReport.data as CompanyData).semana_anterior.tarefas_atrasadas} />
+                <StatDelta label="Publicados no mês" atual={(activeReport.data as CompanyData).semana_atual.conteudos_publicados_mes ?? 0} anterior={(activeReport.data as CompanyData).semana_anterior.conteudos_publicados_mes ?? 0} />
                 <StatDelta label="Conteúdo publicado" atual={(activeReport.data as CompanyData).semana_atual.conteudos_publicados} anterior={(activeReport.data as CompanyData).semana_anterior.conteudos_publicados} />
                 <StatDelta label="Novos leads" atual={(activeReport.data as CompanyData).novos_leads_semana} anterior={0} />
               </div>
@@ -232,7 +233,7 @@ export default function RelatoriosPage() {
           {!isCompany && 'atual' in activeReport.data && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatDelta label="Tarefas concluídas" atual={(activeReport.data as { atual: Metrics; anterior: Metrics }).atual.tarefas_concluidas} anterior={(activeReport.data as { atual: Metrics; anterior: Metrics }).anterior.tarefas_concluidas} />
-              <StatDelta label="Tarefas atrasadas" atual={(activeReport.data as { atual: Metrics; anterior: Metrics }).atual.tarefas_atrasadas} anterior={(activeReport.data as { atual: Metrics; anterior: Metrics }).anterior.tarefas_atrasadas} />
+              <StatDelta label="Publicados no mês" atual={(activeReport.data as { atual: Metrics; anterior: Metrics }).atual.conteudos_publicados_mes ?? 0} anterior={(activeReport.data as { atual: Metrics; anterior: Metrics }).anterior.conteudos_publicados_mes ?? 0} />
               <StatDelta label="Conteúdo publicado" atual={(activeReport.data as { atual: Metrics; anterior: Metrics }).atual.conteudos_publicados} anterior={(activeReport.data as { atual: Metrics; anterior: Metrics }).anterior.conteudos_publicados} />
               <StatDelta label="Cobranças pagas" atual={(activeReport.data as { atual: Metrics; anterior: Metrics }).atual.cobrancas_pagas} anterior={(activeReport.data as { atual: Metrics; anterior: Metrics }).anterior.cobrancas_pagas} />
             </div>

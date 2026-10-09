@@ -1,12 +1,22 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { getClientWeeklyReport } from '@/lib/weeklyReport/generate'
+import { createClient } from '@/lib/supabase/server'
+import { getRole, isFinanceRestricted } from '@/lib/roles'
+import { getClientWeeklyReport, stripFinance } from '@/lib/weeklyReport/generate'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const clientId = searchParams.get('client_id')
   const weekStart = searchParams.get('week_start')
   const force = searchParams.get('force') === 'true'
+
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const restricted = isFinanceRestricted(getRole(user.user_metadata))
+
+  // O relatório geral da empresa tem MRR e financeiro: não é pra quem não tem acesso ao financeiro.
+  if (restricted && !clientId) return NextResponse.json({ error: 'Sem acesso' }, { status: 403 })
 
   const supabase = createServiceClient()
 
@@ -28,5 +38,14 @@ export async function GET(request: Request) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  // Julia/Mari: tira os números de dinheiro (e frases que citem valores, em relatórios antigos).
+  if (restricted) {
+    return NextResponse.json((data ?? []).map(r => ({ ...r, data: stripFinance(r.data), summary: scrubMoney(r.summary) })))
+  }
   return NextResponse.json(data)
+}
+
+function scrubMoney(text: string): string {
+  const parts = String(text ?? '').split(/(?<=[.!?])\s+/)
+  return parts.filter(p => !/R\$|MRR|faturamento|cobran[çc]a|receita|recebid/i.test(p)).join(' ').trim() || 'Resumo disponível apenas com os números abaixo.'
 }

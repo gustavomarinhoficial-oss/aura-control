@@ -12,7 +12,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const update: Record<string, unknown> = {}
   if (body.title !== undefined) update.title = body.title
   if (body.description !== undefined) update.description = body.description
-  if (body.status !== undefined) update.status = body.status
+  if (body.status !== undefined) {
+    update.status = body.status
+    // Guarda quando foi concluída (os relatórios contam o que foi feito na semana).
+    update.completed_at = body.status === 'concluido' ? new Date().toISOString() : null
+  }
   if (body.priority !== undefined) update.priority = body.priority
   if (body.due_date !== undefined) update.due_date = body.due_date || null
   if (body.client_id !== undefined) update.client_id = body.client_id || null
