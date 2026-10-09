@@ -462,6 +462,8 @@ export default function FinanceiroPage() {
   const margemLucro = receita > 0 ? (lucro / receita) * 100 : 0
   // O que sobra no caixa depois de pagar o pró-labore
   const sobraAposPro = lucro - proPago
+  // Margem que fica na empresa depois de repassar o pró-labore
+  const margemAposPro = receita > 0 ? (sobraAposPro / receita) * 100 : 0
 
   // ── próximos vencimentos (14 dias) ───────────────────────────────────────
   const hoje = today.toISOString().split('T')[0]
@@ -564,7 +566,15 @@ export default function FinanceiroPage() {
             <p className="text-xs text-muted-foreground uppercase tracking-wider">Margem de lucro</p>
           </div>
           <p className={`text-xl font-semibold ${margemLucro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{margemLucro.toFixed(1)}%</p>
-          <p className="text-[11px] text-muted-foreground mt-1">lucro ÷ faturamento</p>
+          <p className="text-[11px] text-muted-foreground mt-1">lucro ÷ faturamento (antes do pró-labore)</p>
+        </div>
+        <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${margemAposPro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp size={13} className={margemAposPro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'} />
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Margem após pró-labore</p>
+          </div>
+          <p className={`text-xl font-semibold ${margemAposPro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{margemAposPro.toFixed(1)}%</p>
+          <p className="text-[11px] text-muted-foreground mt-1">o que fica na empresa: {formatBRL(sobraAposPro)}</p>
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${sobraAposPro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
           <div className="flex items-center gap-2 mb-3">
