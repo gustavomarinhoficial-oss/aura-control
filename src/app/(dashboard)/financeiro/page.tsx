@@ -482,7 +482,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpCircle size={13} className="text-[#22c55e]" />
