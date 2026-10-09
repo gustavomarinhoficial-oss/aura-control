@@ -341,19 +341,22 @@ const getFinanceiroSummary: OmarTool = {
 
     const [chargesRes, expensesRes, overdueRes] = await Promise.all([
       supabase.from('charges').select('amount, paid_at, status').gte('due_date', monthStart).lte('due_date', monthEnd),
-      supabase.from('expenses').select('amount').gte('due_date', monthStart).lte('due_date', monthEnd),
+      supabase.from('expenses').select('amount, category').gte('due_date', monthStart).lte('due_date', monthEnd),
       supabase.from('charges').select('id, amount, due_date, clients(name)').is('paid_at', null).lt('due_date', today()),
     ])
 
     const charges = chargesRes.data ?? []
     const estimatedMonth = charges.reduce((sum, c) => sum + Number(c.amount), 0)
     const receivedMonth = charges.filter(c => c.paid_at).reduce((sum, c) => sum + Number(c.amount), 0)
-    const expensesMonth = (expensesRes.data ?? []).reduce((sum, e) => sum + Number(e.amount), 0)
+    // Pró-labore vai separado das despesas.
+    const expensesMonth = (expensesRes.data ?? []).filter(e => e.category !== 'prolabore').reduce((sum, e) => sum + Number(e.amount), 0)
+    const proLaboreMonth = (expensesRes.data ?? []).filter(e => e.category === 'prolabore').reduce((sum, e) => sum + Number(e.amount), 0)
 
     return {
       receita_estimada_mes: estimatedMonth,
       receita_recebida_mes: receivedMonth,
       despesas_mes: expensesMonth,
+      pro_labore_mes: proLaboreMonth,
       cobrancas_em_atraso: overdueRes.data ?? [],
     }
   },

@@ -32,7 +32,7 @@ interface Expense {
   notes: string | null
 }
 
-interface HistoricoPoint { label: string; key: string; revenue: number; expenses: number; profit: number }
+interface HistoricoPoint { label: string; key: string; revenue: number; expenses: number; prolabore: number; profit: number }
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
@@ -395,14 +395,22 @@ export default function FinanceiroPage() {
   const inadimplente = withStatus.filter(c => c.status === 'atrasado').reduce((s, c) => s + Number(c.amount), 0)
 
   // ── cálculos de despesa ──────────────────────────────────────────────────
-  const despesaTotal  = expenses.reduce((s, e) => s + Number(e.amount), 0)
-  const despesaPaga   = expenses.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
-  const despesaPendente = expenses.filter(e => !e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  // Pró-labore fica separado: não é despesa da operação, então não entra no lucro nem na margem.
+  const despesasOp = expenses.filter(e => e.category !== 'prolabore')
+  const prolabores = expenses.filter(e => e.category === 'prolabore')
+  const despesaTotal  = despesasOp.reduce((s, e) => s + Number(e.amount), 0)
+  const despesaPaga   = despesasOp.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  const despesaPendente = despesasOp.filter(e => !e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  const proTotal = prolabores.reduce((s, e) => s + Number(e.amount), 0)
+  const proPago = prolabores.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
+  const proPendente = proTotal - proPago
 
   // ── lucro ────────────────────────────────────────────────────────────────
   const lucro = receita - despesaPaga
-  // Margem de lucro: quanto da receita sobra depois das despesas, em %
+  // Margem de lucro: quanto da receita sobra depois das despesas (antes do pró-labore), em %
   const margemLucro = receita > 0 ? (lucro / receita) * 100 : 0
+  // O que sobra no caixa depois de pagar o pró-labore
+  const sobraAposPro = lucro - proPago
 
   // ── próximos vencimentos (14 dias) ───────────────────────────────────────
   const hoje = today.toISOString().split('T')[0]
@@ -412,7 +420,7 @@ export default function FinanceiroPage() {
 
   // ── categorias de despesa ────────────────────────────────────────────────
   const byCategory = Object.entries(
-    expenses.reduce<Record<string, number>>((acc, e) => {
+    despesasOp.reduce<Record<string, number>>((acc, e) => {
       acc[e.category] = (acc[e.category] ?? 0) + Number(e.amount); return acc
     }, {})
   ).sort((a, b) => b[1] - a[1])
@@ -474,7 +482,7 @@ export default function FinanceiroPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpCircle size={13} className="text-[#22c55e]" />
@@ -494,10 +502,10 @@ export default function FinanceiroPage() {
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${lucro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
           <div className="flex items-center gap-2 mb-3">
             <Wallet size={13} className="text-[#efefef]" />
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Lucro líquido</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Lucro</p>
           </div>
           <p className={`text-xl font-semibold ${lucro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{formatBRL(lucro)}</p>
-          <p className="text-[11px] text-muted-foreground mt-1">receita − despesas pagas</p>
+          <p className="text-[11px] text-muted-foreground mt-1">receita − despesas (antes do pró-labore)</p>
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${margemLucro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
           <div className="flex items-center gap-2 mb-3">
@@ -506,6 +514,14 @@ export default function FinanceiroPage() {
           </div>
           <p className={`text-xl font-semibold ${margemLucro >= 0 ? 'text-[#efefef]' : 'text-[#ef4444]'}`}>{margemLucro.toFixed(1)}%</p>
           <p className="text-[11px] text-muted-foreground mt-1">lucro ÷ faturamento</p>
+        </div>
+        <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${sobraAposPro >= 0 ? 'border-[#2a2a2a]' : 'border-[#ef4444]/20'}`}>
+          <div className="flex items-center gap-2 mb-3">
+            <Wallet size={13} className="text-[#efefef]" />
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Pró-labore</p>
+          </div>
+          <p className="text-xl font-semibold text-[#efefef]">{formatBRL(proTotal)}</p>
+          <p className="text-[11px] text-muted-foreground mt-1">{formatBRL(proPendente)} pendente · sobra {formatBRL(sobraAposPro)}</p>
         </div>
         <div className={`bg-[#1a1a1a] border rounded-xl p-5 ${inadimplente > 0 ? 'border-[#ef4444]/20' : 'border-[#2a2a2a]'}`}>
           <div className="flex items-center gap-2 mb-3">
@@ -602,7 +618,7 @@ export default function FinanceiroPage() {
               {historico.slice().reverse().map(h => (
                 <div key={h.key} className="px-5 py-4 flex items-center gap-4">
                   <span className="text-sm text-muted-foreground capitalize w-20">{h.label}</span>
-                  <div className="flex-1 grid grid-cols-3 gap-4 text-sm">
+                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Receita</p>
                       <p className="font-medium text-[#22c55e]">{formatBRL(h.revenue)}</p>
@@ -610,6 +626,10 @@ export default function FinanceiroPage() {
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Despesas</p>
                       <p className="font-medium text-[#ef4444]">{formatBRL(h.expenses)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Pró-labore</p>
+                      <p className="font-medium text-[#efefef]">{formatBRL(h.prolabore ?? 0)}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Lucro</p>
@@ -720,10 +740,12 @@ export default function FinanceiroPage() {
               </button>
             </div>
           )}
-          {expenses.length > 0 && (
+          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }].filter(g => g.list.length > 0).map(group => (
+            <div key={group.title} className="space-y-2">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground px-1">{group.title}</p>
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
               <div className="divide-y divide-[#2a2a2a]">
-                {expenses.map(e => {
+                {group.list.map(e => {
                   const catInfo = EXPENSE_CATEGORIES[e.category] ?? EXPENSE_CATEGORIES.outro
                   const isPaid = !!e.paid_at
                   const isOverdue = !isPaid && e.due_date < hoje
@@ -770,14 +792,16 @@ export default function FinanceiroPage() {
                 })}
               </div>
             </div>
-          )}
+            </div>
+          ))}
           {/* Totais */}
           {expenses.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Total do mês', value: despesaTotal, color: 'text-foreground' },
-                { label: 'Pago', value: despesaPaga, color: 'text-[#22c55e]' },
-                { label: 'Pendente', value: despesaPendente, color: 'text-[#f59e0b]' },
+                { label: 'Despesas do mês', value: despesaTotal, color: 'text-foreground' },
+                { label: 'Despesas pagas', value: despesaPaga, color: 'text-[#22c55e]' },
+                { label: 'Despesas pendentes', value: despesaPendente, color: 'text-[#f59e0b]' },
+                { label: 'Pró-labore (pago)', value: proPago, color: 'text-[#efefef]' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-4">
                   <p className="text-xs text-muted-foreground mb-2">{label}</p>

@@ -110,7 +110,7 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
       db.from('services').select('amount').eq('active', true).eq('type', 'recorrente'),
       db.from('charges').select('amount, paid_at').gte('due_date', monthStart).lte('due_date', monthEnd),
       db.from('charges').select('id, amount').is('paid_at', null).lt('due_date', today),
-      db.from('expenses').select('amount').gte('due_date', monthStart).lte('due_date', monthEnd),
+      db.from('expenses').select('amount, category').gte('due_date', monthStart).lte('due_date', monthEnd),
       db.from('expenses').select('description, amount').is('paid_at', null).eq('due_date', today),
       db.from('content_posts').select('id, status'),
       db.from('leads').select('stage, estimated_value'),
@@ -119,7 +119,9 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
     const mrr = (servicesRes.data ?? []).reduce((s, x) => s + Number(x.amount), 0)
     const charges = chargesMonthRes.data ?? []
     const receitaRecebida = charges.filter(c => c.paid_at).reduce((s, c) => s + Number(c.amount), 0)
-    const despesas = (expensesRes.data ?? []).reduce((s, e) => s + Number(e.amount), 0)
+    // Pró-labore fica fora das despesas (é a retirada dos sócios, não custo da operação).
+    const despesas = (expensesRes.data ?? []).filter(e => e.category !== 'prolabore').reduce((s, e) => s + Number(e.amount), 0)
+    const proLabore = (expensesRes.data ?? []).filter(e => e.category === 'prolabore').reduce((s, e) => s + Number(e.amount), 0)
     const overdueCharges = overdueChargesRes.data ?? []
     const awaitingContent = (contentRes.data ?? []).filter(c => c.status === 'aguardando_aprovacao').length
 
@@ -161,6 +163,7 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
       mrr,
       receita_recebida_mes: receitaRecebida,
       despesas_mes: despesas,
+      pro_labore_mes: proLabore,
       margem_mes: receitaRecebida - despesas,
       cobrancas_atrasadas: overdueCharges.length,
       valor_atrasado: valorAtrasado,
