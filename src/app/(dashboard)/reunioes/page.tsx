@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2, Video,
+  Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
   AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
