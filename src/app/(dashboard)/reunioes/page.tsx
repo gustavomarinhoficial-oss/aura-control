@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
+  Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2, Video,
   AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
@@ -82,6 +82,13 @@ function AttendeeMultiSelect({ members, value, onChange }: { members: Member[]; 
   )
 }
 
+// Aceita link sem https:// e já deixa pronto pra clicar.
+function normalizeLink(raw: string): string | null {
+  const v = raw.trim()
+  if (!v) return null
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`
+}
+
 interface MeetingFormData {
   title: string
   type: MeetingType
@@ -90,6 +97,7 @@ interface MeetingFormData {
   meeting_date: string
   start_time: string | null
   location: string | null
+  meeting_link: string | null
   notes: string | null
   attendee_ids: string[]
 }
@@ -110,6 +118,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
   const [date, setDate] = useState(initial?.meeting_date ?? localDateStr(new Date()))
   const [time, setTime] = useState(initial?.start_time?.slice(0, 5) ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
+  const [meetingLink, setMeetingLink] = useState(initial?.meeting_link ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [attendeeIds, setAttendeeIds] = useState<string[]>(initial?.attendees?.map(a => a.id) ?? [])
 
@@ -125,6 +134,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
       meeting_date: date,
       start_time: time || null,
       location: location.trim() || null,
+      meeting_link: normalizeLink(meetingLink),
       notes: notes.trim() || null,
       attendee_ids: attendeeIds,
     })
@@ -192,6 +202,14 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
         <input
           value={location} onChange={e => setLocation(e.target.value)}
           placeholder="Ex: Escritório, endereço do cliente..."
+          className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
+        />
+      </div>
+      <div>
+        <label className="block text-xs text-muted-foreground mb-1">Link da reunião <span className="text-muted-foreground/60">(se for online)</span></label>
+        <input
+          value={meetingLink} onChange={e => setMeetingLink(e.target.value)}
+          placeholder="Ex: https://meet.google.com/abc-defg-hij"
           className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
         />
       </div>
@@ -386,10 +404,29 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
               ) : meeting.leads && (
                 <span className="text-[11px] text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded-full">(Lead) {meeting.leads.company_name}</span>
               )}
+              {meeting.meeting_link && (
+                <a
+                  href={meeting.meeting_link} target="_blank" rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1 text-[11px] font-medium text-[#60a5fa] bg-[#60a5fa]/10 hover:bg-[#60a5fa]/20 px-2 py-0.5 rounded-full transition-colors"
+                >
+                  <Video size={10} /> Entrar na reunião
+                </a>
+              )}
               {meeting.location && (
-                <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <MapPin size={10} />{meeting.location}
-                </span>
+                /^https?:\/\//i.test(meeting.location.trim()) ? (
+                  <a
+                    href={meeting.location.trim()} target="_blank" rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-1 text-[11px] text-[#60a5fa] hover:underline truncate max-w-[220px]"
+                  >
+                    <MapPin size={10} />{meeting.location}
+                  </a>
+                ) : (
+                  <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <MapPin size={10} />{meeting.location}
+                  </span>
+                )
               )}
               <AttendeeAvatars attendees={meeting.attendees} size={18} />
             </div>

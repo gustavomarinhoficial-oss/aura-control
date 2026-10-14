@@ -138,6 +138,7 @@ export interface Meeting {
   meeting_date: string
   start_time: string | null
   location: string | null
+  meeting_link?: string | null
   notes: string | null
   status: MeetingStatus
   created_at: string

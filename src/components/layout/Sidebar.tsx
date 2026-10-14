@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, canAccessFdmc, type Role } from '@/lib/roles'
 import { OwlMark } from '@/components/ui/OwlMark'
+import { NotificationsToggle } from '@/components/domain/NotificationsToggle'
 import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet, Megaphone } from 'lucide-react'
 
 const ALL_NAV = [
@@ -176,6 +177,7 @@ export function Sidebar() {
             Instalar app
           </button>
         )}
+        <NotificationsToggle />
         <button
           onClick={handleSignOut}
           className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a] transition-colors"

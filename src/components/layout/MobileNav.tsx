@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { NotificationsToggle } from '@/components/domain/NotificationsToggle'
 import { getRole, type Role } from '@/lib/roles'
 import {
   LayoutDashboard, Kanban, Newspaper, Users,
@@ -134,6 +135,11 @@ export function MobileNav() {
                   </Link>
                 )
               })}
+            </div>
+
+            {/* avisos de reunião */}
+            <div className="px-4 py-2">
+              <NotificationsToggle />
             </div>
 
             {/* sair */}

@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     meeting_date: body.meeting_date,
     start_time: body.start_time || null,
     location: body.location || null,
+    meeting_link: body.meeting_link || null,
     notes: body.notes || null,
     status: body.status || 'agendada',
     workspace: body.workspace === 'fdmc' ? 'fdmc' : 'owl',

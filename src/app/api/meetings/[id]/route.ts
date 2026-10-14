@@ -17,6 +17,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (body.meeting_date !== undefined) update.meeting_date = body.meeting_date
   if (body.start_time !== undefined) update.start_time = body.start_time || null
   if (body.location !== undefined) update.location = body.location || null
+  if (body.meeting_link !== undefined) update.meeting_link = body.meeting_link || null
   if (body.notes !== undefined) update.notes = body.notes || null
   if (body.status !== undefined) update.status = body.status
 

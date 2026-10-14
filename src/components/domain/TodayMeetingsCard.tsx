@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CalendarClock, MapPin } from 'lucide-react'
+import { CalendarClock, MapPin, Video } from 'lucide-react'
 import { useRole } from '@/lib/hooks/useRole'
 import { ROLE_NAME } from '@/lib/roles'
 import type { Meeting } from '@/lib/supabase/types'
@@ -43,7 +43,18 @@ export function TodayMeetingsCard() {
                 </p>
               )}
             </div>
-            {m.start_time && <span className="text-xs text-[#efefef] font-medium shrink-0">{m.start_time.slice(0, 5)}</span>}
+            <div className="flex items-center gap-2 shrink-0">
+              {m.meeting_link && (
+                <a
+                  href={m.meeting_link} target="_blank" rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="flex items-center gap-1 text-[11px] font-medium text-[#60a5fa] bg-[#60a5fa]/10 hover:bg-[#60a5fa]/20 px-2 py-0.5 rounded-full"
+                >
+                  <Video size={10} /> Entrar
+                </a>
+              )}
+              {m.start_time && <span className="text-xs text-[#efefef] font-medium">{m.start_time.slice(0, 5)}</span>}
+            </div>
           </Link>
         ))}
       </div>
