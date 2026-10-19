@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireFdmcAccess } from '@/lib/fdmc/auth'
+
+const HORIZON_MONTHS = 3
 
 function addMonths(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T12:00:00Z')
@@ -18,8 +21,8 @@ export async function GET(request: Request) {
   let query = supabase
     .from('fdmc_entries')
     .select('*')
-    .order('entry_date', { ascending: false })
-    .order('created_at', { ascending: false })
+    .order('entry_date', { ascending: true })
+    .order('created_at', { ascending: true })
 
   if (month) {
     const monthStart = `${month}-01`
@@ -41,18 +44,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
   }
 
+  const recurrent = body.recurrent === true
+  const group = recurrent ? randomUUID() : null
+  const endDate = recurrent && body.recurrence_end_date ? body.recurrence_end_date : null
+
+  const base = {
+    type: body.type,
+    description: body.description,
+    amount: Number(body.amount),
+    category: body.category || 'outro',
+    notes: body.notes || null,
+    recurrent,
+    recurrence_group: group,
+    recurrence_end_date: endDate,
+  }
+
   const { data, error } = await supabase
     .from('fdmc_entries')
-    .insert({
-      type: body.type,
-      description: body.description,
-      amount: Number(body.amount),
-      entry_date: body.entry_date,
-      notes: body.notes || null,
-    })
+    .insert({ ...base, entry_date: body.entry_date, paid_at: body.paid_at || null })
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Gera as próximas parcelas mensais (respeitando o prazo, se houver)
+  if (recurrent && group) {
+    const future = []
+    for (let i = 1; i <= HORIZON_MONTHS; i++) {
+      const entry_date = addMonths(body.entry_date, i)
+      if (endDate && entry_date >= endDate) break
+      future.push({ ...base, entry_date })
+    }
+    if (future.length > 0) await supabase.from('fdmc_entries').insert(future)
+  }
+
   return NextResponse.json(data, { status: 201 })
 }

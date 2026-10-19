@@ -22,7 +22,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json(data)
   }
 
-  const allowed = ['type', 'description', 'amount', 'entry_date', 'notes']
+  // Encerra a recorrência a partir de uma data: apaga as parcelas futuras não pagas e trava novas.
+  if (body.action === 'stop_recurrence') {
+    const fromDate = body.from_date as string
+    if (!fromDate) return NextResponse.json({ error: 'from_date obrigatório' }, { status: 400 })
+    const { data: current, error: findError } = await supabase.from('fdmc_entries').select('recurrence_group').eq('id', id).single()
+    if (findError) return NextResponse.json({ error: findError.message }, { status: 500 })
+    if (!current.recurrence_group) return NextResponse.json({ error: 'Este lançamento não é recorrente' }, { status: 400 })
+    await supabase.from('fdmc_entries').update({ recurrence_end_date: fromDate }).eq('recurrence_group', current.recurrence_group)
+    await supabase.from('fdmc_entries').delete().eq('recurrence_group', current.recurrence_group).is('paid_at', null).gte('entry_date', fromDate)
+    return NextResponse.json({ ok: true })
+  }
+
+  const allowed = ['type', 'description', 'amount', 'entry_date', 'notes', 'category']
   const update: Record<string, unknown> = {}
   for (const key of allowed) {
     if (key in body) update[key] = body[key]
@@ -31,6 +43,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { data, error } = await supabase.from('fdmc_entries').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Valor mudou "daqui pra frente": atualiza as parcelas futuras não pagas do mesmo grupo
+  if (body.amount !== undefined && body.effective_date && data.recurrence_group) {
+    await supabase
+      .from('fdmc_entries')
+      .update({ amount: Number(body.amount) })
+      .eq('recurrence_group', data.recurrence_group)
+      .is('paid_at', null)
+      .gte('entry_date', body.effective_date)
+      .neq('id', id)
+  }
+
   return NextResponse.json(data)
 }
 
