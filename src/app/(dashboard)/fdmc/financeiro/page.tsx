@@ -9,6 +9,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, AreaChart, Area, CartesianGrid,
 } from 'recharts'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 
 // ── tipos ──────────────────────────────────────────────────────────────────
 interface FdmcEntry {
@@ -255,6 +256,7 @@ export default function FdmcFinanceiroPage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <AvailableCashCard workspace="fdmc" />
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3"><ArrowUpCircle size={13} className="text-[#22c55e]" /><p className="text-xs text-muted-foreground uppercase tracking-wider">Faturamento</p></div>
           <p className="text-xl font-semibold text-[#22c55e]">{formatBRL(receita)}</p>

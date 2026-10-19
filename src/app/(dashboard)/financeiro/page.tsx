@@ -8,6 +8,7 @@ import {
   Copy, X, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet,
   Clock, AlertCircle, Edit2, Tag
 } from 'lucide-react'
+import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 import { FreelancerPackages } from '@/components/domain/financeiro/FreelancerPackages'
 import { NewChargeModal } from '@/components/domain/NewChargeModal'
 import {
@@ -536,6 +537,7 @@ export default function FinanceiroPage() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <AvailableCashCard workspace="owl" />
         <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpCircle size={13} className="text-[#22c55e]" />
