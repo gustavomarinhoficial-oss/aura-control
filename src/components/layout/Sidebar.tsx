@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, canAccessFdmc, type Role } from '@/lib/roles'
 import { OwlMark } from '@/components/ui/OwlMark'
 import { NotificationsToggle } from '@/components/domain/NotificationsToggle'
-import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarDays, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet, Megaphone } from 'lucide-react'
+import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet, Megaphone } from 'lucide-react'
 
 const ALL_NAV = [
   { href: '/dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
@@ -24,7 +24,6 @@ const ALL_NAV = [
   { href: '/metas',          label: 'Metas',          icon: Target },
   { href: '/tarefas',        label: 'Tarefas',        icon: CheckSquare },
   { href: '/reunioes',       label: 'Reuniões',       icon: CalendarClock },
-  { href: '/calendario',     label: 'Calendário',     icon: CalendarDays },
   { href: '/configuracoes', label: 'Config.',         icon: Settings },
 ]
 

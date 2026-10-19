@@ -6,6 +6,7 @@ import {
   Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
   AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users,
 } from 'lucide-react'
+import { MeetingsCalendar } from '@/components/domain/reunioes/MeetingsCalendar'
 import { formatDate } from '@/lib/utils/format'
 import { leadOptionValue, decodeEntitySelect } from '@/lib/utils/entitySelect'
 import { useRole } from '@/lib/hooks/useRole'
@@ -253,6 +254,8 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [pulseMeeting, setPulseMeeting] = useState<string | null>(null)
+  // Data/hora pré-preenchidas quando o compromisso é criado clicando no calendário
+  const [createInit, setCreateInit] = useState<Partial<Meeting> | undefined>(undefined)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -295,6 +298,18 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
     return () => { clearTimeout(timer); clearTimeout(clear) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightId, loading, meetings.length])
+
+  function selectFromCalendar(m: Meeting) {
+    if (m.meeting_date < todayStr) setShowPast(true)
+    setPulseMeeting(m.id)
+    setTimeout(() => document.getElementById(`meeting-${m.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80)
+    setTimeout(() => setPulseMeeting(null), 2500)
+  }
+
+  function createFromCalendar(date: string, time: string | null) {
+    setCreateInit({ meeting_date: date, start_time: time })
+    setShowNew(true)
+  }
 
   async function createMeeting(data: MeetingFormData) {
     setSaving(true); setError('')
@@ -454,13 +469,21 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
           </p>
         </div>
         <button
-          onClick={() => setShowNew(true)}
+          onClick={() => { setCreateInit(undefined); setShowNew(true) }}
           className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={14} />
           Novo compromisso
         </button>
       </div>
+
+      {!loading && (
+        <MeetingsCalendar meetings={visibleMeetings} clients={clients} onSelect={selectFromCalendar} onCreateAt={createFromCalendar} />
+      )}
+
+      {!loading && upcoming.length > 0 && (
+        <h2 className="text-sm font-semibold pt-2">Lista de compromissos</h2>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center h-40">
@@ -499,7 +522,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
             <h2 className="text-base font-semibold mb-5">Novo compromisso</h2>
-            <MeetingForm clients={clients} leads={leads} members={members} onSubmit={createMeeting} submitLabel="Criar" saving={saving} error={error} />
+            <MeetingForm initial={createInit} clients={clients} leads={leads} members={members} onSubmit={createMeeting} submitLabel="Criar" saving={saving} error={error} />
             <button onClick={() => { setShowNew(false); setError('') }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-3 py-1">Cancelar</button>
           </div>
         </div>

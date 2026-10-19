@@ -9,7 +9,7 @@ import { getRole, type Role } from '@/lib/roles'
 import {
   LayoutDashboard, Kanban, Newspaper, Users,
   Layers, DollarSign, Target, CheckSquare,
-  CalendarDays, CalendarClock, Brain, Settings, LogOut,
+  CalendarClock, Brain, Settings, LogOut,
   MoreHorizontal, X, FileBarChart, Handshake, Wallet, Megaphone,
 } from 'lucide-react'
 
@@ -33,7 +33,6 @@ const ALL_MORE_NAV = [
   { href: '/influenciadores', label: 'Influenciadores', icon: Handshake, roles: ['admin', 'mariana'] },
   { href: '/ia',           label: 'Central IA',     icon: Brain,        roles: ['admin', 'julia', 'mariana'] },
   { href: '/reunioes',     label: 'Reuniões',       icon: CalendarClock,roles: ['all'] },
-  { href: '/calendario',   label: 'Calendário',     icon: CalendarDays, roles: ['all'] },
   { href: '/configuracoes',label: 'Config.',        icon: Settings,     roles: ['admin'] },
   { href: '/fdmc/financeiro', label: 'FDMC Financeiro', icon: DollarSign,    roles: ['gustavo', 'gabriel'] },
   { href: '/fdmc/tarefas',    label: 'FDMC Tarefas',    icon: CheckSquare,   roles: ['gustavo', 'gabriel'] },

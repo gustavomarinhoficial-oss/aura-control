@@ -101,7 +101,7 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
     const next7Str = next7.toISOString().split('T')[0]
     const scheduled = content.filter(c => c.status === 'agendado' && c.scheduled_date && c.scheduled_date >= today && c.scheduled_date <= next7Str).length
     stats.push({ label: 'Conteúdo aguardando aprovação', value: String(awaiting), href: '/conteudo' })
-    stats.push({ label: 'Posts agendados (7 dias)', value: String(scheduled), href: '/calendario' })
+    stats.push({ label: 'Posts agendados (7 dias)', value: String(scheduled), href: '/conteudo' })
     data.conteudo_aguardando_aprovacao = awaiting
     data.posts_agendados_semana = scheduled
   } else {
