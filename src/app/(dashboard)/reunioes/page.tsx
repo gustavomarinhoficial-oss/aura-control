@@ -7,10 +7,11 @@ import {
   AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users,
 } from 'lucide-react'
 import { MeetingsCalendar } from '@/components/domain/reunioes/MeetingsCalendar'
+import { VoiceDictation, type VoiceDraft } from '@/components/domain/reunioes/VoiceDictation'
 import { formatDate } from '@/lib/utils/format'
 import { leadOptionValue, decodeEntitySelect } from '@/lib/utils/entitySelect'
 import { useRole } from '@/lib/hooks/useRole'
-import { JULIA_TASK_MEMBERS } from '@/lib/roles'
+import { JULIA_TASK_MEMBERS, ROLE_NAME } from '@/lib/roles'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import type { Meeting, MeetingStatus, MeetingType, Member } from '@/lib/supabase/types'
 
@@ -97,6 +98,7 @@ interface MeetingFormData {
   lead_id: string | null
   meeting_date: string
   start_time: string | null
+  end_time: string | null
   location: string | null
   meeting_link: string | null
   notes: string | null
@@ -118,6 +120,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
   const [entityValue, setEntityValue] = useState(initial?.lead_id ? leadOptionValue(initial.lead_id) : (initial?.client_id ?? ''))
   const [date, setDate] = useState(initial?.meeting_date ?? localDateStr(new Date()))
   const [time, setTime] = useState(initial?.start_time?.slice(0, 5) ?? '')
+  const [endTime, setEndTime] = useState(initial?.end_time?.slice(0, 5) ?? '')
   const [location, setLocation] = useState(initial?.location ?? '')
   const [meetingLink, setMeetingLink] = useState(initial?.meeting_link ?? '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
@@ -134,6 +137,7 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
       lead_id,
       meeting_date: date,
       start_time: time || null,
+      end_time: time && endTime && endTime > time ? endTime : null,
       location: location.trim() || null,
       meeting_link: normalizeLink(meetingLink),
       notes: notes.trim() || null,
@@ -186,18 +190,24 @@ function MeetingForm({ initial, clients, leads, members, onSubmit, submitLabel, 
           )}
         </select>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs text-muted-foreground mb-1">Data *</label>
           <input type="date" value={date} onChange={e => setDate(e.target.value)}
             className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
         </div>
         <div>
-          <label className="block text-xs text-muted-foreground mb-1">Horário</label>
+          <label className="block text-xs text-muted-foreground mb-1">Início</label>
           <input type="time" value={time} onChange={e => setTime(e.target.value)}
             className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
         </div>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">Término</label>
+          <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} min={time || undefined}
+            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+        </div>
       </div>
+      <p className="text-[11px] text-muted-foreground -mt-2">Sem horário de término, o compromisso ocupa 1 hora no calendário.</p>
       <div>
         <label className="block text-xs text-muted-foreground mb-1">Local</label>
         <input
@@ -256,6 +266,8 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
   const [pulseMeeting, setPulseMeeting] = useState<string | null>(null)
   // Data/hora pré-preenchidas quando o compromisso é criado clicando no calendário
   const [createInit, setCreateInit] = useState<Partial<Meeting> | undefined>(undefined)
+  // O que a pessoa falou no ditado (mostrado no formulário pra conferir)
+  const [voiceTranscript, setVoiceTranscript] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -307,7 +319,27 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
   }
 
   function createFromCalendar(date: string, time: string | null) {
+    setVoiceTranscript('')
     setCreateInit({ meeting_date: date, start_time: time })
+    setShowNew(true)
+  }
+
+  // Ditado por voz: abre o formulário já preenchido com o que foi entendido, pra conferir e salvar.
+  function applyVoice(draft: VoiceDraft, transcript: string) {
+    setVoiceTranscript(transcript)
+    setCreateInit({
+      title: draft.title,
+      type: draft.type,
+      client_id: draft.client_id,
+      lead_id: draft.lead_id,
+      meeting_date: draft.meeting_date ?? localDateStr(new Date()),
+      start_time: draft.start_time,
+      end_time: draft.end_time,
+      location: draft.location,
+      meeting_link: draft.meeting_link,
+      notes: draft.notes,
+      attendees: members.filter(m => draft.attendee_ids.includes(m.id)).map(m => ({ id: m.id, name: m.name, initials: m.initials, color: m.color })),
+    })
     setShowNew(true)
   }
 
@@ -407,7 +439,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
             <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                 <CalendarClock size={10} />
-                {formatDate(meeting.meeting_date)}{meeting.start_time && ` · ${meeting.start_time.slice(0, 5)}`}
+                {formatDate(meeting.meeting_date)}{meeting.start_time && ` · ${meeting.start_time.slice(0, 5)}${meeting.end_time ? `–${meeting.end_time.slice(0, 5)}` : ''}`}
               </span>
               {meeting.type === 'captacao' && (
                 <span className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ color: tc.color, backgroundColor: tc.color + '1a' }}>
@@ -468,13 +500,16 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
             {upcoming.length} próxima{upcoming.length !== 1 ? 's' : ''}
           </p>
         </div>
-        <button
-          onClick={() => { setCreateInit(undefined); setShowNew(true) }}
-          className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={14} />
-          Novo compromisso
-        </button>
+        <div className="flex items-start gap-2 flex-wrap justify-end">
+          <VoiceDictation me={ROLE_NAME[role] || ''} onResult={applyVoice} />
+          <button
+            onClick={() => { setCreateInit(undefined); setVoiceTranscript(''); setShowNew(true) }}
+            className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <Plus size={14} />
+            Novo compromisso
+          </button>
+        </div>
       </div>
 
       {!loading && (
@@ -522,6 +557,13 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
             <h2 className="text-base font-semibold mb-5">Novo compromisso</h2>
+            {voiceTranscript && (
+              <div className="mb-4 rounded-lg border border-[#2a2a2a] bg-[#111111] px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Você disse</p>
+                <p className="text-xs italic text-[#d4d4d4]">“{voiceTranscript}”</p>
+                <p className="text-[10px] text-muted-foreground mt-1.5">Confira os campos abaixo e corrija se precisar.</p>
+              </div>
+            )}
             <MeetingForm initial={createInit} clients={clients} leads={leads} members={members} onSubmit={createMeeting} submitLabel="Criar" saving={saving} error={error} />
             <button onClick={() => { setShowNew(false); setError('') }} className="w-full text-center text-sm text-muted-foreground hover:text-foreground mt-3 py-1">Cancelar</button>
           </div>

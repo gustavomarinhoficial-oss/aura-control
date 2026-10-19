@@ -53,7 +53,7 @@ export function TodayMeetingsCard() {
                   <Video size={10} /> Entrar
                 </a>
               )}
-              {m.start_time && <span className="text-xs text-[#efefef] font-medium">{m.start_time.slice(0, 5)}</span>}
+              {m.start_time && <span className="text-xs text-[#efefef] font-medium">{m.start_time.slice(0, 5)}{m.end_time ? `–${m.end_time.slice(0, 5)}` : ''}</span>}
             </div>
           </Link>
         ))}

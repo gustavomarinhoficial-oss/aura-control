@@ -15,7 +15,14 @@ const LEAD_COLOR = '#f97316'
 const NEUTRAL_COLOR = '#6b7280'
 
 const HOUR_PX = 56
-const DEFAULT_DURATION_H = 1
+const DEFAULT_DURATION_MIN = 60
+
+// Duração em minutos: usa o término informado; sem ele, 1 hora.
+function durationOf(m: { start_time: string | null; end_time?: string | null }): number {
+  const s = minutesOf(m.start_time)
+  const e = minutesOf(m.end_time ?? null)
+  return s !== null && e !== null && e > s ? e - s : DEFAULT_DURATION_MIN
+}
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 function dateStr(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -31,7 +38,7 @@ function Chip({ m, color, label, compact = false, onSelect }: { m: Meeting; colo
     <button
       type="button"
       onClick={e => { e.stopPropagation(); onSelect(m) }}
-      title={[m.title, m.start_time?.slice(0, 5), label, m.location].filter(Boolean).join(' · ')}
+      title={[m.title, m.start_time ? `${m.start_time.slice(0, 5)}${m.end_time ? `–${m.end_time.slice(0, 5)}` : ''}` : null, label, m.location].filter(Boolean).join(' · ')}
       className={`w-full text-left rounded-md px-1.5 py-1 text-[11px] leading-tight transition-opacity hover:opacity-80 ${cancelled ? 'opacity-40 line-through' : done ? 'opacity-70' : ''}`}
       style={{
         backgroundColor: color + '26',
@@ -132,7 +139,7 @@ export function MeetingsCalendar({ meetings, clients, onSelect, onCreateAt }: {
     const timed = weekDays.flatMap(d => byDay.get(dateStr(d)) ?? []).filter(m => m.start_time)
     const mins = timed.map(m => minutesOf(m.start_time)!)
     const startH = Math.max(0, Math.min(8, mins.length ? Math.floor(Math.min(...mins) / 60) : 8))
-    const endH = Math.min(24, Math.max(19, mins.length ? Math.ceil((Math.max(...mins) + 60) / 60) : 19))
+    const endH = Math.min(24, Math.max(19, mins.length ? Math.ceil(Math.max(...timed.map(m => minutesOf(m.start_time)! + durationOf(m))) / 60) : 19))
     const hours = Array.from({ length: endH - startH }, (_, i) => startH + i)
     const untimed = (d: Date) => (byDay.get(dateStr(d)) ?? []).filter(m => !m.start_time)
 
@@ -193,13 +200,14 @@ export function MeetingsCalendar({ meetings, clients, onSelect, onCreateAt }: {
             let groupEnd = -1
             const flush = () => { const cols = Math.max(1, ...group.map(g => g.col + 1)); group.forEach(g => { g.cols = cols }); placed.push(...group); group = []; groupEnd = -1 }
             for (const m of sorted) {
-              const s = minutesOf(m.start_time)!
-              const e = s + DEFAULT_DURATION_H * 60
-              if (group.length && s >= groupEnd) flush()
-              const used = new Set(group.filter(g => minutesOf(g.m.start_time)! + DEFAULT_DURATION_H * 60 > s).map(g => g.col))
+              const st = minutesOf(m.start_time)!
+              const dur = durationOf(m)
+              const e = st + dur
+              if (group.length && st >= groupEnd) flush()
+              const used = new Set(group.filter(g => minutesOf(g.m.start_time)! + durationOf(g.m) > st).map(g => g.col))
               let col = 0
               while (used.has(col)) col++
-              group.push({ m, col, cols: 1, top: ((s / 60) - startH) * HOUR_PX, height: DEFAULT_DURATION_H * HOUR_PX - 2 })
+              group.push({ m, col, cols: 1, top: ((st / 60) - startH) * HOUR_PX, height: Math.max(24, (dur / 60) * HOUR_PX - 2) })
               groupEnd = Math.max(groupEnd, e)
             }
             if (group.length) flush()

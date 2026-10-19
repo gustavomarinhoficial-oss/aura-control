@@ -137,6 +137,7 @@ export interface Meeting {
   lead_id: string | null
   meeting_date: string
   start_time: string | null
+  end_time?: string | null
   location: string | null
   meeting_link?: string | null
   notes: string | null

@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     lead_id: body.lead_id || null,
     meeting_date: body.meeting_date,
     start_time: body.start_time || null,
+    end_time: body.start_time && body.end_time && body.end_time > body.start_time ? body.end_time : null,
     location: body.location || null,
     meeting_link: body.meeting_link || null,
     notes: body.notes || null,
