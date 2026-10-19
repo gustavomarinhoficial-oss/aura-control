@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { findClientByShare } from '@/lib/shareSlug'
 import { effectiveUnlockedMonth } from '@/lib/utils/contentUnlock'
 
 // GET /api/public/content?token=X
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
 
   const supabase = createServiceClient()
 
-  const { data: client } = await supabase.from('clients').select('id, name, content_unlocked_month, content_approval_enabled, project_sharing_enabled').eq('share_token', token).maybeSingle()
+  const client = await findClientByShare<{ id: string; name: string; content_unlocked_month: string | null; content_approval_enabled: boolean; project_sharing_enabled: boolean }>(supabase, token, 'id, name, content_unlocked_month, content_approval_enabled, project_sharing_enabled')
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
 
   const { data: allPosts, error } = await supabase

@@ -644,8 +644,8 @@ function ScheduleView({ projects, loading }: { projects: ScheduleProject[]; load
 }
 
 export default function PublicCalendarPage() {
-  const params = useParams<{ token: string }>()
-  const token = params.token
+  const params = useParams<{ token?: string; slug?: string }>()
+  const token = (params.token ?? params.slug ?? '') as string
 
   const [client, setClient] = useState<ClientInfo | null>(null)
   const [posts, setPosts] = useState<Post[]>([])

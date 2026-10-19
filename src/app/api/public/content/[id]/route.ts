@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/server'
+import { findClientByShare } from '@/lib/shareSlug'
 
 const ALLOWED_STATUSES = ['aprovado', 'reprovado']
 const ALERT_SETTINGS_ID = '00000000-0000-0000-0000-000000000001'
@@ -74,7 +75,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const supabase = createServiceClient()
 
-  const { data: client } = await supabase.from('clients').select('id, name, content_approval_enabled').eq('share_token', token).maybeSingle()
+  const client = await findClientByShare<{ id: string; name: string; content_approval_enabled: boolean }>(supabase, String(token), 'id, name, content_approval_enabled')
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
   if (!client.content_approval_enabled) {
     return NextResponse.json({ error: 'Aprovação/reprovação não está disponível pra esse cliente' }, { status: 403 })

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { RESERVED_SLUGS } from '@/lib/shareSlug'
 import { getRole, canAccessFdmc, BLOCKED_FOR_JULIA, BLOCKED_FOR_MARIANA } from '@/lib/roles'
 
 export async function proxy(request: NextRequest) {
@@ -29,7 +30,10 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isLoginRoute  = pathname === '/login'
   const isApiRoute    = pathname.startsWith('/api')
-  const isPublicRoute = pathname.startsWith('/publico/')
+  // /<nome-da-empresa> (um segmento só, que não seja rota do app) é a página pública de aprovação.
+  const firstSegment = pathname.split('/')[1] ?? ''
+  const isClientSlugRoute = pathname.split('/').filter(Boolean).length === 1 && !RESERVED_SLUGS.has(firstSegment.toLowerCase()) && !firstSegment.includes('.')
+  const isPublicRoute = pathname.startsWith('/publico/') || isClientSlugRoute
   const isRoot        = pathname === '/'
   // Rotas de API que precisam continuar acessíveis sem sessão: usadas pela
   // página pública de aprovação do cliente (token próprio), ou já protegidas

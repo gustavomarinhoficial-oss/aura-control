@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { findClientByShare } from '@/lib/shareSlug'
 
 // GET /api/public/projects?token=X
 // Retorna só os projetos do cliente dono do token — nunca outros clientes,
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
 
   const supabase = createServiceClient()
 
-  const { data: client } = await supabase.from('clients').select('id, name, project_sharing_enabled').eq('share_token', token).maybeSingle()
+  const client = await findClientByShare<{ id: string; name: string; project_sharing_enabled: boolean }>(supabase, token, 'id, name, project_sharing_enabled')
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
   if (!client.project_sharing_enabled) {
     return NextResponse.json({ error: 'Cronograma não está disponível pra esse cliente' }, { status: 403 })

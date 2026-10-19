@@ -1584,6 +1584,7 @@ function MetricasView({ posts, month, year }: { posts: ContentPost[]; month: num
 // ── ShareModal ────────────────────────────────────────────────────────────────
 function ShareModal({ client, onClose }: { client: Client; onClose: () => void }) {
   const [token, setToken] = useState<string | null>(null)
+  const [slug, setSlug] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1594,13 +1595,13 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
 
   const loadToken = useCallback(async () => {
     const res = await fetch(`/api/clients/${client.id}/share-link`).catch(() => null)
-    if (res?.ok) { const d = await res.json(); setToken(d.token) }
+    if (res?.ok) { const d = await res.json(); setToken(d.token); setSlug(d.slug ?? null) }
     setLoading(false)
   }, [client.id])
 
   useEffect(() => { loadToken() }, [loadToken])
 
-  const url = token ? `${window.location.origin}/publico/${token}` : ''
+  const url = slug ? `${window.location.origin}/${slug}` : token ? `${window.location.origin}/publico/${token}` : ''
 
   function copyLink() {
     navigator.clipboard.writeText(url)
@@ -1612,7 +1613,7 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
     if (!confirm('Isso invalida o link atual — quem tiver o link antigo perde o acesso. Continuar?')) return
     setRegenerating(true)
     const res = await fetch(`/api/clients/${client.id}/share-link`, { method: 'POST' })
-    if (res.ok) { const d = await res.json(); setToken(d.token) }
+    if (res.ok) { const d = await res.json(); setToken(d.token); setSlug(d.slug ?? null) }
     setRegenerating(false)
   }
 
