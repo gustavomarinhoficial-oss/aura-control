@@ -39,7 +39,7 @@ function Chip({ m, color, label, compact = false, onSelect }: { m: Meeting; colo
       type="button"
       onClick={e => { e.stopPropagation(); onSelect(m) }}
       title={[m.title, m.start_time ? `${m.start_time.slice(0, 5)}${m.end_time ? `–${m.end_time.slice(0, 5)}` : ''}` : null, label, m.location].filter(Boolean).join(' · ')}
-      className={`w-full text-left rounded-md px-1.5 py-1 text-[11px] leading-tight transition-opacity hover:opacity-80 ${cancelled ? 'opacity-40 line-through' : done ? 'opacity-70' : ''}`}
+      className={`w-full h-full overflow-hidden flex flex-col justify-start items-stretch text-left rounded-md px-1.5 py-1 text-[11px] leading-tight transition-opacity hover:opacity-80 ${cancelled ? 'opacity-40 line-through' : done ? 'opacity-70' : ''}`}
       style={{
         backgroundColor: color + '26',
         borderLeft: `3px ${m.type === 'captacao' ? 'dashed' : 'solid'} ${color}`,
@@ -48,7 +48,7 @@ function Chip({ m, color, label, compact = false, onSelect }: { m: Meeting; colo
     >
       <span className="flex items-center gap-1 min-w-0">
         <Icon size={10} style={{ color }} className="shrink-0" />
-        {m.start_time && <span className="font-semibold shrink-0">{m.start_time.slice(0, 5)}</span>}
+        {m.start_time && <span className="font-semibold shrink-0">{m.start_time.slice(0, 5)}{!compact && m.end_time ? `–${m.end_time.slice(0, 5)}` : ''}</span>}
         <span className="truncate">{m.title}</span>
         {m.meeting_link && <Link2 size={9} className="shrink-0 opacity-70" />}
       </span>
@@ -187,7 +187,9 @@ export function MeetingsCalendar({ meetings, clients, onSelect, onCreateAt }: {
           {/* horas */}
           <div>
             {hours.map(h => (
-              <div key={h} className="text-[10px] text-muted-foreground text-right pr-1.5 -mt-1.5" style={{ height: HOUR_PX }}>{pad(h)}:00</div>
+              <div key={h} className="relative" style={{ height: HOUR_PX }}>
+                <span className="absolute right-1.5 -top-1.5 text-[10px] text-muted-foreground">{pad(h)}:00</span>
+              </div>
             ))}
           </div>
           {weekDays.map(d => {
@@ -233,7 +235,7 @@ export function MeetingsCalendar({ meetings, clients, onSelect, onCreateAt }: {
                   <div
                     key={p.m.id}
                     className="absolute px-0.5"
-                    style={{ top: p.top, height: p.height, left: `${(p.col / p.cols) * 100}%`, width: `${100 / p.cols}%` }}
+                    style={{ top: p.top, height: p.height, left: `${Math.min(p.col * 16, 48)}%`, width: `${100 - Math.min(p.col * 16, 48)}%`, zIndex: p.col + 1 }}
                   >
                     <div className="h-full">{chip(p.m)}</div>
                   </div>
