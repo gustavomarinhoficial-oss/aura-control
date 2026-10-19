@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireFdmcAccess } from '@/lib/fdmc/auth'
+
+function addMonths(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  d.setUTCMonth(d.getUTCMonth() + n)
+  return d.toISOString().split('T')[0]
+}
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await requireFdmcAccess())) return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
@@ -43,6 +50,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { data, error } = await supabase.from('fdmc_entries').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Lançamento avulso virou recorrente: cria o grupo e gera as próximas parcelas mensais
+  if (body.recurrent === true && !data.recurrence_group) {
+    const group = randomUUID()
+    const endDate = body.recurrence_end_date || null
+    await supabase.from('fdmc_entries').update({ recurrent: true, recurrence_group: group, recurrence_end_date: endDate }).eq('id', id)
+    const future = []
+    for (let i = 1; i <= 3; i++) {
+      const entry_date = addMonths(data.entry_date, i)
+      if (endDate && entry_date >= endDate) break
+      future.push({
+        type: data.type, description: data.description, amount: data.amount, category: data.category, notes: data.notes,
+        entry_date, recurrent: true, recurrence_group: group, recurrence_end_date: endDate,
+      })
+    }
+    if (future.length > 0) await supabase.from('fdmc_entries').upsert(future, { onConflict: 'recurrence_group,entry_date', ignoreDuplicates: true })
+  }
 
   // Valor mudou "daqui pra frente": atualiza as parcelas futuras não pagas do mesmo grupo
   if (body.amount !== undefined && body.effective_date && data.recurrence_group) {

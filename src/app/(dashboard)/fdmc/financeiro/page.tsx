@@ -584,7 +584,7 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
             </div>
           )}
 
-          {!initial && (
+          {(!initial || !initial.recurrence_group) && (
             <div className="rounded-lg border border-[#2a2a2a] p-3 space-y-2">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))} className="accent-[#efefef]" />
