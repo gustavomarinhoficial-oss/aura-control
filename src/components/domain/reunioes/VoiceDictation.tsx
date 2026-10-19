@@ -26,7 +26,14 @@ function pickMimeType(): string {
 
 // Ditado por voz: grava o áudio, manda pro servidor (Whisper, grátis) e devolve o compromisso já interpretado.
 // Funciona no iPhone (app instalado) e no computador, sem depender do reconhecimento de voz do navegador.
-export function VoiceDictation({ me, onResult }: { me: string; onResult: (draft: VoiceDraft, transcript: string) => void }) {
+export function VoiceDictation<T = VoiceDraft>({ me, onResult, endpoint = '/api/meetings/voice', label = 'Ditar compromisso', example = 'Ex: “captação do Stadium sexta de meio-dia até as 3”', fullWidth = false }: {
+  me: string
+  onResult: (draft: T, transcript: string) => void
+  endpoint?: string
+  label?: string
+  example?: string
+  fullWidth?: boolean
+}) {
   const [state, setState] = useState<'idle' | 'recording' | 'processing'>('idle')
   const [seconds, setSeconds] = useState(0)
   const [error, setError] = useState('')
@@ -83,10 +90,10 @@ export function VoiceDictation({ me, onResult }: { me: string; onResult: (draft:
     fd.append('audio', blob, 'ditado')
     fd.append('me', me)
     try {
-      const res = await fetch('/api/meetings/voice', { method: 'POST', body: fd })
+      const res = await fetch(endpoint, { method: 'POST', body: fd })
       const d = await res.json().catch(() => ({}))
       if (!res.ok) { setError(d.error ?? 'Não consegui processar o áudio.'); setState('idle'); return }
-      onResult(d.draft as VoiceDraft, d.transcript as string)
+      onResult(d.draft as T, d.transcript as string)
     } catch {
       setError('Sem conexão para enviar o áudio. Tente de novo.')
     }
@@ -96,22 +103,22 @@ export function VoiceDictation({ me, onResult }: { me: string; onResult: (draft:
   const mm = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className={`flex flex-col gap-1 ${fullWidth ? 'items-stretch' : 'items-end'}`}>
       {state === 'idle' && (
-        <button onClick={start} className="flex items-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-          <Mic size={14} /> Ditar compromisso
+        <button type="button" onClick={start} className="flex items-center justify-center gap-2 border border-[#2a2a2a] hover:bg-[#1a1a1a] text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+          <Mic size={14} /> {label}
         </button>
       )}
       {state === 'recording' && (
-        <button onClick={stop} className="flex items-center gap-2 bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors animate-pulse">
+        <button type="button" onClick={stop} className="flex items-center justify-center gap-2 bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors animate-pulse">
           <Square size={13} fill="currentColor" /> Gravando {mm} · toque para parar
         </button>
       )}
       {state === 'processing' && (
         <span className="flex items-center gap-2 text-sm text-muted-foreground px-4 py-2"><Loader2 size={14} className="animate-spin" /> Entendendo o que você falou...</span>
       )}
-      {error && <p className="text-[11px] text-[#ef4444] max-w-xs text-right">{error}</p>}
-      {state === 'idle' && !error && <p className="text-[10px] text-muted-foreground hidden sm:block">Ex: “captação do Stadium sexta de meio-dia até as 3”</p>}
+      {error && <p className={`text-[11px] text-[#ef4444] ${fullWidth ? '' : 'max-w-xs text-right'}`}>{error}</p>}
+      {state === 'idle' && !error && <p className={`text-[10px] text-muted-foreground ${fullWidth ? '' : 'hidden sm:block'}`}>{example}</p>}
     </div>
   )
 }

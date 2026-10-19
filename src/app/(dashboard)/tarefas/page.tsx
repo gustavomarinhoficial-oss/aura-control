@@ -6,7 +6,8 @@ import { Plus, Circle, Loader2, CheckCircle2, Trash2, AlertCircle, Calendar, Che
 import { formatDate } from '@/lib/utils/format'
 import { leadOptionValue, decodeEntitySelect } from '@/lib/utils/entitySelect'
 import { useRole } from '@/lib/hooks/useRole'
-import { JULIA_TASK_MEMBERS } from '@/lib/roles'
+import { JULIA_TASK_MEMBERS, ROLE_NAME } from '@/lib/roles'
+import { VoiceDictation } from '@/components/domain/reunioes/VoiceDictation'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import type { Task, TaskStatus, TaskPriority, Member, TaskItem } from '@/lib/supabase/types'
 
@@ -504,17 +505,27 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [assigneeIds, setAssigneeIds] = useState<string[]>([])
+  const [form, setForm] = useState({ title: '', description: '', client_id: '', priority: 'media', due_date: '' })
+  // O que a pessoa falou no ditado (pra conferir o que foi entendido)
+  const [voiceTranscript, setVoiceTranscript] = useState('')
+  const role = useRole()
+  const set = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
+
+  function applyVoice(d: { title: string; description: string | null; client_select: string; assignee_ids: string[]; priority: string; due_date: string | null }, transcript: string) {
+    setVoiceTranscript(transcript)
+    setForm({ title: d.title, description: d.description ?? '', client_id: d.client_select, priority: d.priority, due_date: d.due_date ?? '' })
+    setAssigneeIds(d.assignee_ids)
+  }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const data = new FormData(e.currentTarget)
-    const title = (data.get('title') as string ?? '').trim()
-    const description = (data.get('description') as string ?? '').trim()
-    const clientRaw = (data.get('client_id') as string ?? '')
+    const title = form.title.trim()
+    const description = form.description.trim()
+    const clientRaw = form.client_id
     const is_global = clientRaw === 'todos'
     const { client_id, lead_id } = is_global ? { client_id: null, lead_id: null } : decodeEntitySelect(clientRaw)
-    const priority = (data.get('priority') as string ?? 'media')
-    const due_date = (data.get('due_date') as string ?? '') || null
+    const priority = form.priority
+    const due_date = form.due_date || null
 
     if (!title) { setError('Informe o título'); return }
     setSaving(true)
@@ -530,13 +541,32 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
       <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-md p-6">
-        <h2 className="text-base font-semibold mb-5">Nova tarefa</h2>
+        <h2 className="text-base font-semibold mb-4">Nova tarefa</h2>
+        <div className="mb-4">
+          <VoiceDictation<{ title: string; description: string | null; client_select: string; assignee_ids: string[]; priority: string; due_date: string | null }>
+            me={ROLE_NAME[role] || ''}
+            endpoint="/api/tasks/voice"
+            label="Ditar tarefa"
+            example="Ex: “criar relatório mensal da iMoowe pro Gabriel, prazo sexta”"
+            fullWidth
+            onResult={applyVoice}
+          />
+        </div>
+        {voiceTranscript && (
+          <div className="mb-4 rounded-lg border border-[#2a2a2a] bg-[#111111] px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Você disse</p>
+            <p className="text-xs italic text-[#d4d4d4]">“{voiceTranscript}”</p>
+            <p className="text-[10px] text-muted-foreground mt-1.5">Confira os campos abaixo e corrija se precisar.</p>
+          </div>
+        )}
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Título *</label>
             <input
               type="text"
               name="title"
+              value={form.title}
+              onChange={e => set('title', e.target.value)}
               placeholder="Ex: Criar relatório mensal"
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             />
@@ -545,6 +575,8 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
             <label className="block text-xs text-muted-foreground mb-1">Descrição</label>
             <textarea
               name="description"
+              value={form.description}
+              onChange={e => set('description', e.target.value)}
               rows={2}
               placeholder="Detalhes opcionais..."
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors resize-none"
@@ -554,7 +586,8 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
             <label className="block text-xs text-muted-foreground mb-1">Cliente</label>
             <select
               name="client_id"
-              defaultValue=""
+              value={form.client_id}
+              onChange={e => set('client_id', e.target.value)}
               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
             >
               <option value="">— Nenhum cliente —</option>
@@ -576,7 +609,8 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
               <label className="block text-xs text-muted-foreground mb-1">Prioridade</label>
               <select
                 name="priority"
-                defaultValue="media"
+                value={form.priority}
+                onChange={e => set('priority', e.target.value)}
                 className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
               >
                 <option value="baixa">Baixa</option>
@@ -589,6 +623,8 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
               <input
                 type="date"
                 name="due_date"
+                value={form.due_date}
+                onChange={e => set('due_date', e.target.value)}
                 className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors"
               />
             </div>
