@@ -268,6 +268,8 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
   const [createInit, setCreateInit] = useState<Partial<Meeting> | undefined>(undefined)
   // O que a pessoa falou no ditado (mostrado no formulário pra conferir)
   const [voiceTranscript, setVoiceTranscript] = useState('')
+  // Filtro por pessoa: 'todos' ou o id do membro
+  const [activeOwner, setActiveOwner] = useState<string>('todos')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -286,9 +288,17 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
 
   useEffect(() => { load() }, [load])
 
-  const visibleMeetings = isJulia
+  const baseMeetings = isJulia
     ? meetings.filter(m => m.attendees?.some(a => JULIA_TASK_MEMBERS.includes(a.name)))
     : meetings
+
+  // Só quem tem compromisso na lista aparece como opção (Julia vê apenas ela e o Gabriel)
+  const ownerOptions = (isJulia ? members.filter(m => JULIA_TASK_MEMBERS.includes(m.name)) : members)
+    .map(m => ({ ...m, count: baseMeetings.filter(x => x.status !== 'cancelada' && x.meeting_date >= localDateStr(new Date()) && x.attendees?.some(a => a.id === m.id)).length }))
+
+  const visibleMeetings = activeOwner === 'todos'
+    ? baseMeetings
+    : baseMeetings.filter(m => m.attendees?.some(a => a.id === activeOwner))
 
   const todayStr = localDateStr(new Date())
   const upcoming = visibleMeetings.filter(m => m.meeting_date >= todayStr).sort((a, b) =>
@@ -511,6 +521,25 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
           </button>
         </div>
       </div>
+
+      {!loading && ownerOptions.length > 0 && (
+        <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {[{ id: 'todos', name: 'Todos', count: null as number | null }, ...ownerOptions].map(o => (
+            <button
+              key={o.id}
+              onClick={() => setActiveOwner(o.id)}
+              className={`px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors shrink-0 ${
+                activeOwner === o.id
+                  ? 'bg-[#efefef]/15 text-[#efefef] font-medium'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-[#1a1a1a]'
+              }`}
+            >
+              {o.name}
+              {o.count !== null && o.count > 0 && <span className="ml-1.5 text-[11px] opacity-60">{o.count}</span>}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!loading && (
         <MeetingsCalendar meetings={visibleMeetings} clients={clients} onSelect={selectFromCalendar} onCreateAt={createFromCalendar} />
