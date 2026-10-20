@@ -13,7 +13,7 @@ interface CashMovement {
   created_at: string
 }
 interface Charge { id: string; amount: number; due_date: string; paid_at: string | null }
-interface Expense { id: string; amount: number; due_date: string; paid_at: string | null }
+interface Expense { id: string; description: string; category: string; amount: number; due_date: string; paid_at: string | null }
 
 const TYPE_META: Record<string, { label: string; defaultDirection: 'entrada' | 'saida' }> = {
   aporte:              { label: 'Aporte',               defaultDirection: 'entrada' },
@@ -94,7 +94,17 @@ function CaixaTab() {
 
   useEffect(() => { load() }, [load])
 
-  const balance = movements.reduce((sum, m) => sum + Number(m.amount), 0)
+  // Aplicações lançadas no Financeiro (categoria "Aplicação / aporte", já pagas) entram aqui sozinhas
+  const aplicacoes = expenses.filter(e => e.category === 'aplicacao' && e.paid_at)
+  const totalAplicado = aplicacoes.reduce((s, e) => s + Number(e.amount), 0)
+  const rows = [
+    ...movements.map(m => ({ ...m, fromFinance: false })),
+    ...aplicacoes.map(e => ({
+      id: `fin-${e.id}`, date: e.due_date, type: 'aplicacao', amount: Number(e.amount),
+      note: e.description, created_at: e.due_date, fromFinance: true,
+    })),
+  ].sort((a, b) => b.date.localeCompare(a.date))
+  const balance = movements.reduce((sum, m) => sum + Number(m.amount), 0) + totalAplicado
 
   async function addMovement() {
     setFormError('')
@@ -221,6 +231,20 @@ function CaixaTab() {
             </div>
           </div>
 
+          {/* Total aplicado (vem do Financeiro) */}
+          <div className="bg-[#1a1a1a] border border-[#e879f9]/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <PiggyBank size={14} className="text-[#e879f9]" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Total já aplicado</span>
+            </div>
+            <p className="text-2xl font-bold text-[#e879f9]">{formatBRL(totalAplicado)}</p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {aplicacoes.length === 0
+                ? 'Lance uma despesa na categoria "Aplicação / aporte" no Financeiro e ela aparece aqui sozinha'
+                : `${aplicacoes.length} aplicaç${aplicacoes.length === 1 ? 'ão' : 'ões'} vinda${aplicacoes.length === 1 ? '' : 's'} do Financeiro, já somada${aplicacoes.length === 1 ? '' : 's'} ao saldo`}
+            </p>
+          </div>
+
           {/* Projeção */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
@@ -246,20 +270,21 @@ function CaixaTab() {
             <div className="px-5 py-4 border-b border-[#2a2a2a]">
               <h2 className="text-sm font-medium">Movimentações</h2>
             </div>
-            {movements.length === 0 ? (
+            {rows.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">Nenhum movimento lançado ainda</div>
             ) : (
               <div className="divide-y divide-[#2a2a2a]">
-                {movements.map(m => {
+                {rows.map(m => {
                   const positive = Number(m.amount) >= 0
                   return (
                     <div key={m.id} className="flex items-center justify-between px-5 py-3 gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {positive ? <TrendingUp size={15} className="text-[#22c55e] shrink-0" /> : <TrendingDown size={15} className="text-[#ef4444] shrink-0" />}
                         <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{TYPE_META[m.type]?.label ?? m.type}</p>
+                          <p className="text-sm font-medium truncate">{m.fromFinance ? 'Aplicação' : (TYPE_META[m.type]?.label ?? m.type)}</p>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-muted-foreground">{formatDate(m.date)}</p>
+                            {m.fromFinance && <span className="text-[10px] text-[#e879f9] border border-[#e879f9]/30 rounded px-1.5 py-0.5 shrink-0">do Financeiro</span>}
                             {m.note && <p className="text-xs text-muted-foreground truncate">· {m.note}</p>}
                           </div>
                         </div>
@@ -268,9 +293,11 @@ function CaixaTab() {
                         <span className={`text-sm font-semibold ${positive ? 'text-[#22c55e]' : 'text-[#ef4444]'}`}>
                           {positive ? '+' : ''}{formatBRL(Number(m.amount))}
                         </span>
-                        <button onClick={() => deleteMovement(m.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors">
-                          <Trash2 size={13} />
-                        </button>
+                        {!m.fromFinance && (
+                          <button onClick={() => deleteMovement(m.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors">
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
