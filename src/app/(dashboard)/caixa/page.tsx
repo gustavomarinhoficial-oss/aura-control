@@ -95,6 +95,12 @@ function CaixaTab() {
   useEffect(() => { load() }, [load])
 
   const balance = movements.reduce((sum, m) => sum + Number(m.amount), 0)
+  // Investido = o que foi aportado; rendimento = os ajustes; o resto (retiradas, distribuições) reduz o saldo
+  const sumOf = (types: string[]) => movements.filter(m => types.includes(m.type)).reduce((s, m) => s + Number(m.amount), 0)
+  const totalInvestido = sumOf(['aporte', 'reinvestimento'])
+  const totalRendimento = sumOf(['ajuste'])
+  const totalSaidas = sumOf(['retirada', 'distribuicao_socio'])
+  const rendimentoPct = totalInvestido > 0 ? (totalRendimento / totalInvestido) * 100 : 0
 
   async function addMovement() {
     setFormError('')
@@ -218,6 +224,29 @@ function CaixaTab() {
                   )}
                 </>
               )}
+            </div>
+          </div>
+
+          {/* Investido x rendimento */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <PiggyBank size={14} className="text-[#e879f9]" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total investido</span>
+              </div>
+              <p className="text-2xl font-bold text-[#e879f9]">{formatBRL(totalInvestido)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">Soma dos aportes que saíram do caixa para render</p>
+            </div>
+            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp size={14} className="text-[#22c55e]" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Total rendido</span>
+              </div>
+              <p className="text-2xl font-bold text-[#22c55e]">{formatBRL(totalRendimento)}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Soma dos ajustes{totalInvestido > 0 ? ` · ${rendimentoPct.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}% sobre o investido` : ''}
+                {totalSaidas !== 0 ? ` · retiradas e distribuições: ${formatBRL(totalSaidas)}` : ''}
+              </p>
             </div>
           </div>
 
