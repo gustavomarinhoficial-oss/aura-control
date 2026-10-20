@@ -38,9 +38,9 @@ export default function CaixaPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Caixa</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Reserva financeira</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {activeTab === 'antecipada' ? 'Receita adiantada por clientes, separada do caixa da empresa' : 'Reserva financeira da empresa — lançado manualmente'}
+            {activeTab === 'antecipada' ? 'Receita adiantada por clientes, separada do caixa da empresa' : 'Dinheiro aplicado (100% do CDI) — um aporte lançado aqui entra sozinho no Financeiro'}
           </p>
         </div>
         <div className="flex items-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-1 gap-1">
@@ -48,7 +48,7 @@ export default function CaixaPage() {
             onClick={() => setActiveTab('caixa')}
             className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeTab === 'caixa' ? 'bg-[#efefef] text-[#111111]' : 'text-muted-foreground hover:text-foreground'}`}
           >
-            <List size={13} /> Caixa da empresa
+            <List size={13} /> Reserva (CDI)
           </button>
           <button
             onClick={() => setActiveTab('antecipada')}
@@ -190,7 +190,7 @@ function CaixaTab() {
             <div className="bg-[#1a1a1a] border border-[#efefef]/30 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-2">
                 <Wallet size={14} className="text-[#efefef]" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">Saldo atual do caixa</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">Saldo atual da reserva</span>
               </div>
               <p className="text-3xl font-bold">{formatBRL(balance)}</p>
             </div>
@@ -312,7 +312,7 @@ function CaixaTab() {
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false) }}>
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Novo movimento de caixa</h2>
+              <h2 className="text-sm font-semibold">Novo movimento da reserva</h2>
               <button onClick={() => setShowNew(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
             </div>
 

@@ -19,7 +19,7 @@ const ALL_NAV = [
   { href: '/influenciadores',label: 'Influenciadores',icon: Handshake },
   { href: '/ia',             label: 'Central IA',     icon: Brain },
   { href: '/financeiro',     label: 'Financeiro',     icon: DollarSign },
-  { href: '/caixa',          label: 'Caixa',          icon: Wallet },
+  { href: '/caixa',          label: 'Reserva',         icon: Wallet },
   { href: '/relatorios',     label: 'Relatórios',     icon: FileBarChart },
   { href: '/metas',          label: 'Metas',          icon: Target },
   { href: '/tarefas',        label: 'Tarefas',        icon: CheckSquare },

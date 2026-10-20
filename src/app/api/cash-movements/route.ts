@@ -38,5 +38,23 @@ export async function POST(request: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Aporte na reserva = dinheiro aplicado: entra no Financeiro como "Aplicação / aporte" (já paga),
+  // ligada ao movimento (apagar o movimento apaga a aplicação).
+  if (data.type === 'aporte' && Number(data.amount) > 0) {
+    const { error: expError } = await supabase.from('expenses').insert({
+      description: data.note ? `Aporte na reserva — ${data.note}` : 'Aporte na reserva',
+      amount: Number(data.amount),
+      category: 'aplicacao',
+      due_date: data.date,
+      paid_at: data.date,
+      recurrent: false,
+      cash_movement_id: data.id,
+    })
+    if (expError) {
+      await supabase.from('cash_movements').delete().eq('id', data.id)
+      return NextResponse.json({ error: `Não consegui ligar o aporte ao Financeiro: ${expError.message}` }, { status: 500 })
+    }
+  }
   return NextResponse.json(data, { status: 201 })
 }
