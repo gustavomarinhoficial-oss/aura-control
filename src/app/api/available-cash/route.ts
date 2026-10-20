@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { requireFdmcAccess } from '@/lib/fdmc/auth'
-import { createClient } from '@/lib/supabase/server'
-import { getRole, isFinanceRestricted } from '@/lib/roles'
+import { canAccessFinance } from '@/lib/finance/access'
 
 // Caixa disponível (conta corrente, sem aplicar), informado na mão. ?workspace=owl|fdmc
-async function allowed(workspace: string): Promise<boolean> {
-  if (workspace === 'fdmc') return !!(await requireFdmcAccess())
-  if (workspace !== 'owl') return false
-  // Saldo do banco é dado financeiro: Julia e Mari não têm acesso
-  const { data: { user } } = await (await createClient()).auth.getUser()
-  return !!user && !isFinanceRestricted(getRole(user.user_metadata))
-}
+const allowed = canAccessFinance
 
 export async function GET(request: Request) {
   const workspace = new URL(request.url).searchParams.get('workspace') ?? 'owl'

@@ -120,7 +120,7 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
     const charges = chargesMonthRes.data ?? []
     const receitaRecebida = charges.filter(c => c.paid_at).reduce((s, c) => s + Number(c.amount), 0)
     // Pró-labore fica fora das despesas (é a retirada dos sócios, não custo da operação).
-    const despesas = (expensesRes.data ?? []).filter(e => e.category !== 'prolabore').reduce((s, e) => s + Number(e.amount), 0)
+    const despesas = (expensesRes.data ?? []).filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao').reduce((s, e) => s + Number(e.amount), 0)
     const proLabore = (expensesRes.data ?? []).filter(e => e.category === 'prolabore').reduce((s, e) => s + Number(e.amount), 0)
     const overdueCharges = overdueChargesRes.data ?? []
     const awaitingContent = (contentRes.data ?? []).filter(c => c.status === 'aguardando_aprovacao').length

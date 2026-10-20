@@ -26,7 +26,7 @@ export async function GET() {
   return NextResponse.json(months.map(({ key, label }) => {
     const inMonth = rows.filter(r => r.entry_date.startsWith(key))
     const revenue = inMonth.filter(r => r.type === 'receita' && r.paid_at).reduce((s, r) => s + Number(r.amount), 0)
-    const expenses = inMonth.filter(r => r.type === 'despesa' && r.category !== 'prolabore').reduce((s, r) => s + Number(r.amount), 0)
+    const expenses = inMonth.filter(r => r.type === 'despesa' && r.category !== 'prolabore' && r.category !== 'aplicacao').reduce((s, r) => s + Number(r.amount), 0)
     const prolabore = inMonth.filter(r => r.type === 'despesa' && r.category === 'prolabore').reduce((s, r) => s + Number(r.amount), 0)
     return { label, key, revenue, expenses, prolabore, profit: revenue - expenses }
   }))

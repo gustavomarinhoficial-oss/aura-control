@@ -8,6 +8,7 @@ import {
   Copy, X, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet,
   Clock, AlertCircle, Edit2, Tag
 } from 'lucide-react'
+import { CashFlowPanel } from '@/components/domain/financeiro/CashFlowPanel'
 import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 import { FreelancerPackages } from '@/components/domain/financeiro/FreelancerPackages'
 import { NewChargeModal } from '@/components/domain/NewChargeModal'
@@ -39,6 +40,7 @@ interface HistoricoPoint { label: string; key: string; revenue: number; expenses
 // ── constantes ──────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   prolabore:  { label: 'Pró-labore',    color: '#efefef' },
+  aplicacao:  { label: 'Aplicação / aporte', color: '#e879f9' },
   salario:    { label: 'Salário',       color: '#818cf8' },
   freelancer: { label: 'Freelancer',    color: '#2dd4bf' },
   impostos:   { label: 'Impostos',      color: '#f59e0b' },
@@ -415,8 +417,11 @@ export default function FinanceiroPage() {
   function prevMonth() { if (month === 1) { setYear(y => y - 1); setMonth(12) } else setMonth(m => m - 1) }
   function nextMonth() { if (month === 12) { setYear(y => y + 1); setMonth(1) } else setMonth(m => m + 1) }
 
+  const [flowVersion, setFlowVersion] = useState(0)
+
   const load = useCallback(async () => {
     setLoading(true)
+    setFlowVersion(v => v + 1)
     const [chargesRes, expensesRes] = await Promise.all([
       fetch(`/api/charges?month=${monthStr}`).then(r => r.json()).catch(() => []),
       fetch(`/api/expenses?month=${monthStr}`).then(r => r.json()).catch(() => []),
@@ -448,8 +453,10 @@ export default function FinanceiroPage() {
 
   // ── cálculos de despesa ──────────────────────────────────────────────────
   // Pró-labore fica separado: não é despesa da operação, então não entra no lucro nem na margem.
-  const despesasOp = expenses.filter(e => e.category !== 'prolabore')
+  // Aplicação/aporte também não é despesa: é dinheiro que foi guardado, não custo da operação.
+  const despesasOp = expenses.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao')
   const prolabores = expenses.filter(e => e.category === 'prolabore')
+  const aplicacoes = expenses.filter(e => e.category === 'aplicacao')
   const despesaTotal  = despesasOp.reduce((s, e) => s + Number(e.amount), 0)
   const despesaPaga   = despesasOp.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
   const despesaPendente = despesasOp.filter(e => !e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
@@ -595,6 +602,8 @@ export default function FinanceiroPage() {
           <p className="text-[11px] text-muted-foreground mt-1">{withStatus.filter(c => c.status === 'atrasado').length} cobrança(s) em atraso</p>
         </div>
       </div>
+
+      <CashFlowPanel workspace="owl" month={monthStr} version={flowVersion} />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit flex-wrap">
@@ -804,7 +813,7 @@ export default function FinanceiroPage() {
               </button>
             </div>
           )}
-          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }].filter(g => g.list.length > 0).map(group => (
+          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }, { title: 'Aplicações / aportes', list: aplicacoes }].filter(g => g.list.length > 0).map(group => (
             <div key={group.title} className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-1">{group.title}</p>
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">

@@ -9,6 +9,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, AreaChart, Area, CartesianGrid,
 } from 'recharts'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { CashFlowPanel } from '@/components/domain/financeiro/CashFlowPanel'
 import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 
 // ── tipos ──────────────────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ interface HistoricoPoint { label: string; key: string; revenue: number; expenses
 // ── constantes (mesmas categorias do financeiro da OWL) ─────────────────────
 const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   prolabore:    { label: 'Pró-labore',     color: '#efefef' },
+  aplicacao:    { label: 'Aplicação / aporte', color: '#e879f9' },
   salario:      { label: 'Salário',        color: '#818cf8' },
   freelancer:   { label: 'Freelancer',     color: '#2dd4bf' },
   impostos:     { label: 'Impostos',       color: '#f59e0b' },
@@ -93,6 +95,7 @@ export default function FdmcFinanceiroPage() {
 
   const [modal, setModal] = useState<{ type: 'receita' | 'despesa'; initial?: FdmcEntry; prefill?: FdmcEntry } | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [flowVersion, setFlowVersion] = useState(0)
 
   const monthStr = `${year}-${String(month).padStart(2, '0')}`
   const monthName = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
@@ -106,6 +109,7 @@ export default function FdmcFinanceiroPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    setFlowVersion(v => v + 1)
     const res = await fetch(`/api/fdmc/entries?month=${monthStr}`).then(r => r.json()).catch(() => [])
     setEntries(Array.isArray(res) ? res : [])
     setLoading(false)
@@ -152,8 +156,10 @@ export default function FdmcFinanceiroPage() {
   // ── cálculos (mesma lógica do financeiro da OWL) ─────────────────────────
   const receitas = entries.filter(e => e.type === 'receita')
   const despesasAll = entries.filter(e => e.type === 'despesa')
-  const despesasOp = despesasAll.filter(e => e.category !== 'prolabore')
+  // Aplicação/aporte não é despesa: é dinheiro guardado, não custo da operação.
+  const despesasOp = despesasAll.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao')
   const prolabores = despesasAll.filter(e => e.category === 'prolabore')
+  const aplicacoes = despesasAll.filter(e => e.category === 'aplicacao')
 
   const receita = receitas.filter(e => e.paid_at).reduce((s, e) => s + Number(e.amount), 0)
   const aReceber = receitas.filter(e => !e.paid_at && statusOf(e) === 'pendente').reduce((s, e) => s + Number(e.amount), 0)
@@ -294,6 +300,8 @@ export default function FdmcFinanceiroPage() {
         </div>
       </div>
 
+      <CashFlowPanel workspace="fdmc" month={monthStr} version={flowVersion} />
+
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit flex-wrap">
         {tabs.map(([k, lbl]) => (
@@ -411,7 +419,7 @@ export default function FdmcFinanceiroPage() {
               <button onClick={() => setModal({ type: 'despesa' })} className="flex items-center gap-1 text-xs text-[#efefef]"><Plus size={12} /> Adicionar despesa</button>
             </div>
           )}
-          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }].filter(g => g.list.length > 0).map(group => (
+          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }, { title: 'Aplicações / aportes', list: aplicacoes }].filter(g => g.list.length > 0).map(group => (
             <div key={group.title} className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-1">{group.title}</p>
               <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">

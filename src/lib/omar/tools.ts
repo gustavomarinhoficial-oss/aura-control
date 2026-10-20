@@ -349,7 +349,7 @@ const getFinanceiroSummary: OmarTool = {
     const estimatedMonth = charges.reduce((sum, c) => sum + Number(c.amount), 0)
     const receivedMonth = charges.filter(c => c.paid_at).reduce((sum, c) => sum + Number(c.amount), 0)
     // Pró-labore vai separado das despesas.
-    const expensesMonth = (expensesRes.data ?? []).filter(e => e.category !== 'prolabore').reduce((sum, e) => sum + Number(e.amount), 0)
+    const expensesMonth = (expensesRes.data ?? []).filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao').reduce((sum, e) => sum + Number(e.amount), 0)
     const proLaboreMonth = (expensesRes.data ?? []).filter(e => e.category === 'prolabore').reduce((sum, e) => sum + Number(e.amount), 0)
 
     return {
