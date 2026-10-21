@@ -76,10 +76,8 @@ function AssigneeMultiSelect({ members, value, onChange }: { members: Member[]; 
   )
 }
 
-function TaskChecklist({ taskId }: { taskId: string }) {
+function TaskChecklist({ taskId, onCounts }: { taskId: string; onCounts?: (done: number, total: number) => void }) {
   const [items, setItems] = useState<TaskItem[]>([])
-  const [newTitle, setNewTitle] = useState('')
-  const inputRef = useRef<HTMLInputElement>(null)
 
   const loadItems = useCallback(() => {
     fetch(`/api/task-items?task_id=${taskId}`).then(r => r.json()).then(d => setItems(Array.isArray(d) ? d : [])).catch(() => {})
@@ -88,7 +86,9 @@ function TaskChecklist({ taskId }: { taskId: string }) {
   useEffect(() => { loadItems() }, [loadItems])
 
   async function toggleItem(id: string, completed: boolean) {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, completed: !completed } : i))
+    const next = items.map(i => i.id === id ? { ...i, completed: !completed } : i)
+    setItems(next)
+    onCounts?.(next.filter(i => i.completed).length, next.length)
     await fetch(`/api/task-items/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -96,20 +96,10 @@ function TaskChecklist({ taskId }: { taskId: string }) {
     })
   }
 
-  async function addItem() {
-    const t = newTitle.trim()
-    if (!t) return
-    setNewTitle('')
-    const res = await fetch('/api/task-items', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task_id: taskId, title: t }),
-    })
-    if (res.ok) loadItems()
-  }
-
   async function deleteItem(id: string) {
-    setItems(prev => prev.filter(i => i.id !== id))
+    const next = items.filter(i => i.id !== id)
+    setItems(next)
+    onCounts?.(next.filter(i => i.completed).length, next.length)
     await fetch(`/api/task-items/${id}`, { method: 'DELETE' })
   }
 
@@ -144,22 +134,6 @@ function TaskChecklist({ taskId }: { taskId: string }) {
           </button>
         </div>
       ))}
-      <div className="flex items-center gap-2 mt-1">
-        <input
-          ref={inputRef}
-          type="text"
-          value={newTitle}
-          onChange={e => setNewTitle(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
-          placeholder="Adicionar item..."
-          className="flex-1 text-xs bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
-        />
-        {newTitle.trim() && (
-          <button onClick={addItem} className="text-[#efefef] hover:text-[#efefef] transition-colors">
-            <Plus size={12} />
-          </button>
-        )}
-      </div>
     </div>
   )
 }
@@ -394,7 +368,10 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
                   {/* Conteúdo */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className={`text-sm font-medium ${task.status === 'concluido' ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                      <p
+                        onClick={() => ((task.items_total ?? 0) > 0 ? setExpandedTask(isExpanded ? null : task.id) : setEditingTask(task))}
+                        className={`text-sm font-medium cursor-pointer ${task.status === 'concluido' ? 'line-through text-muted-foreground' : 'text-foreground'}`}
+                      >
                         {task.title}
                       </p>
                       <button
@@ -446,14 +423,16 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
                     </div>
                   </div>
 
-                  {/* Expand checklist */}
-                  <button
-                    onClick={() => setExpandedTask(isExpanded ? null : task.id)}
-                    className="text-muted-foreground hover:text-foreground transition-colors mt-0.5"
-                    title="Checklist"
-                  >
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
+                  {/* Abre a lista de empresas (só nas tarefas que têm) */}
+                  {(task.items_total ?? 0) > 0 && (
+                    <button
+                      onClick={() => setExpandedTask(isExpanded ? null : task.id)}
+                      className="text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+                      title="Empresas"
+                    >
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                  )}
 
                   {/* Delete */}
                   <button
@@ -464,7 +443,13 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
                   </button>
                 </div>
 
-                {isExpanded && <TaskChecklist taskId={task.id} />}
+                {(task.items_total ?? 0) > 0 && (
+                  <div className="mt-3 h-1 bg-[#2a2a2a] rounded-full overflow-hidden" title={`${task.items_done}/${task.items_total}`}>
+                    <div className="h-full bg-[#22c55e] rounded-full transition-all" style={{ width: `${Math.round(((task.items_done ?? 0) / (task.items_total ?? 1)) * 100)}%` }} />
+                  </div>
+                )}
+
+                {isExpanded && (task.items_total ?? 0) > 0 && <TaskChecklist taskId={task.id} onCounts={(done, total) => setTasks(ts => ts.map(t => t.id === task.id ? { ...t, items_done: done, items_total: total } : t))} />}
               </div>
             )
           })}
