@@ -19,6 +19,7 @@ export interface Client {
   content_approval_enabled: boolean | null
   traffic_sharing_enabled: boolean | null
   meta_ad_account_id: string | null
+  logo_url?: string | null
   created_at: string
 }
 
@@ -98,6 +99,7 @@ export interface Member {
   name: string
   initials: string
   color: string
+  avatar_url?: string | null
   created_at: string
 }
 
@@ -123,7 +125,7 @@ export interface Task {
   created_at: string
   clients?: { id: string; name: string } | null
   leads?: { id: string; company_name: string } | null
-  assignees?: Array<{ id: string; name: string; initials: string; color: string }>
+  assignees?: Array<{ id: string; name: string; initials: string; color: string; avatar_url?: string | null }>
   items_total?: number
   items_done?: number
 }
@@ -147,7 +149,7 @@ export interface Meeting {
   created_at: string
   clients?: { id: string; name: string } | null
   leads?: { id: string; company_name: string } | null
-  attendees?: Array<{ id: string; name: string; initials: string; color: string }>
+  attendees?: Array<{ id: string; name: string; initials: string; color: string; avatar_url?: string | null }>
 }
 
 export type OmarRole = 'user' | 'assistant'

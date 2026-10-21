@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { Plus, Trash2, Users, Key, Check, AlertTriangle, Bell, Mail, MessageCircle, Send, ChevronDown, Save, AlertCircle } from 'lucide-react'
-import type { Member } from '@/lib/supabase/types'
+import { useEffect, useState } from 'react'
+import { Plus, Trash2, Key, Check, AlertTriangle, Bell, Mail, MessageCircle, Send, ChevronDown, Save, AlertCircle } from 'lucide-react'
+import { TeamTab } from '@/components/domain/configuracoes/TeamTab'
 import { getAgencyName, DEFAULT_AGENCY_NAME, AGENCY_NAME_KEY } from '@/lib/utils/agencyName'
 
 interface WhatsappNumber { name: string; phone: string; apikey: string }
@@ -33,20 +33,10 @@ const DAYS_AHEAD_OPTIONS = [
 ]
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => ({ value: i, label: `${String(i).padStart(2, '0')}:00` }))
 
-const COLORS = ['#efefef', '#2563eb', '#16a34a', '#ea580c', '#db2777', '#0891b2', '#65a30d', '#9333ea']
-
-function getInitials(name: string) {
-  return name.trim().split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)
-}
-
 const PIX_KEY = 'aura_pix_key'
 
 export default function ConfiguracoesPage() {
-  const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
-  const [name, setName] = useState('')
-  const [color, setColor] = useState(COLORS[0])
-  const [saving, setSaving] = useState(false)
+  const [tab, setTab] = useState<'equipe' | 'geral'>('equipe')
 
   const [pixKey, setPixKey] = useState('')
   const [agencyName, setAgencyName] = useState('')
@@ -136,36 +126,28 @@ export default function ConfiguracoesPage() {
     setNewWaName(''); setNewWaPhone(''); setNewWaKey(''); setShowWaForm(false)
   }
 
-  const load = useCallback(() => {
-    fetch('/api/members').then(r => r.json()).then(d => { setMembers(Array.isArray(d) ? d : []); setLoading(false) })
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  async function addMember() {
-    if (!name.trim()) return
-    setSaving(true)
-    await fetch('/api/members', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), initials: getInitials(name), color }),
-    })
-    setName('')
-    setSaving(false)
-    load()
-  }
-
-  async function deleteMember(id: string) {
-    setMembers(prev => prev.filter(m => m.id !== id))
-    await fetch(`/api/members/${id}`, { method: 'DELETE' })
-  }
-
   return (
     <div className="space-y-8 max-w-lg">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Configurações</h1>
-        <p className="text-sm text-muted-foreground mt-1">Membros da equipe e preferências</p>
+        <p className="text-sm text-muted-foreground mt-1">Equipe, empresas e preferências</p>
       </div>
+
+      <div className="flex items-center bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-1 gap-1 w-fit">
+        {([['equipe', 'Equipe e empresas'], ['geral', 'Geral']] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${tab === key ? 'bg-[#efefef] text-[#111111]' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'equipe' && <TeamTab />}
+
+      {tab === 'geral' && <>
 
       {/* PIX e Agência */}
       <section className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
@@ -234,81 +216,6 @@ export default function ConfiguracoesPage() {
         </div>
       </section>
 
-      {/* Membros */}
-      <section className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-5">
-          <Users size={14} className="text-[#efefef]" />
-          <h2 className="text-sm font-medium">Membros da equipe</h2>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center h-20">
-            <div className="w-4 h-4 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-2 mb-5">
-            {members.length === 0 && (
-              <p className="text-xs text-muted-foreground">Nenhum membro cadastrado.</p>
-            )}
-            {members.map(m => (
-              <div key={m.id} className="flex items-center gap-3 py-2.5 border-b border-[#2a2a2a] last:border-0">
-                <div
-                  style={{ backgroundColor: m.color + '22', borderColor: m.color + '55', color: m.color }}
-                  className="w-8 h-8 rounded-full border flex items-center justify-center text-xs font-semibold shrink-0"
-                >
-                  {m.initials}
-                </div>
-                <span className="text-sm flex-1">{m.name}</span>
-                <button onClick={() => deleteMember(m.id)} className="text-muted-foreground hover:text-[#ef4444] transition-colors">
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="space-y-3 pt-3 border-t border-[#2a2a2a]">
-          <p className="text-xs text-muted-foreground">Adicionar membro</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addMember() }}
-              placeholder="Nome completo"
-              className="flex-1 bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[#efefef] transition-colors"
-            />
-            <button
-              onClick={addMember}
-              disabled={saving || !name.trim()}
-              className="bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            {COLORS.map(c => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                style={{ backgroundColor: c }}
-                className={`w-5 h-5 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-offset-[#1a1a1a] ring-white/50' : ''}`}
-              />
-            ))}
-          </div>
-          {name && (
-            <div className="flex items-center gap-2">
-              <div
-                style={{ backgroundColor: color + '22', borderColor: color + '55', color }}
-                className="w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-semibold"
-              >
-                {getInitials(name)}
-              </div>
-              <span className="text-xs text-muted-foreground">Prévia do avatar</span>
-            </div>
-          )}
-        </div>
-      </section>
       {/* Alertas */}
       {alertSettings && (
         <section className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5 space-y-5">
@@ -443,6 +350,7 @@ export default function ConfiguracoesPage() {
           )}
         </section>
       )}
+      </>}
     </div>
   )
 }

@@ -26,7 +26,11 @@ const priorityConfig: Record<TaskPriority, { label: string; color: string }> = {
 interface Client { id: string; name: string }
 interface Lead { id: string; company_name: string }
 
-function MemberAvatar({ member, size = 20 }: { member: { initials: string; color: string; name: string }; size?: number }) {
+function MemberAvatar({ member, size = 20 }: { member: { initials: string; color: string; name: string; avatar_url?: string | null }; size?: number }) {
+  if (member.avatar_url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={member.avatar_url} alt={member.name} title={member.name} style={{ width: size, height: size }} className="rounded-full object-cover border border-[#2a2a2a] shrink-0 cursor-default" />
+  }
   return (
     <div
       title={member.name}

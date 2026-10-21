@@ -1,5 +1,5 @@
 interface RawAssigneeJoin {
-  members: { id: string; name: string; initials: string; color: string } | null
+  members: { id: string; name: string; initials: string; color: string; avatar_url?: string | null } | null
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

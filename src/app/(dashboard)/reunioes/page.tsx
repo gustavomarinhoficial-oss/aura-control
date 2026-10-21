@@ -34,7 +34,11 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function MemberAvatar({ member, size = 20 }: { member: { initials: string; color: string; name: string }; size?: number }) {
+function MemberAvatar({ member, size = 20 }: { member: { initials: string; color: string; name: string; avatar_url?: string | null }; size?: number }) {
+  if (member.avatar_url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={member.avatar_url} alt={member.name} title={member.name} style={{ width: size, height: size }} className="rounded-full object-cover border border-[#2a2a2a] shrink-0 cursor-default" />
+  }
   return (
     <div
       title={member.name}
@@ -348,7 +352,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
       location: draft.location,
       meeting_link: draft.meeting_link,
       notes: draft.notes,
-      attendees: members.filter(m => draft.attendee_ids.includes(m.id)).map(m => ({ id: m.id, name: m.name, initials: m.initials, color: m.color })),
+      attendees: members.filter(m => draft.attendee_ids.includes(m.id)).map(m => ({ id: m.id, name: m.name, initials: m.initials, color: m.color, avatar_url: m.avatar_url })),
     })
     setShowNew(true)
   }

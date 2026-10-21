@@ -112,8 +112,11 @@ export default function ClientesPage() {
             className="block bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-4 flex items-center gap-3 hover:border-[#3a3a3a] active:bg-[#222] transition-colors"
           >
             {/* avatar */}
-            <div className="w-10 h-10 rounded-full bg-[#efefef]/15 flex items-center justify-center shrink-0">
-              <span className="text-sm font-bold text-[#efefef]">{c.name[0].toUpperCase()}</span>
+            <div className="w-10 h-10 rounded-full bg-[#efefef]/15 flex items-center justify-center shrink-0 overflow-hidden">
+              {c.logo_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={c.logo_url} alt="" className="w-full h-full object-contain" />
+                : <span className="text-sm font-bold text-[#efefef]">{c.name[0].toUpperCase()}</span>}
             </div>
             {/* info */}
             <div className="flex-1 min-w-0">
