@@ -56,8 +56,8 @@ export async function POST(request: Request) {
 Regras:
 (1) "kind": captacao para captação/gravação/filmagem/sessão de fotos; o resto é reuniao.
 (2) "who": o cliente, lead ou pessoa com quem é o compromisso, escrito do jeito que foi falado (ex.: "Imove", "Stadium", "Aaron"). Sem artigo e sem a palavra "reunião". Não invente.
-(3) "subject": só o ASSUNTO se a pessoa disse um explicitamente (ex.: "alinhamento mensal", "apresentação da proposta"). Se disse apenas "reunião com X", subject = null.
-(4) "date": NÃO calcule datas. "terça-feira"/"na terça"/"sexta que vem" => {"kind":"weekday","weekday":"terça"}; "amanhã" => {"kind":"amanha"}; "dia 15" => {"kind":"day_of_month","day":15}; "dia 15 de novembro" => day 15, month 11; data completa dita => kind "iso".
+(3) "subject": o ASSUNTO/descrição do compromisso se a pessoa disse um (ex.: "alinhamento mensal", "apresentação da proposta", "continuidade de captação dos vídeos de yoga"), do jeito que foi dito, sem a data, o horário nem o cliente. Se disse apenas "reunião com X" ou "captação do X", subject = null.
+(4) "date": NÃO calcule datas. "terça-feira"/"na terça"/"sexta que vem" => {"kind":"weekday","weekday":"terça"}; "amanhã" => {"kind":"amanha"}; "dia 15" => {"kind":"day_of_month","day":15}; "dia 15 de novembro" => day 15, month 11; data completa dita => kind "iso". Se disse o dia do mês E o dia da semana (ex.: "segunda-feira, dia 26 de outubro"), use day_of_month com day e month.
 (5) Horários em 24h: "10h" = 10:00, "meio-dia" = 12:00, "meia-noite" = 00:00, "duas da tarde" = 14:00, "de 10h a meio-dia" = start 10:00 e end 12:00. Se só disse o início, end_time = null.
 (6) "attendees": nomes de pessoas da equipe (${members.map(m => m.name).join(', ') || 'nenhuma cadastrada'}); "eu", "comigo" = ${me || 'a pessoa que está falando'}.
 (7) "notes": só pauta ou detalhes extras ditos. "location"/"meeting_link" só se ditos.`
@@ -67,7 +67,8 @@ Regras:
     const completion = await groq.chat.completions.create({
       model: PARSE_MODEL,
       temperature: 0,
-      max_tokens: 500,
+      max_tokens: 2000,
+      reasoning_effort: 'low',
       messages: [{ role: 'system', content: system }, { role: 'user', content: transcript }],
     })
     const text = completion.choices[0]?.message?.content ?? ''

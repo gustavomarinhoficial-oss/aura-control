@@ -67,7 +67,8 @@ Regras:
     const completion = await groq.chat.completions.create({
       model: PARSE_MODEL,
       temperature: 0,
-      max_tokens: 600,
+      max_tokens: 2000,
+      reasoning_effort: 'low',
       messages: [{ role: 'system', content: system }, { role: 'user', content: transcript }],
     })
     const text = completion.choices[0]?.message?.content ?? ''
