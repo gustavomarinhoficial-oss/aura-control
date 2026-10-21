@@ -124,6 +124,8 @@ export interface Task {
   clients?: { id: string; name: string } | null
   leads?: { id: string; company_name: string } | null
   assignees?: Array<{ id: string; name: string; initials: string; color: string }>
+  items_total?: number
+  items_done?: number
 }
 
 export type MeetingStatus = 'agendada' | 'realizada' | 'cancelada'

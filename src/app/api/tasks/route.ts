@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAssignees } from '@/lib/utils/tasks'
 
-const SELECT_WITH_ASSIGNEES = '*, clients(id, name), leads(id, company_name), task_assignees(members(id, name, initials, color))'
+const SELECT_WITH_ASSIGNEES = '*, clients(id, name), leads(id, company_name), task_assignees(members(id, name, initials, color)), task_items(completed)'
 
 export async function GET(request: Request) {
   const supabase = createServiceClient()
@@ -64,6 +64,15 @@ export async function POST(request: Request) {
       .from('task_assignees')
       .insert(assigneeIds.map(member_id => ({ task_id: task.id, member_id })))
     if (aErr) return NextResponse.json({ error: aErr.message }, { status: 500 })
+  }
+
+  // Tarefa para várias empresas: um item de checklist por empresa, pra dar check em cada uma
+  const checklist: string[] = Array.isArray(body.checklist) ? body.checklist.filter((t: unknown): t is string => typeof t === 'string' && !!t.trim()) : []
+  if (checklist.length > 0) {
+    const { error: cErr } = await supabase
+      .from('task_items')
+      .insert(checklist.map((title, position) => ({ task_id: task.id, title: title.trim(), position })))
+    if (cErr) return NextResponse.json({ error: cErr.message }, { status: 500 })
   }
 
   const { data: full } = await supabase.from('tasks').select(SELECT_WITH_ASSIGNEES).eq('id', task.id).single()

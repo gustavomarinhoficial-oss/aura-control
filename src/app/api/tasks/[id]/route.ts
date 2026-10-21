@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAssignees } from '@/lib/utils/tasks'
 
-const SELECT_WITH_ASSIGNEES = '*, clients(id, name), leads(id, company_name), task_assignees(members(id, name, initials, color))'
+const SELECT_WITH_ASSIGNEES = '*, clients(id, name), leads(id, company_name), task_assignees(members(id, name, initials, color)), task_items(completed)'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

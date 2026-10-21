@@ -120,9 +120,9 @@ function TaskChecklist({ taskId }: { taskId: string }) {
       {items.length > 0 && (
         <div className="flex items-center gap-2 mb-2">
           <div className="flex-1 h-1 bg-[#2a2a2a] rounded-full overflow-hidden">
-            <div className="h-full bg-[#efefef] rounded-full transition-all" style={{ width: `${Math.round((done / items.length) * 100)}%` }} />
+            <div className={`h-full rounded-full transition-all ${done === items.length ? 'bg-[#22c55e]' : 'bg-[#efefef]'}`} style={{ width: `${Math.round((done / items.length) * 100)}%` }} />
           </div>
-          <span className="text-[10px] text-muted-foreground shrink-0">{done}/{items.length}</span>
+          <span className={`text-[10px] shrink-0 ${done === items.length ? 'text-[#22c55e]' : 'text-muted-foreground'}`}>{done}/{items.length}</span>
         </div>
       )}
       {items.map(item => (
@@ -130,12 +130,12 @@ function TaskChecklist({ taskId }: { taskId: string }) {
           <button
             onClick={() => toggleItem(item.id, item.completed)}
             className={`w-3.5 h-3.5 rounded border shrink-0 flex items-center justify-center transition-colors ${
-              item.completed ? 'bg-[#efefef] border-[#efefef]' : 'border-[#3a3a3a] hover:border-[#efefef]'
+              item.completed ? 'bg-[#22c55e] border-[#22c55e]' : 'border-[#3a3a3a] hover:border-[#22c55e]'
             }`}
           >
             {item.completed && <Check size={8} className="text-white" />}
           </button>
-          <span className={`text-xs flex-1 ${item.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>{item.title}</span>
+          <span className={`text-xs flex-1 ${item.completed ? 'text-[#22c55e]' : 'text-foreground'}`}>{item.title}</span>
           <button
             onClick={() => deleteItem(item.id)}
             className="opacity-100 md:opacity-0 md:group-hover:opacity-100 text-muted-foreground hover:text-[#ef4444] transition-all"
@@ -423,6 +423,15 @@ export function TarefasView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc' 
                         </span>
                       )}
                       <span className={`text-[11px] font-medium ${pc.color}`}>{pc.label}</span>
+                      {(task.items_total ?? 0) > 0 && (
+                        <button
+                          onClick={() => setExpandedTask(isExpanded ? null : task.id)}
+                          className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${task.items_done === task.items_total ? 'text-[#22c55e] bg-[#22c55e]/10' : 'text-muted-foreground bg-[#2a2a2a]'}`}
+                          title="Abrir checklist"
+                        >
+                          <Check size={10} /> {task.items_done}/{task.items_total}
+                        </button>
+                      )}
                       {!task.due_date && task.status !== 'concluido' && (
                         <span className="text-[11px] font-medium text-[#efefef] bg-[#efefef]/10 px-2 py-0.5 rounded-full">Fixa · sem prazo</span>
                       )}
@@ -506,6 +515,8 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
   const [error, setError] = useState('')
   const [assigneeIds, setAssigneeIds] = useState<string[]>([])
   const [form, setForm] = useState({ title: '', description: '', client_id: '', priority: 'media', due_date: '' })
+  // Tarefa pra várias empresas: cada uma vira um item do checklist
+  const [pickedClients, setPickedClients] = useState<string[]>([])
   // O que a pessoa falou no ditado (pra conferir o que foi entendido)
   const [voiceTranscript, setVoiceTranscript] = useState('')
   const role = useRole()
@@ -523,16 +534,19 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
     const description = form.description.trim()
     const clientRaw = form.client_id
     const is_global = clientRaw === 'todos'
-    const { client_id, lead_id } = is_global ? { client_id: null, lead_id: null } : decodeEntitySelect(clientRaw)
+    const multi = clientRaw === 'varias'
+    const { client_id, lead_id } = is_global || multi ? { client_id: null, lead_id: null } : decodeEntitySelect(clientRaw)
+    const checklist = multi ? clients.filter(c => pickedClients.includes(c.id)).map(c => c.name) : []
     const priority = form.priority
     const due_date = form.due_date || null
 
     if (!title) { setError('Informe o título'); return }
+    if (multi && checklist.length === 0) { setError('Escolha pelo menos uma empresa'); return }
     setSaving(true)
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: description || null, client_id, lead_id, is_global, assignee_ids: assigneeIds, priority, due_date, workspace }),
+      body: JSON.stringify({ title, description: description || null, client_id, lead_id, is_global, checklist, assignee_ids: assigneeIds, priority, due_date, workspace }),
     })
     if (!res.ok) { setError('Erro ao criar tarefa'); setSaving(false); return }
     onCreated()
@@ -592,6 +606,7 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
             >
               <option value="">— Nenhum cliente —</option>
               <option value="todos">🌐 Todos os clientes</option>
+              <option value="varias">☑ Várias empresas (um check para cada)</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               {leads.length > 0 && (
                 <optgroup label="Leads">
@@ -599,6 +614,35 @@ function NewTaskModal({ clients, leads, members, workspace, onClose, onCreated }
                 </optgroup>
               )}
             </select>
+            {form.client_id === 'varias' && (
+              <div className="mt-2 rounded-lg border border-[#2a2a2a] bg-[#111111] p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[11px] text-muted-foreground">Marque as empresas. Depois você dá check em cada uma que já foi feita.</p>
+                  <button
+                    type="button"
+                    onClick={() => setPickedClients(pickedClients.length === clients.length ? [] : clients.map(c => c.id))}
+                    className="text-[11px] text-[#efefef] hover:underline shrink-0 ml-2"
+                  >
+                    {pickedClients.length === clients.length ? 'Limpar' : 'Todas'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {clients.map(c => {
+                    const on = pickedClients.includes(c.id)
+                    return (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setPickedClients(p => on ? p.filter(x => x !== c.id) : [...p, c.id])}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${on ? 'bg-[#22c55e]/15 border-[#22c55e]/40 text-[#22c55e]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'}`}
+                      >
+                        {on && <Check size={10} className="inline mr-1" />}{c.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Responsáveis</label>
