@@ -1,6 +1,8 @@
 import Groq from 'groq-sdk'
 import { createServiceClient } from '@/lib/supabase/server'
 import { ROLE_NAME, type Role } from '@/lib/roles'
+import { loadContractAlerts } from '@/lib/contractsServer'
+import { contractInfo, contractLabel } from '@/lib/contracts'
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 const MODEL = 'openai/gpt-oss-120b'
@@ -149,6 +151,11 @@ async function gatherData(role: Role): Promise<{ data: Record<string, unknown>; 
     const valorAtrasado = overdueCharges.reduce((s, c) => s + Number(c.amount), 0)
     if (overdueCharges.length > 0) {
       alerts.push(`${overdueCharges.length} cobrança${overdueCharges.length !== 1 ? 's' : ''} em atraso somando ${valorAtrasado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+    }
+
+    // Contratos acabando ou vencidos entram no resumo (pra já começar a renovação)
+    for (const a of await loadContractAlerts()) {
+      if (a.level !== 'soon') alerts.push(`${a.name}: ${contractLabel(contractInfo(a.end)).toLowerCase()}`)
     }
 
     const expensesToday = expensesTodayRes.data ?? []

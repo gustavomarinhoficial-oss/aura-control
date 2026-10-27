@@ -22,7 +22,7 @@ interface Lead { id: string; company_name: string; estimated_value: number | nul
 interface AlertData {
   overdue: { id: string; description: string; amount: number; due_date: string; clients: { name: string } | null }[]
   upcoming: { id: string; description: string; amount: number; due_date: string; clients: { name: string } | null }[]
-  renewals: { id: string; name: string; contract_end: string; clients: { name: string } | null }[]
+  renewals: { id: string; name: string; contract_end: string; level?: string; daysLeft?: number; clients: { name: string } | null }[]
 }
 interface ContentPost {
   id: string; client_id: string; title: string; platform: string; status: string
@@ -376,9 +376,9 @@ function GustavoDashboard() {
             ))}
             {alerts.renewals.map(s => (
               <div key={s.id} className="flex items-center gap-2 text-xs">
-                <Clock size={11} className="text-[#efefef] shrink-0" />
-                <span className="text-[#efefef] font-medium shrink-0">Renovação</span>
-                <span className="text-muted-foreground truncate">{s.clients?.name} · {s.name} · até {formatDate(s.contract_end)}</span>
+                <Clock size={11} className={`shrink-0 ${s.level === 'soon' ? 'text-[#f59e0b]' : 'text-[#ef4444]'}`} />
+                <span className={`font-medium shrink-0 ${s.level === 'soon' ? 'text-[#f59e0b]' : 'text-[#ef4444]'}`}>{s.level === 'ended' ? 'Contrato vencido' : s.level === 'soon' ? 'Renovar' : 'Último mês'}</span>
+                <span className="text-muted-foreground truncate">{s.clients?.name} · {s.name}</span>
               </div>
             ))}
             {editorialAlerts.map(ea => {

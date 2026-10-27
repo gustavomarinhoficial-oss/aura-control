@@ -1,5 +1,7 @@
 'use client'
 
+import { ContractBadge } from '@/components/domain/ContractBadge'
+import { effectiveContractEnd } from '@/lib/contracts'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
@@ -510,6 +512,17 @@ export default function ClientProfilePage() {
               <div className="flex items-center gap-3">
                 <Calendar size={13} className="text-muted-foreground shrink-0" />
                 <span className="text-sm">Cliente desde {formatDate(client.started_at)}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock size={13} className="text-muted-foreground shrink-0" />
+                <span className="text-sm flex items-center gap-2 flex-wrap">
+                  {(() => {
+                    const end = effectiveContractEnd(client, client.services)
+                    return end
+                      ? <><span>Contrato até <span className="font-semibold text-[#efefef]">{formatDate(end)}</span></span><ContractBadge end={end} /></>
+                      : <span className="text-muted-foreground">Contrato sem fim definido</span>
+                  })()}
+                </span>
               </div>
               {!isJulia && client.billing_day && (
                 <div className="flex items-center gap-3">
@@ -1387,6 +1400,9 @@ export default function ClientProfilePage() {
                   <option value="">Não definido</option>
                   {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
                 </select>
+              </div>
+              <div>
+                <Field label="Fim do contrato (vazio = sem fim)" value={form.contract_end ?? ''} onChange={v => setForm(f => ({ ...f, contract_end: v || null }))} type="date" />
               </div>
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Meta mensal de conteúdo (posts/mês)</label>

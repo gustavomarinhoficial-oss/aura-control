@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { loadContractAlerts, shouldRemindToday } from '@/lib/contractsServer'
+import { contractInfo, contractLabel } from '@/lib/contracts'
 
 const SETTINGS_ID = '00000000-0000-0000-0000-000000000001'
 
@@ -104,7 +106,12 @@ export async function POST(request: Request) {
 
   const taskList = (tasks as Task[] ?? [])
 
-  if (taskList.length === 0) {
+  // Contratos acabando: lembra de manhã nos marcos (60, 30, 15, 7, 3, 1 dias, no dia e, vencido, toda semana)
+  const contractLines = mode === 'morning'
+    ? (await loadContractAlerts()).filter(a => shouldRemindToday(a.daysLeft)).map(a => `• ${a.name} — ${contractLabel(contractInfo(a.end))}`)
+    : []
+
+  if (taskList.length === 0 && contractLines.length === 0) {
     return NextResponse.json({ skipped: mode === 'morning' ? 'Sem tarefas ativas' : 'Sem tarefas para amanhã' })
   }
 
@@ -134,6 +141,10 @@ export async function POST(request: Request) {
     }
     if (!overdue.length && !today.length) {
       lines.push('✅ Nenhuma tarefa urgente pra hoje!')
+    }
+    if (contractLines.length) {
+      lines.push('', `📄 *Contratos para renovar (${contractLines.length}):*`)
+      contractLines.forEach(l => lines.push(l))
     }
   } else {
     const header = `🌙 *Preparação para amanhã — ${new Date(tomorrowStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}*`

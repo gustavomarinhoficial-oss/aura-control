@@ -44,6 +44,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       billing_day: body.billing_day !== undefined ? (body.billing_day || null) : undefined,
       content_unlocked_month: body.content_unlocked_month !== undefined ? (body.content_unlocked_month || null) : undefined,
       monthly_content_quota: body.monthly_content_quota !== undefined ? (body.monthly_content_quota || null) : undefined,
+      contract_end: body.contract_end !== undefined ? (body.contract_end || null) : undefined,
       logo_url: body.logo_url !== undefined ? (body.logo_url || null) : undefined,
       project_sharing_enabled: body.project_sharing_enabled,
       content_approval_enabled: body.content_approval_enabled,

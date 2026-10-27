@@ -5,7 +5,7 @@ export async function GET() {
   const supabase = createServiceClient()
   const { data, error } = await supabase
     .from('clients')
-    .select('*, services(id, amount, type, active)')
+    .select('*, services(id, amount, type, active, contract_end)')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       started_at: body.started_at,
       notes: body.notes || null,
       billing_day: body.billing_day || null,
+      contract_end: body.contract_end || null,
     })
     .select()
     .single()

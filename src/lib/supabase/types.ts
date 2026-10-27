@@ -20,6 +20,7 @@ export interface Client {
   traffic_sharing_enabled: boolean | null
   meta_ad_account_id: string | null
   logo_url?: string | null
+  contract_end?: string | null
   created_at: string
 }
 

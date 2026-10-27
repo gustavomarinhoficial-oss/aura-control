@@ -10,7 +10,7 @@ interface Props {
 
 export function NewClientModal({ onClose, onCreated }: Props) {
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', started_at: new Date().toISOString().split('T')[0], notes: '', billing_day: '',
+    name: '', email: '', phone: '', started_at: new Date().toISOString().split('T')[0], notes: '', billing_day: '', contract_end: '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -50,6 +50,10 @@ export function NewClientModal({ onClose, onCreated }: Props) {
               {Array.from({ length: 28 }, (_, i) => i + 1).map(d => <option key={d} value={d}>Todo dia {d}</option>)}
             </select>
             <p className="text-[10px] text-muted-foreground mt-1">Dia do mês em que as cobranças vencem para este cliente.</p>
+          </div>
+          <div>
+            <Field label="Fim do contrato" value={form.contract_end} onChange={v => set('contract_end', v)} type="date" />
+            <p className="text-[10px] text-muted-foreground mt-1">Deixe vazio se o contrato não tem fim. O Hub avisa quando entrar no último mês.</p>
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1.5">Observações</label>

@@ -1,5 +1,7 @@
 ﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { loadContractAlerts } from '@/lib/contractsServer'
+import { contractInfo, contractLabel } from '@/lib/contracts'
 
 export async function GET() {
   const supabase = createServiceClient()
@@ -47,6 +49,14 @@ export async function GET() {
   return NextResponse.json({
     overdue: filterActive(overdueRes.data),
     upcoming: filterActive(upcomingRes.data),
-    renewals: renewalRes.error ? [] : (renewalRes.data ?? []),
+    // Contratos dos clientes que acabaram ou estão no último mês / perto de renovar
+    renewals: (await loadContractAlerts()).map(a => ({
+      id: a.id,
+      name: contractLabel(contractInfo(a.end)),
+      contract_end: a.end,
+      level: a.level,
+      daysLeft: a.daysLeft,
+      clients: { name: a.name },
+    })),
   })
 }

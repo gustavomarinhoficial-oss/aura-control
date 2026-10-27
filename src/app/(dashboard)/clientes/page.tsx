@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { useRole } from '@/lib/hooks/useRole'
 import { isFinanceRestricted } from '@/lib/roles'
 import type { Client, Service } from '@/lib/supabase/types'
+import { ContractBadge } from '@/components/domain/ContractBadge'
+import { contractInfo, contractLabel, CONTRACT_COLOR, effectiveContractEnd, needsAttention } from '@/lib/contracts'
 
 type ClientWithServices = Client & { services: Service[] }
 
@@ -41,6 +43,13 @@ export default function ClientesPage() {
     const matchStatus = filterStatus === 'todos' || c.status === filterStatus
     return matchSearch && matchStatus
   })
+
+  // Contratos acabando (ou vencidos) dos clientes ativos, o que vence primeiro no topo
+  const contractsToRenew = clients
+    .filter(c => c.status === 'ativo')
+    .map(c => ({ c, info: contractInfo(effectiveContractEnd(c, c.services)) }))
+    .filter(x => needsAttention(x.info))
+    .sort((a, b) => (a.info.daysLeft ?? 0) - (b.info.daysLeft ?? 0))
 
   function clientMRR(c: ClientWithServices) {
     return (c.services ?? [])
@@ -95,6 +104,22 @@ export default function ClientesPage() {
         </div>
       </div>
 
+      {contractsToRenew.length > 0 && (
+        <div className="bg-[#1a1a1a] border border-[#ef4444]/30 rounded-xl p-4">
+          <p className="text-xs font-semibold text-[#ef4444] uppercase tracking-wider mb-3">
+            {contractsToRenew.length} contrato{contractsToRenew.length !== 1 ? 's' : ''} para renovar
+          </p>
+          <div className="space-y-2">
+            {contractsToRenew.map(({ c, info }) => (
+              <Link key={c.id} href={`/clientes/${c.id}`} className="flex items-center justify-between gap-3 hover:bg-[#222222] rounded-lg px-2 py-1.5 -mx-2 transition-colors">
+                <span className="text-sm font-medium truncate">{c.name}</span>
+                <span style={{ color: CONTRACT_COLOR[info.level] }} className="text-xs font-medium text-right">{contractLabel(info)}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Mobile: cards ── */}
       <div className="md:hidden space-y-2">
         {loading ? (
@@ -132,6 +157,7 @@ export default function ClientesPage() {
                   <span className="text-[10px] text-muted-foreground">{activeServices(c)} serv.</span>
                 )}
               </div>
+              {c.status === 'ativo' && <div className="mt-1"><ContractBadge end={effectiveContractEnd(c, c.services)} /></div>}
             </div>
             <ChevronRight size={16} className="text-muted-foreground shrink-0" />
           </Link>
@@ -164,7 +190,10 @@ export default function ClientesPage() {
                   onClick={() => router.push(`/clientes/${c.id}`)}
                   className="border-b border-[#2a2a2a] last:border-0 hover:bg-[#222222] cursor-pointer transition-colors"
                 >
-                  <td className="px-5 py-4 text-sm font-medium">{c.name}</td>
+                  <td className="px-5 py-4 text-sm font-medium">
+                    {c.name}
+                    {c.status === 'ativo' && <div className="mt-1"><ContractBadge end={effectiveContractEnd(c, c.services)} /></div>}
+                  </td>
                   <td className="px-5 py-4">
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${statusColor[c.status]}`}>
                       {statusLabel[c.status]}
