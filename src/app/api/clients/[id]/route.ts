@@ -25,6 +25,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const supabase = createServiceClient()
   const body = await request.json()
 
+  // Dia de vencimento mudou? Guarda o anterior pra reajustar as cobranças já geradas
+  let oldBillingDay: number | null | undefined
+  if (body.billing_day !== undefined) {
+    const { data: cur } = await supabase.from('clients').select('billing_day').eq('id', id).single()
+    oldBillingDay = cur?.billing_day ?? null
+  }
+
   if (body.status) {
     const { data: current } = await supabase.from('clients').select('status').eq('id', id).single()
     if (current && current.status !== body.status) {
@@ -56,6 +63,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // O dia de vencimento do cliente manda: as cobranças recorrentes que ainda não foram pagas
+  // (deste mês em diante) passam a vencer no novo dia, pra o Financeiro bater com o painel do cliente.
+  const newDay = body.billing_day ? Number(body.billing_day) : null
+  if (newDay && newDay >= 1 && newDay <= 28 && newDay !== oldBillingDay) {
+    const monthStart = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 8) + '01'
+    const { data: pending } = await supabase
+      .from('charges')
+      .select('id, due_date, services(type)')
+      .eq('client_id', id)
+      .is('paid_at', null)
+      .not('service_id', 'is', null)
+      .gte('due_date', monthStart)
+    for (const ch of (pending ?? []) as unknown as { id: string; due_date: string; services: { type: string } | null }[]) {
+      if (ch.services?.type !== 'recorrente') continue
+      const due = `${ch.due_date.slice(0, 8)}${String(newDay).padStart(2, '0')}`
+      if (due !== ch.due_date) await supabase.from('charges').update({ due_date: due }).eq('id', ch.id)
+    }
+  }
+
   return NextResponse.json(data)
 }
 
