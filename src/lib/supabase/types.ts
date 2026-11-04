@@ -49,6 +49,7 @@ export interface Service {
 }
 
 export interface Charge {
+  original_due_date?: string | null
   id: string
   client_id: string
   service_id: string | null

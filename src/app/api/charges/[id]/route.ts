@@ -32,7 +32,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const updates: Record<string, unknown> = {}
 
   if (body.action === 'pay') {
-    updates.paid_at = new Date().toISOString()
+    // Pode informar o dia em que o cliente realmente pagou (o vencimento oficial não muda)
+    const paidAt = typeof body.paid_at === 'string' && !Number.isNaN(Date.parse(body.paid_at)) ? new Date(body.paid_at).toISOString() : new Date().toISOString()
+    updates.paid_at = paidAt
     updates.status = 'pago'
   } else if (body.action === 'unpay') {
     updates.paid_at = null
@@ -40,7 +42,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   } else {
     if (body.description !== undefined) updates.description = body.description
     if (body.amount !== undefined) updates.amount = body.amount
-    if (body.due_date !== undefined) updates.due_date = body.due_date
+    if (body.due_date !== undefined) {
+      // Reagendar vale só pra essa cobrança. Guarda o vencimento oficial pra medir o atraso depois.
+      const { data: cur } = await supabase.from('charges').select('due_date, original_due_date').eq('id', id).single()
+      if (cur && body.due_date !== cur.due_date) {
+        const original = cur.original_due_date ?? cur.due_date
+        updates.due_date = body.due_date
+        updates.original_due_date = body.due_date === original ? null : original
+      }
+    }
   }
 
   const { data, error } = await supabase

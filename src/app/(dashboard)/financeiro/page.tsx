@@ -17,6 +17,7 @@ import {
   AreaChart, Area, CartesianGrid
 } from 'recharts'
 import type { Charge } from '@/lib/supabase/types'
+import { paymentDelay, delayLabel, delayColor, paidDay, officialDue, diffDays } from '@/lib/chargeTiming'
 
 // ── tipos ──────────────────────────────────────────────────────────────────
 type ChargeService = { active: boolean; contract_end?: string | null } | null
@@ -77,6 +78,57 @@ function buildWhatsAppMessage(charge: ChargeWithStatus, pixKey: string, agencyNa
   const isOverdue = !charge.paid_at && new Date(charge.due_date) < new Date()
   const dueFormatted = new Date(charge.due_date + 'T12:00:00').toLocaleDateString('pt-BR')
   return `Olá, ${clientName}! 👋\n\n${isOverdue ? '⚠️ Identificamos uma cobrança em aberto:' : 'Passando pra lembrar sobre a cobrança:'}\n\n📋 *${charge.description}*\n💰 *${formatBRL(Number(charge.amount))}*\n📅 Vencimento: ${dueFormatted}${isOverdue ? ' _(em atraso)_' : ''}\n\nPara realizar o pagamento via *PIX*:\n🔑 \`${pixKey || 'chave não configurada — acesse Configurações'}\`\n${pixKey ? '\nÉ só copiar a chave acima e realizar o pagamento pelo seu banco. ✅' : ''}\n\nQualquer dúvida, estamos à disposição! 😊\n\n_${agencyName}_`
+}
+
+// ── Marcar cobrança como paga (com a data real do pagamento) ─────────────────
+function PayChargeModal({ charge, onClose, onPaid }: { charge: ChargeWithStatus; onClose: () => void; onPaid: () => void }) {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const [date, setDate] = useState(today)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const official = officialDue(charge)
+  const delay = date ? diffDays(date, official) : 0
+
+  async function confirm() {
+    if (!date) return
+    setBusy(true)
+    const res = await fetch(`/api/charges/${charge.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'pay', paid_at: new Date(date + 'T12:00:00').toISOString() }),
+    })
+    if (!res.ok) { setError('Erro ao marcar como pago'); setBusy(false); return }
+    onPaid()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl w-full max-w-sm p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Marcar como pago</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={16} /></button>
+        </div>
+        <p className="text-xs text-muted-foreground">{charge.clients?.name} — {charge.description} — {formatBRL(Number(charge.amount))}</p>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1.5">Dia em que o cliente pagou</label>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)}
+            className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef]" />
+        </div>
+        <p className="text-xs">
+          Vencimento oficial: <span className="font-medium">{formatDate(official)}</span>
+          {date && <> · <span style={{ color: delayColor(delay) }} className="font-medium">{delayLabel(delay)}</span></>}
+        </p>
+        <p className="text-[11px] text-muted-foreground">O vencimento continua sendo o do painel do cliente. O atraso fica salvo nessa cobrança.</p>
+        {error && <p className="text-xs text-destructive">{error}</p>}
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
+          <button onClick={confirm} disabled={busy || !date} className="flex-1 bg-[#22c55e] hover:bg-[#16a34a] text-[#04120a] font-medium text-sm py-2.5 rounded-lg transition-colors disabled:opacity-50">
+            {busy ? 'Salvando...' : 'Confirmar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── Delete charge modal ──────────────────────────────────────────────────────
@@ -410,6 +462,7 @@ export default function FinanceiroPage() {
   const [deletingCharge, setDeletingCharge] = useState<string | null>(null)
   const [deletingExp, setDeletingExp] = useState<string | null>(null)
   const [whatsAppCharge, setWhatsAppCharge] = useState<ChargeWithStatus | null>(null)
+  const [payingCharge, setPayingCharge] = useState<ChargeWithStatus | null>(null)
 
   const monthStr = `${year}-${String(month).padStart(2, '0')}`
   const monthName = new Date(year, month - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
@@ -765,15 +818,26 @@ export default function FinanceiroPage() {
                     <div className="text-right shrink-0">
                       <p className="text-sm font-semibold">{formatBRL(Number(c.amount))}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{formatDate(c.due_date)}</p>
+                      {c.original_due_date && c.original_due_date !== c.due_date && (
+                        <p className="text-[10px] text-[#f59e0b] mt-0.5">reagendada · oficial {formatDate(c.original_due_date)}</p>
+                      )}
                     </div>
                   </div>
+                  {c.paid_at && (() => {
+                    const d = paymentDelay(c)
+                    return d === null ? null : (
+                      <p className="text-xs text-muted-foreground">
+                        Pago dia {formatDate(paidDay(c.paid_at))} · <span style={{ color: delayColor(d) }} className="font-medium">{delayLabel(d)}</span>
+                      </p>
+                    )
+                  })()}
                   {/* Linha 2: status + ações */}
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-xs font-medium px-2 py-1 rounded-full ${chargeStatusStyle[c.status]}`}>
                       {chargeStatusLabel[c.status]}
                     </span>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => markChargePaid(c.id, !!c.paid_at)} disabled={paying === c.id}
+                      <button onClick={() => (c.paid_at ? markChargePaid(c.id, true) : setPayingCharge(c as ChargeWithStatus))} disabled={paying === c.id}
                         className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${c.paid_at ? 'border border-[#2a2a2a] text-muted-foreground hover:text-foreground' : 'bg-[#22c55e]/10 text-[#22c55e] hover:bg-[#22c55e]/20 border border-[#22c55e]/20'}`}>
                         <Check size={12} />{c.paid_at ? 'Desfazer' : 'Marcar pago'}
                       </button>
@@ -970,6 +1034,9 @@ export default function FinanceiroPage() {
       )}
       {editingExpense && (
         <ExpenseModal initial={editingExpense} onClose={() => setEditingExpense(null)} onSaved={() => { setEditingExpense(null); load() }} />
+      )}
+      {payingCharge && (
+        <PayChargeModal charge={payingCharge} onClose={() => setPayingCharge(null)} onPaid={() => { setPayingCharge(null); load() }} />
       )}
       {whatsAppCharge && (
         <WhatsAppModal charge={whatsAppCharge} onClose={() => setWhatsAppCharge(null)} />

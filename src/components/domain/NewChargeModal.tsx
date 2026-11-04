@@ -78,6 +78,13 @@ export function NewChargeModal({ onClose, onCreated, defaultMonth, initial }: Pr
           <Field label="Descrição *" value={form.description} onChange={v => set('description', v)} placeholder="Ex: Gestão de tráfego — Agosto" />
           <Field label="Valor (R$) *" value={form.amount} onChange={v => set('amount', v)} type="number" placeholder="0,00" />
           <Field label="Vencimento *" value={form.due_date} onChange={v => set('due_date', v)} type="date" />
+          {initial && (
+            <p className="text-[10px] text-muted-foreground -mt-2">
+              Mudar a data vale só para esta cobrança. O dia oficial continua o do painel do cliente
+              {initial.original_due_date ? ` (oficial: ${initial.original_due_date.split('-').reverse().join('/')})` : ''}.
+              Se o cliente só atrasou, deixe a data e informe o dia real em “Marcar pago”.
+            </p>
+          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 border border-[#2a2a2a] text-sm font-medium py-2.5 rounded-lg hover:bg-[#222222] transition-colors">Cancelar</button>
