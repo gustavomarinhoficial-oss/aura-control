@@ -42,12 +42,16 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/api/public/') ||
     pathname.startsWith('/api/cron/') ||
     pathname === '/api/upload'
+  // Conector MCP do Claude: protegido por token próprio (na URL ou no header), não por sessão.
+  // /.well-known fica aberto só pra devolver 404 limpo na descoberta de OAuth (o conector não usa OAuth).
+  const isMcpRoute = pathname === '/mcp' || pathname.startsWith('/mcp/') || pathname.startsWith('/.well-known/')
 
   if (!user) {
     // API interna sem sessão: nunca redireciona pra tela de login (isso
     // devolveria HTML pra quem esperava JSON) — responde 401 direto. É essa
     // checagem que faltava: antes, isApiRoute pulava a autenticação inteira
     // e qualquer pessoa conseguia ler/editar dados batendo direto em /api/*.
+    if (isMcpRoute) return supabaseResponse
     if (isApiRoute && !isPublicApiRoute) {
       return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
     }
