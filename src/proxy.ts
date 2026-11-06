@@ -44,7 +44,7 @@ export async function proxy(request: NextRequest) {
     pathname === '/api/upload'
   // Conector MCP do Claude: protegido por token próprio (na URL ou no header), não por sessão.
   // /.well-known fica aberto só pra devolver 404 limpo na descoberta de OAuth (o conector não usa OAuth).
-  const isMcpRoute = pathname === '/mcp' || pathname.startsWith('/mcp/') || pathname.startsWith('/.well-known/')
+  const isMcpRoute = pathname.startsWith('/api/claude/') || pathname === '/mcp' || pathname.startsWith('/mcp/') || pathname.startsWith('/.well-known/')
 
   if (!user) {
     // API interna sem sessão: nunca redireciona pra tela de login (isso

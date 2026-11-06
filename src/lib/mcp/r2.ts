@@ -50,13 +50,17 @@ export async function storeImage(input: ImageInput, label: string): Promise<stri
   }
   const raw = input.conteudo_base64.replace(/^data:[^;]+;base64,/, '').replace(/\s+/g, '')
   if (!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)) throw new ToolError(`${label}: o base64 da imagem é inválido.`)
-  const bytes = Buffer.from(raw, 'base64')
+  return storeBytes(Buffer.from(raw, 'base64'), typeof input.mime === 'string' ? input.mime : undefined, label)
+}
+
+// Valida os bytes (tamanho e formato reais) e grava no R2. Usado pelo base64 e pelo upload por arquivo.
+export async function storeBytes(bytes: Buffer, declaredMime: string | undefined, label: string): Promise<string> {
   if (bytes.length === 0) throw new ToolError(`${label}: a imagem está vazia.`)
   if (bytes.length > MAX_IMAGE_BYTES) throw new ToolError(`${label}: a imagem tem ${(bytes.length / 1048576).toFixed(1)} MB; o limite é 5 MB.`)
 
   const real = sniff(bytes)
   if (!real) throw new ToolError(`${label}: formato não suportado. Envie JPEG ou PNG.`)
-  const declared = typeof input.mime === 'string' ? input.mime.toLowerCase() : real
+  const declared = declaredMime ? declaredMime.toLowerCase() : real
   if (!MIME_EXT[declared]) throw new ToolError(`${label}: mime "${declared}" não suportado. Use image/jpeg ou image/png.`)
 
   const c = config()
