@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { effectiveUnlockedMonth } from '@/lib/utils/contentUnlock'
+import { ToolError } from './errors'
 import { storeImage, deleteImages, isOurUrl, MAX_IMAGES, type ImageInput } from './r2'
 
 const BASE_URL = (process.env.PUBLIC_BASE_URL || 'https://hub.owlcreative.club').replace(/\/$/, '')
@@ -24,7 +25,6 @@ const STATUS_ALIAS: Record<string, string> = {
   ajustado: 'ajustado', em_criacao: 'em_criacao',
 }
 
-class ToolError extends Error {}
 const fail = (msg: string): never => { throw new ToolError(msg) }
 
 const isUuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)
@@ -382,4 +382,3 @@ export const TOOLS: Tool[] = [
   },
 ]
 
-export { ToolError }

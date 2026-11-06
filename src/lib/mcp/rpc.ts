@@ -1,4 +1,5 @@
-import { TOOLS, ToolError } from './tools'
+import { TOOLS } from './tools'
+import { ToolError } from './errors'
 
 // Servidor MCP mínimo, transporte Streamable HTTP, sem sessão (cada POST é independente).
 // Cobre o que o claude.ai usa: initialize, ping, tools/list e tools/call.

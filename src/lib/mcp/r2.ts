@@ -1,3 +1,4 @@
+import { ToolError } from './errors'
 import { S3Client, PutObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 
 // Mesmo bucket e mesma pasta (posts/) que o Hub já usa pras imagens do calendário editorial.
@@ -10,7 +11,7 @@ const MIME_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/jpg': 'jp
 function config() {
   const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = process.env
   if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME || !R2_PUBLIC_URL) {
-    throw new Error('O armazenamento de imagens (R2) não está configurado no servidor.')
+    throw new ToolError('O armazenamento de imagens (R2) não está configurado no servidor.')
   }
   return { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL }
 }
@@ -41,22 +42,22 @@ export interface ImageInput { nome_arquivo?: unknown; conteudo_base64?: unknown;
 // Recebe uma imagem em base64 (ou uma URL que já é nossa) e devolve a URL pública no R2.
 export async function storeImage(input: ImageInput, label: string): Promise<string> {
   if (typeof input.url === 'string' && input.url) {
-    if (!isOurUrl(input.url)) throw new Error(`${label}: só aceito URLs de imagens enviadas por este conector (use enviar_imagem ou conteudo_base64).`)
+    if (!isOurUrl(input.url)) throw new ToolError(`${label}: só aceito URLs de imagens enviadas por este conector (use enviar_imagem ou conteudo_base64).`)
     return input.url
   }
   if (typeof input.conteudo_base64 !== 'string' || !input.conteudo_base64) {
-    throw new Error(`${label}: informe "conteudo_base64" (ou "url" de uma imagem já enviada).`)
+    throw new ToolError(`${label}: informe "conteudo_base64" (ou "url" de uma imagem já enviada).`)
   }
   const raw = input.conteudo_base64.replace(/^data:[^;]+;base64,/, '').replace(/\s+/g, '')
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)) throw new Error(`${label}: o base64 da imagem é inválido.`)
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(raw)) throw new ToolError(`${label}: o base64 da imagem é inválido.`)
   const bytes = Buffer.from(raw, 'base64')
-  if (bytes.length === 0) throw new Error(`${label}: a imagem está vazia.`)
-  if (bytes.length > MAX_IMAGE_BYTES) throw new Error(`${label}: a imagem tem ${(bytes.length / 1048576).toFixed(1)} MB; o limite é 5 MB.`)
+  if (bytes.length === 0) throw new ToolError(`${label}: a imagem está vazia.`)
+  if (bytes.length > MAX_IMAGE_BYTES) throw new ToolError(`${label}: a imagem tem ${(bytes.length / 1048576).toFixed(1)} MB; o limite é 5 MB.`)
 
   const real = sniff(bytes)
-  if (!real) throw new Error(`${label}: formato não suportado. Envie JPEG ou PNG.`)
+  if (!real) throw new ToolError(`${label}: formato não suportado. Envie JPEG ou PNG.`)
   const declared = typeof input.mime === 'string' ? input.mime.toLowerCase() : real
-  if (!MIME_EXT[declared]) throw new Error(`${label}: mime "${declared}" não suportado. Use image/jpeg ou image/png.`)
+  if (!MIME_EXT[declared]) throw new ToolError(`${label}: mime "${declared}" não suportado. Use image/jpeg ou image/png.`)
 
   const c = config()
   const key = `posts/${Date.now()}-${Math.random().toString(36).slice(2)}.${MIME_EXT[real]}`
