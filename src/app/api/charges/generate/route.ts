@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { insertIgnoringDuplicates } from '@/lib/db/insertMissing'
 
 function addMonths(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T12:00:00Z')
@@ -98,8 +99,7 @@ export async function POST() {
       // duas vezes quase junto (duas abas abertas, F5 no meio do
       // carregamento), a segunda chamada não duplica a cobrança que a
       // primeira já criou pro mesmo serviço+vencimento — só ignora.
-      await supabase.from('charges').upsert(newCharges, { onConflict: 'service_id,due_date', ignoreDuplicates: true })
-      totalGenerated += newCharges.length
+      totalGenerated += await insertIgnoringDuplicates(supabase, 'charges', newCharges)
     }
   }
 

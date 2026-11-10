@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { randomUUID } from 'crypto'
+import { insertIgnoringDuplicates } from '@/lib/db/insertMissing'
 
 const BUFFER_MONTHS = 3
 
@@ -77,11 +78,9 @@ export async function POST() {
   }
 
   if (newExpenses.length > 0) {
-    // upsert com ignoreDuplicates: se essa rota rodar duas vezes quase junto
-    // (mesma causa da BMF/Petnico duplicadas), a segunda chamada não cria de
-    // novo a parcela que a primeira já gerou pro mesmo grupo+vencimento.
-    await supabase.from('expenses').upsert(newExpenses, { onConflict: 'recurrence_group,due_date', ignoreDuplicates: true })
-    totalGenerated = newExpenses.length
+    // Se essa rota rodar duas vezes quase junto (mesma causa da BMF/Petnico duplicadas), o índice único
+    // barra a repetição e só as parcelas que faltam entram (ver insertIgnoringDuplicates).
+    totalGenerated = await insertIgnoringDuplicates(supabase, 'expenses', newExpenses)
   }
 
   return NextResponse.json({ generated: totalGenerated })
