@@ -41,6 +41,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         new_status: body.status,
         note: body.status_note || null,
       })
+      // Cliente encerrado = baixa de verdade: os serviços dele saem do MRR (viram churn de MRR) e
+      // param de gerar cobranças. As cobranças já em aberto continuam valendo (aparecem como encerradas).
+      if (body.status === 'encerrado') {
+        await supabase.from('services').update({
+          active: false,
+          ended_at: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
+        }).eq('client_id', id).eq('active', true)
+      }
     }
   }
 

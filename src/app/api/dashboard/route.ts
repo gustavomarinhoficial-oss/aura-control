@@ -17,7 +17,7 @@ export async function GET() {
     supabase.from('charges').select('id').is('paid_at', null).lt('due_date', today.toISOString().split('T')[0]),
     supabase.from('charges').select('*, clients(name)').is('paid_at', null).neq('status', 'atrasado').gte('due_date', today.toISOString().split('T')[0]).lte('due_date', next7.toISOString().split('T')[0]).order('due_date'),
     // Clientes que cancelaram/ficaram inativos este mÃªs (via histÃ³rico)
-    supabase.from('client_status_history').select('client_id').eq('new_status', 'cancelado').gte('changed_at', monthStart).lte('changed_at', monthEnd),
+    supabase.from('client_status_history').select('client_id').eq('new_status', 'encerrado').gte('changed_at', monthStart).lte('changed_at', monthEnd),
     // ServiÃ§os recorrentes encerrados este mÃªs (MRR churn)
     supabase.from('services').select('amount').eq('active', false).eq('type', 'recorrente').gte('ended_at', monthStart).lte('ended_at', monthEnd),
   ])
