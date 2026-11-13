@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { DiagnosticoTab } from '@/components/domain/onboarding/DiagnosticoTab'
 import type { Client, Service, ClientStatusHistory, Charge, Task } from '@/lib/supabase/types'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface EditorialLine {
   id: string
@@ -589,10 +590,10 @@ export default function ClientProfilePage() {
                 </div>
                 <div>
                   <label className="block text-xs text-muted-foreground mb-1">Valor (R$) *</label>
-                  <input
-                    type="number"
+                  <MoneyInput
+                   
                     value={newService.amount}
-                    onChange={e => setNewService(s => ({ ...s, amount: e.target.value }))}
+                    onValueChange={v => setNewService(s => ({ ...s, amount: v }))}
                     className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                   />
                 </div>
@@ -652,7 +653,7 @@ export default function ClientProfilePage() {
                         </div>
                         <div>
                           <label className="block text-xs text-muted-foreground mb-1">Valor (R$)</label>
-                          <input type="number" value={editServiceForm.amount} onChange={e => setEditServiceForm(f => ({ ...f, amount: e.target.value }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+                          <MoneyInput value={editServiceForm.amount} onValueChange={v => setEditServiceForm(f => ({ ...f, amount: v }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
                         </div>
                         {s.type === 'recorrente' && (
                           <div>

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, X, Trash2, Wallet, TrendingUp, TrendingDown, Target, Pencil, Check, List, PiggyBank } from 'lucide-react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface CashMovement {
   id: string
@@ -204,7 +205,7 @@ function CaixaTab() {
               </div>
               {editingTarget ? (
                 <div className="flex gap-2">
-                  <input autoFocus type="number" value={targetInput} onChange={e => setTargetInput(e.target.value)}
+                  <MoneyInput autoFocus value={targetInput} onValueChange={v => setTargetInput(v)}
                     onKeyDown={e => e.key === 'Enter' && saveTarget()}
                     className="flex-1 bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
                   <button onClick={saveTarget} className="bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] rounded-lg px-3 flex items-center justify-center"><Check size={14} /></button>
@@ -346,7 +347,7 @@ function CaixaTab() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
-                <input autoFocus type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                <MoneyInput autoFocus placeholder="0,00" value={form.amount} onValueChange={v => setForm(f => ({ ...f, amount: v }))}
                   className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
               </div>
               <div>
@@ -562,7 +563,7 @@ function AntecipadaTab() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
-                <input autoFocus type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                <MoneyInput autoFocus placeholder="0,00" value={form.amount} onValueChange={v => setForm(f => ({ ...f, amount: v }))}
                   className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
               </div>
               <div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import type { Client, Charge } from '@/lib/supabase/types'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface Props {
   onClose: () => void
@@ -76,7 +77,10 @@ export function NewChargeModal({ onClose, onCreated, defaultMonth, initial }: Pr
             </div>
           )}
           <Field label="Descrição *" value={form.description} onChange={v => set('description', v)} placeholder="Ex: Gestão de tráfego — Agosto" />
-          <Field label="Valor (R$) *" value={form.amount} onChange={v => set('amount', v)} type="number" placeholder="0,00" />
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$) *</label>
+            <MoneyInput value={form.amount} onValueChange={v => set('amount', v)} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-[#efefef] transition-colors" />
+          </div>
           <Field label="Vencimento *" value={form.due_date} onChange={v => set('due_date', v)} type="date" />
           {initial && (
             <p className="text-[10px] text-muted-foreground -mt-2">

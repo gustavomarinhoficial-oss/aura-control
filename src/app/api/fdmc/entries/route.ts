@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { createServiceClient } from '@/lib/supabase/server'
 import { requireFdmcAccess } from '@/lib/fdmc/auth'
+import { addMonthsClamped, installmentAmounts, parseInstallments } from '@/lib/finance/installments'
 
 const HORIZON_MONTHS = 3
 
@@ -42,6 +43,32 @@ export async function POST(request: Request) {
 
   if (!body.description || !body.amount || !body.entry_date || !['receita', 'despesa'].includes(body.type)) {
     return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
+  }
+
+  // Parcelado em N vezes (só despesa): cria as N parcelas de uma vez, uma por mês, ligadas pelo mesmo grupo
+  if (body.installments !== undefined && body.installments !== null) {
+    const n = parseInstallments(body.installments)
+    if (!n) return NextResponse.json({ error: 'Parcelas: informe um número inteiro de 2 a 60.' }, { status: 400 })
+    if (body.type !== 'despesa') return NextResponse.json({ error: 'Só despesa pode ser parcelada.' }, { status: 400 })
+    const group = randomUUID()
+    const amounts = installmentAmounts(Number(body.amount), n, body.amount_mode === 'total' ? 'total' : 'parcela')
+    const rows = amounts.map((amount, i) => ({
+      type: body.type,
+      description: body.description,
+      amount,
+      category: body.category || 'outro',
+      notes: body.notes || null,
+      recurrent: false,
+      recurrence_group: group,
+      recurrence_end_date: null,
+      entry_date: addMonthsClamped(body.entry_date, i),
+      paid_at: i === 0 ? (body.paid_at || null) : null,
+      installment_number: i + 1,
+      installments_total: n,
+    }))
+    const { data, error } = await supabase.from('fdmc_entries').insert(rows).select().order('entry_date', { ascending: true })
+    if (error) return NextResponse.json({ error: `${error.message}. Se for sobre "installment", rode o SQL da migration 056.` }, { status: 500 })
+    return NextResponse.json(data?.[0] ?? null, { status: 201 })
   }
 
   const recurrent = body.recurrent === true

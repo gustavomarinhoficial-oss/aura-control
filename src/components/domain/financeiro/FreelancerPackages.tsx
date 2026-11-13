@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, Check, X, Film, Loader2, ChevronDown, Trash2, RotateCw } from 'lucide-react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface Video { id: string; delivered_at: string; note: string | null }
 interface Pkg {
@@ -106,7 +107,7 @@ export function FreelancerPackages({ onExpenseLaunched }: { onExpenseLaunched: (
           </div>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Valor (R$)</label>
-            <input type="number" step="0.01" value={draft.amount} onChange={e => setDraft(d => ({ ...d, amount: e.target.value }))} placeholder="1000" className={inputCls} />
+            <MoneyInput value={draft.amount} onValueChange={v => setDraft(d => ({ ...d, amount: v }))} placeholder="0,00" className={inputCls} />
           </div>
           <button
             onClick={() => createPackage({ freelancer_name: draft.freelancer_name, total_videos: Number(draft.total_videos), amount: Number(draft.amount) })}

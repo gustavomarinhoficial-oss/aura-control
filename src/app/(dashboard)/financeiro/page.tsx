@@ -12,6 +12,8 @@ import { CashFlowPanel } from '@/components/domain/financeiro/CashFlowPanel'
 import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 import { FreelancerPackages } from '@/components/domain/financeiro/FreelancerPackages'
 import { NewChargeModal } from '@/components/domain/NewChargeModal'
+import { MoneyInput } from '@/components/ui/MoneyInput'
+import { PaymentMode, EMPTY_PAYMENT, paymentPayload, type PaymentState } from '@/components/domain/financeiro/PaymentMode'
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
   AreaChart, Area, CartesianGrid
@@ -34,6 +36,8 @@ interface Expense {
   recurrence_group: string | null
   recurrence_end_date: string | null
   notes: string | null
+  installment_number?: number | null
+  installments_total?: number | null
 }
 
 interface HistoricoPoint { label: string; key: string; revenue: number; expenses: number; prolabore: number; profit: number }
@@ -263,6 +267,8 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
   const [stopping, setStopping] = useState(false)
   const [stopFrom, setStopFrom] = useState(initial?.due_date ?? new Date().toISOString().split('T')[0])
   const [stopSaving, setStopSaving] = useState(false)
+  // Só ao criar: à vista, parcelado em N vezes ou recorrente
+  const [payment, setPayment] = useState<PaymentState>(EMPTY_PAYMENT)
 
   async function stopRecurrence() {
     if (!initial) return
@@ -280,12 +286,15 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
     if (!form.description.trim()) return setError('Informe a descrição')
     if (!form.amount || isNaN(Number(form.amount))) return setError('Informe o valor')
     if (!form.due_date) return setError('Informe a data')
+    const pay = initial ? {} : paymentPayload(payment, form.due_date)
+    if (typeof pay === 'string') return setError(pay)
     setSaving(true)
     const res = await fetch(initial ? `/api/expenses/${initial.id}` : '/api/expenses', {
       method: initial ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        ...pay,
         amount: Number(form.amount),
         ...(isRecurringEdit && amountChanged && applyForward ? { effective_date: effectiveDate } : {}),
         ...(!initial && alreadyPaid ? { paid_at: new Date(paidDate + 'T12:00:00').toISOString() } : {}),
@@ -313,8 +322,7 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Valor (R$)</label>
-              <input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                placeholder="0,00"
+              <MoneyInput value={form.amount} onValueChange={v => setForm(f => ({ ...f, amount: v }))}
                 className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
             </div>
             <div>
@@ -355,7 +363,11 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
           </div>
           {isRecurringEdit ? (
             <div className="space-y-2">
-              {initial!.recurrence_end_date ? (
+              {initial!.installments_total ? (
+                <p className="text-[11px] text-[#60a5fa] flex items-center gap-1.5">
+                  <Tag size={11} />Parcela {initial!.installment_number}/{initial!.installments_total} — as outras parcelas seguem vinculadas.
+                </p>
+              ) : initial!.recurrence_end_date ? (
                 <p className="text-[11px] text-[#f59e0b] flex items-center gap-1.5">
                   <Tag size={11} />Recorrência encerra a partir de {formatDate(initial!.recurrence_end_date)}.
                 </p>
@@ -366,7 +378,7 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
               )}
               {!stopping ? (
                 <button type="button" onClick={() => setStopping(true)} className="text-[11px] text-[#ef4444] hover:underline">
-                  Encerrar recorrência
+                  {initial!.installments_total ? 'Cancelar as parcelas restantes' : 'Encerrar recorrência'}
                 </button>
               ) : (
                 <div className="bg-[#ef4444]/10 border border-[#ef4444]/20 rounded-lg p-3 space-y-2">
@@ -384,6 +396,14 @@ function ExpenseModal({ initial, prefill, onClose, onSaved }: {
                 </div>
               )}
             </div>
+          ) : !initial ? (
+            <PaymentMode
+              value={payment}
+              onChange={setPayment}
+              amount={form.amount}
+              firstDate={form.due_date}
+              inputCls="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
+            />
           ) : (
             <div className="space-y-2">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -896,6 +916,13 @@ export default function FinanceiroPage() {
                             <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: catInfo.color + '20', color: catInfo.color }}>
                               {catInfo.label}
                             </span>
+                            {e.installments_total ? (
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#60a5fa]/15 text-[#60a5fa]" title={`Parcelado em ${e.installments_total}x`}>
+                                Parcela {e.installment_number}/{e.installments_total}
+                              </span>
+                            ) : !e.recurrent && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-[#2a2a2a] text-muted-foreground">À vista</span>
+                            )}
                             {e.recurrent && (
                               <span className="text-xs text-muted-foreground flex items-center gap-1" title={e.recurrence_end_date ? `Encerra em ${formatDate(e.recurrence_end_date)}` : 'Recorrente'}>
                                 <Tag size={10} />{e.recurrence_end_date ? `até ${formatDate(e.recurrence_end_date)}` : 'recorrente'}

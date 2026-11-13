@@ -10,6 +10,8 @@ import {
 } from 'recharts'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { CashFlowPanel } from '@/components/domain/financeiro/CashFlowPanel'
+import { MoneyInput } from '@/components/ui/MoneyInput'
+import { PaymentMode, EMPTY_PAYMENT, paymentPayload, type PaymentState } from '@/components/domain/financeiro/PaymentMode'
 import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 
 // ── tipos ──────────────────────────────────────────────────────────────────
@@ -25,6 +27,8 @@ interface FdmcEntry {
   recurrent: boolean | null
   recurrence_group: string | null
   recurrence_end_date: string | null
+  installment_number?: number | null
+  installments_total?: number | null
   created_at: string
 }
 
@@ -137,7 +141,9 @@ export default function FdmcFinanceiroPage() {
 
   async function remove(e: FdmcEntry) {
     if (e.recurrence_group) {
-      const all = confirm('Este lançamento é recorrente.\n\nOK = apagar este e todos os próximos (encerra a recorrência)\nCancelar = escolher só este mês')
+      const all = confirm(e.installments_total
+        ? `Esta é a parcela ${e.installment_number}/${e.installments_total}.\n\nOK = apagar esta e as parcelas seguintes ainda não pagas\nCancelar = escolher só esta parcela`
+        : 'Este lançamento é recorrente.\n\nOK = apagar este e todos os próximos (encerra a recorrência)\nCancelar = escolher só este mês')
       if (all) {
         setBusy(e.id)
         await fetch(`/api/fdmc/entries/${e.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'stop_recurrence', from_date: e.entry_date }) })
@@ -203,6 +209,13 @@ export default function FdmcFinanceiroPage() {
             <p className="text-sm font-medium truncate">{e.description}</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: cat.color + '20', color: cat.color }}>{cat.label}</span>
+              {e.installments_total ? (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#60a5fa]/15 text-[#60a5fa]" title={`Parcelado em ${e.installments_total}x`}>
+                  Parcela {e.installment_number}/{e.installments_total}
+                </span>
+              ) : !e.recurrent && e.type === 'despesa' && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[#2a2a2a] text-muted-foreground">À vista</span>
+              )}
               {e.recurrent && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1" title={e.recurrence_end_date ? `Encerra em ${formatDate(e.recurrence_end_date)}` : 'Recorrente'}>
                   <Tag size={10} />{e.recurrence_end_date ? `até ${formatDate(e.recurrence_end_date)}` : 'recorrente'}
@@ -518,6 +531,8 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
   const [effectiveDate, setEffectiveDate] = useState(initial?.entry_date ?? todayStr())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Só ao criar: à vista, parcelado em N vezes ou recorrente
+  const [payment, setPayment] = useState<PaymentState>(EMPTY_PAYMENT)
 
   const isRecurringEdit = !!initial?.recurrence_group
   const amountChanged = initial ? Number(form.amount) !== Number(initial.amount) : false
@@ -528,12 +543,15 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
     const amountNum = parseFloat(String(form.amount).replace(',', '.'))
     if (!amountNum || amountNum <= 0) return setError('Informe um valor maior que zero')
     if (!form.entry_date) return setError('Informe a data')
+    const pay = initial ? {} : paymentPayload(payment, form.entry_date)
+    if (typeof pay === 'string') return setError(pay)
     setSaving(true)
     const res = await fetch(initial ? `/api/fdmc/entries/${initial.id}` : '/api/fdmc/entries', {
       method: initial ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...form,
+        ...pay,
         type,
         amount: amountNum,
         ...(isRecurringEdit && amountChanged && applyForward ? { effective_date: effectiveDate } : {}),
@@ -565,7 +583,7 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Valor (R$)</label>
-              <input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0,00" className={inputCls} />
+              <MoneyInput value={form.amount} onValueChange={v => setForm(f => ({ ...f, amount: v }))} className={inputCls} />
             </div>
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Vencimento</label>
@@ -594,7 +612,13 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
             </div>
           )}
 
-          {(!initial || !initial.recurrence_group) && (
+          {!initial && (
+            <PaymentMode value={payment} onChange={setPayment} amount={form.amount} firstDate={form.entry_date} inputCls={inputCls} allowInstallments={type === 'despesa'} />
+          )}
+          {initial?.installments_total ? (
+            <p className="text-[11px] text-[#60a5fa] flex items-center gap-1.5"><Tag size={11} />Parcela {initial.installment_number}/{initial.installments_total} — as outras parcelas seguem vinculadas.</p>
+          ) : null}
+          {initial && !initial.recurrence_group && (
             <div className="rounded-lg border border-[#2a2a2a] p-3 space-y-2">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={form.recurrent} onChange={e => setForm(f => ({ ...f, recurrent: e.target.checked }))} className="accent-[#efefef]" />
@@ -780,7 +804,7 @@ function CaixaTab() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-muted-foreground mb-1.5">Valor (R$)</label>
-                <input autoFocus type="number" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                <MoneyInput autoFocus placeholder="0,00" value={form.amount} onValueChange={v => setForm(f => ({ ...f, amount: v }))}
                   className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
               </div>
               <div>

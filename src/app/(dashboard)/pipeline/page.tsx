@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Plus, X, Check, Trash2, Phone, Mail, DollarSign, FileText, Calendar, Pencil, AtSign, MapPin, User } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 // ── Confetti ────────────────────────────────────────────────────────────────
 function Confetti({ name, value }: { name: string; value: number | null }) {
@@ -375,8 +376,8 @@ export default function PipelinePage() {
                     <input placeholder="Nome do contato"
                       value={newForm.contact_name} onChange={e => setNewForm(f => ({ ...f, contact_name: e.target.value }))}
                       className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
-                    <input placeholder="Valor esperado (R$)" type="number"
-                      value={newForm.estimated_value} onChange={e => setNewForm(f => ({ ...f, estimated_value: e.target.value }))}
+                    <MoneyInput placeholder="Valor esperado"
+                      value={newForm.estimated_value} onValueChange={v => setNewForm(f => ({ ...f, estimated_value: v }))}
                       className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                     <div className="flex gap-1.5">
                       <button onClick={() => setAddingStage(null)}
@@ -529,7 +530,7 @@ export default function PipelinePage() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><DollarSign size={10} /> Valor esperado</label>
-                    <input type="number" placeholder="3000" value={editForm.estimated_value} onChange={e => setEditForm(f => ({ ...f, estimated_value: e.target.value }))}
+                    <MoneyInput placeholder="0,00" value={editForm.estimated_value} onValueChange={v => setEditForm(f => ({ ...f, estimated_value: v }))}
                       className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>

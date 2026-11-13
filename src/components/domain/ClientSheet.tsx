@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { X, Plus, CheckCircle, XCircle, AlertCircle, Clock, Edit2, Check } from 'lucide-react'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import type { Client, Service, ClientStatusHistory } from '@/lib/supabase/types'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 type FullClient = Client & { services: Service[]; status_history: ClientStatusHistory[] }
 
@@ -241,7 +242,10 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                     </div>
                   )}
                 </div>
-                <EditField label="Valor (R$)" value={newService.amount} onChange={v => setNewService(s => ({ ...s, amount: v }))} type="number" />
+                <div>
+                  <label className="block text-[10px] text-muted-foreground mb-1">Valor (R$)</label>
+                  <MoneyInput value={newService.amount} onValueChange={v => setNewService(s => ({ ...s, amount: v }))} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+                </div>
                 <EditField label="Início" value={newService.started_at} onChange={v => setNewService(s => ({ ...s, started_at: v }))} type="date" />
                 {newService.type === 'recorrente' && client.billing_day && (
                   <p className="text-[10px] text-muted-foreground">Cobranças geradas no dia <span className="text-foreground font-medium">{client.billing_day}</span> de cada mês (vencimento do cliente).</p>
@@ -314,10 +318,10 @@ export function ClientSheet({ clientId, onClose, onRefresh }: Props) {
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className="block text-[10px] text-muted-foreground mb-1">Valor (R$)</label>
-                            <input
-                              type="number"
+                            <MoneyInput
+                             
                               value={editServiceForm.amount}
-                              onChange={e => setEditServiceForm(f => ({ ...f, amount: e.target.value }))}
+                              onValueChange={v => setEditServiceForm(f => ({ ...f, amount: v }))}
                               className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-[#efefef] transition-colors"
                             />
                           </div>

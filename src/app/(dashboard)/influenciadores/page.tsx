@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Plus, X, Check, Trash2, Phone, Mail, DollarSign, FileText, Pencil, AtSign, User, Tag, Building2, Copy } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface Client { id: string; name: string }
 
@@ -245,8 +246,8 @@ export default function InfluenciadoresPage() {
               <option value="">Sem cliente vinculado</option>
               {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <input placeholder="Valor negociado (R$)" type="number"
-              value={newForm.value} onChange={e => setNewForm(f => ({ ...f, value: e.target.value }))}
+            <MoneyInput placeholder="Valor negociado"
+              value={newForm.value} onValueChange={v => setNewForm(f => ({ ...f, value: v }))}
               className="w-full bg-[#111] border border-[#2a2a2a] rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
             <div className="flex gap-1.5">
               <button onClick={() => setAddingStatus(null)}
@@ -444,7 +445,7 @@ export default function InfluenciadoresPage() {
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5"><DollarSign size={10} /> Valor negociado</label>
-                    <input type="number" placeholder="500" value={editForm.value} onChange={e => setEditForm(f => ({ ...f, value: e.target.value }))}
+                    <MoneyInput placeholder="0,00" value={editForm.value} onValueChange={v => setEditForm(f => ({ ...f, value: v }))}
                       className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] placeholder:text-muted-foreground" />
                   </div>
                 </div>

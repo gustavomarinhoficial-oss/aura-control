@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Settings2, Check, X, Loader2, PiggyBank } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface Flow {
   carryOver: number
@@ -104,7 +105,7 @@ export function CashFlowPanel({ workspace, month, version }: { workspace: 'owl' 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] text-muted-foreground mb-1">Saldo inicial (R$)</label>
-              <input type="number" step="0.01" value={opening} onChange={e => setOpening(e.target.value)}
+              <MoneyInput value={opening} onValueChange={v => setOpening(v)}
                 className="w-full bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
             </div>
             <div>

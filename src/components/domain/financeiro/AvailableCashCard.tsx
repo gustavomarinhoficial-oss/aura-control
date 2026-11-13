@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Landmark, Pencil, Check, X, Loader2 } from 'lucide-react'
 import { formatBRL } from '@/lib/utils/format'
+import { MoneyInput } from '@/components/ui/MoneyInput'
 
 interface Cash { amount: number; note: string | null; updated_at: string | null }
 
@@ -66,7 +67,7 @@ export function AvailableCashCard({ workspace }: { workspace: 'owl' | 'fdmc' }) 
 
       {editing ? (
         <div className="space-y-2">
-          <input autoFocus type="number" step="0.01" value={value} onChange={e => setValue(e.target.value)} placeholder="0,00"
+          <MoneyInput autoFocus value={value} onValueChange={v => setValue(v)} placeholder="0,00"
             className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]" />
           <input value={note} onChange={e => setNote(e.target.value)} placeholder="Nota (opcional): ex. Itaú conta corrente"
             className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-[#efefef]" />
