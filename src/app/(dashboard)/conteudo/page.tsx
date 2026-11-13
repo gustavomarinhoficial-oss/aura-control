@@ -141,6 +141,34 @@ function displayTitle(title: string, contentType: string | null | undefined) {
 function postDate(post: ContentPost) {
   return post.scheduled_date ?? (post.published_at ? post.published_at.split('T')[0] : null)
 }
+// Quantos posts de cada tipo (Reels, Stories, Feed...) — pra saber o que foi criado, não só o total
+const TYPE_GROUPS = [
+  { key: 'reels',     label: 'Reels',     color: '#ec4899' },
+  { key: 'stories',   label: 'Stories',   color: '#f59e0b' },
+  { key: 'feed',      label: 'Feed',      color: '#3b82f6' },
+  { key: 'carrossel', label: 'Carrossel', color: '#8b5cf6' },
+  { key: 'video',     label: 'Vídeo',     color: '#06b6d4' },
+  { key: '',          label: 'Sem tipo',  color: '#6b7280' },
+]
+function typeBreakdown(list: ContentPost[]) {
+  return TYPE_GROUPS
+    .map(g => ({ ...g, count: list.filter(p => (p.content_type ?? '') === g.key).length }))
+    .filter(g => g.count > 0)
+}
+function TypeChips({ posts }: { posts: ContentPost[] }) {
+  const groups = typeBreakdown(posts)
+  if (groups.length === 0) return <span className="text-xs text-muted-foreground">nenhum post</span>
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {groups.map(g => (
+        <span key={g.key || 'none'} style={{ color: g.color, backgroundColor: g.color + '1a', borderColor: g.color + '40' }} className="text-[11px] font-medium px-2 py-0.5 rounded-full border whitespace-nowrap">
+          {g.label} <span className="font-bold">{g.count}</span>
+        </span>
+      ))}
+    </div>
+  )
+}
+
 // Data de hoje no fuso local (não UTC), no mesmo formato YYYY-MM-DD usado em scheduled_date
 function localTodayStr(): string {
   const d = new Date()
@@ -1831,6 +1859,20 @@ export default function ConteudoPage() {
   const monthCreated  = monthPosts.length
   const monthApproved = monthPosts.filter(p => p.status === 'aprovado' || p.status === 'publicado').length
 
+  // Visão "todos os clientes": o mês de cada empresa, com a divisão por tipo
+  const monthAll = isAllClients ? posts.filter(p => {
+    const d = postDate(p)
+    if (!d) return false
+    const [y, m] = d.split('-').map(Number)
+    return y === currentMonth.year && m - 1 === currentMonth.month
+  }) : []
+  const monthByClient = isAllClients
+    ? clients
+        .map(c => ({ c, list: monthAll.filter(p => p.client_id === c.id) }))
+        .filter(x => x.c.status === 'ativo' || x.list.length > 0)
+        .sort((a, b) => a.c.name.localeCompare(b.c.name))
+    : []
+
   return (
     <>
           <VideoPackageCounter />
@@ -1996,6 +2038,47 @@ export default function ConteudoPage() {
                     <div className="h-full bg-[#22c55e] rounded-full transition-all" style={{ width: `${Math.min((monthApproved / monthQuota) * 100, 100)}%` }} />
                   </div>
                 </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-[#1f1f1f]">
+                <p className="text-[11px] text-muted-foreground mb-2">Criados por tipo</p>
+                <TypeChips posts={monthPosts} />
+              </div>
+            </div>
+          )}
+
+          {/* cliente sem meta definida: só o total e a divisão por tipo */}
+          {!isAllClients && !(monthQuota !== null && monthQuota > 0) && (
+            <div className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] text-muted-foreground">Criados em {MONTH_NAMES[currentMonth.month]}</p>
+                <span className="text-sm font-semibold text-[#efefef]">{monthCreated}</span>
+              </div>
+              <TypeChips posts={monthPosts} />
+            </div>
+          )}
+
+          {/* todas as empresas: o mês de cada uma */}
+          {isAllClients && monthByClient.length > 0 && (
+            <div className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-4 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[11px] text-muted-foreground">Criados em {MONTH_NAMES[currentMonth.month]}, por empresa</p>
+                <span className="text-xs text-muted-foreground">{monthAll.length} no total</span>
+              </div>
+              <div className="divide-y divide-[#1f1f1f]">
+                {monthByClient.map(({ c, list }) => {
+                  const quota = c.monthly_content_quota ?? null
+                  return (
+                    <div key={c.id} className="py-2.5 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4">
+                      <div className="sm:w-48 shrink-0 flex items-baseline gap-2">
+                        <span className="text-sm font-medium truncate">{c.name}</span>
+                        <span className={`text-xs font-semibold ${quota && list.length >= quota ? 'text-[#22c55e]' : 'text-[#efefef]'}`}>
+                          {list.length}{quota ? `/${quota}` : ''}
+                        </span>
+                      </div>
+                      <TypeChips posts={list} />
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
