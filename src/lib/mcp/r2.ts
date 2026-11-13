@@ -1,12 +1,17 @@
 import { ToolError } from './errors'
-import { S3Client, PutObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 // Mesmo bucket e mesma pasta (posts/) que o Hub já usa pras imagens do calendário editorial.
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
 export const MAX_IMAGES = 10
+export const MAX_VIDEO_BYTES = 500 * 1024 * 1024
+export const MAX_DIRECT_IMAGE_BYTES = 25 * 1024 * 1024 // imagem enviada direto pro R2 (url pré-assinada)
+export const UPLOAD_URL_TTL_SECONDS = 30 * 60
 
 const MIME_EXT: Record<string, string> = { 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+const VIDEO_EXT: Record<string, string> = { 'video/mp4': 'mp4', 'video/quicktime': 'mov' }
 
 function config() {
   const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL } = process.env
@@ -81,4 +86,61 @@ export async function deleteImages(urls: string[]): Promise<void> {
   } catch {
     // limpeza é best-effort: a imagem sobrar no bucket não pode quebrar a operação
   }
+}
+
+export type MediaKind = 'image' | 'video'
+
+// ── envio direto pro R2 (vídeos e imagens pesadas) ───────────────────────────
+// O arquivo NÃO passa pelo servidor do Hub (a Vercel limita a ~4,5 MB): o Claude faz um PUT
+// direto na url_upload e depois usa a url_publica no post.
+export async function createUploadUrl(mimeRaw: string, size: number): Promise<{ url_upload: string; url_publica: string; tipo: MediaKind; ext: string; content_type: string; expira_em_minutos: number }> {
+  const mime = mimeRaw.toLowerCase().trim()
+  const isVideo = !!VIDEO_EXT[mime]
+  const isImage = !!MIME_EXT[mime]
+  if (!isVideo && !isImage) throw new ToolError('"mime" não suportado. Use video/mp4, video/quicktime, image/jpeg ou image/png.')
+  const limit = isVideo ? MAX_VIDEO_BYTES : MAX_DIRECT_IMAGE_BYTES
+  if (!Number.isFinite(size) || size <= 0) throw new ToolError('Informe "tamanho" em bytes (número maior que zero).')
+  if (size > limit) throw new ToolError(`O arquivo tem ${(size / 1048576).toFixed(1)} MB; o limite para ${isVideo ? 'vídeo é 500 MB' : 'imagem é 25 MB'}.`)
+
+  const c = config()
+  const ext = isVideo ? VIDEO_EXT[mime] : MIME_EXT[mime]
+  const key = `posts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const url_upload = await getSignedUrl(
+    client(c),
+    new PutObjectCommand({ Bucket: c.R2_BUCKET_NAME, Key: key, ContentType: mime }),
+    { expiresIn: UPLOAD_URL_TTL_SECONDS },
+  )
+  return { url_upload, url_publica: `${c.R2_PUBLIC_URL}/${key}`, tipo: isVideo ? 'video' : 'image', ext, content_type: mime, expira_em_minutos: UPLOAD_URL_TTL_SECONDS / 60 }
+}
+
+// Confere no R2 que o arquivo da url foi mesmo enviado, é do tipo permitido e não passa do limite
+export async function verifyUploaded(url: string, label: string): Promise<MediaKind> {
+  if (!isOurUrl(url)) throw new ToolError(`${label}: só aceito URLs geradas por este conector (gerar_url_upload, enviar_imagem ou o upload por arquivo).`)
+  const c = config()
+  const key = url.slice(c.R2_PUBLIC_URL.length + 1)
+  let head
+  try {
+    head = await client(c).send(new HeadObjectCommand({ Bucket: c.R2_BUCKET_NAME, Key: key }))
+  } catch {
+    throw new ToolError(`${label}: esse arquivo ainda não foi enviado (ou a url expirou). Faça o PUT do arquivo na url_upload e tente de novo.`)
+  }
+  const type = (head.ContentType ?? '').toLowerCase()
+  const size = head.ContentLength ?? 0
+  const kind: MediaKind | null = VIDEO_EXT[type] ? 'video' : MIME_EXT[type] ? 'image' : null
+  if (!kind) {
+    await deleteImages([url])
+    throw new ToolError(`${label}: tipo de arquivo "${type || 'desconhecido'}" não suportado. Use video/mp4, video/quicktime, image/jpeg ou image/png (o Content-Type do PUT deve ser o mesmo informado em gerar_url_upload).`)
+  }
+  const limit = kind === 'video' ? MAX_VIDEO_BYTES : MAX_DIRECT_IMAGE_BYTES
+  if (size === 0 || size > limit) {
+    await deleteImages([url])
+    throw new ToolError(`${label}: o arquivo enviado tem ${(size / 1048576).toFixed(1)} MB; ${size === 0 ? 'está vazio' : `o limite para ${kind === 'video' ? 'vídeo é 500 MB' : 'imagem é 25 MB'}`}.`)
+  }
+  return kind
+}
+
+// Mídia de um post: base64 (só imagem) ou url já enviada (imagem ou vídeo)
+export async function storeMedia(input: ImageInput, label: string): Promise<{ url: string; kind: MediaKind }> {
+  if (typeof input.url === 'string' && input.url) return { url: input.url, kind: await verifyUploaded(input.url, label) }
+  return { url: await storeImage(input, label), kind: 'image' }
 }

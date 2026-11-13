@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { effectiveUnlockedMonth } from '@/lib/utils/contentUnlock'
 import { ToolError } from './errors'
-import { storeImage, deleteImages, isOurUrl, MAX_IMAGES, type ImageInput } from './r2'
+import { storeImage, storeMedia, createUploadUrl, deleteImages, isOurUrl, MAX_IMAGES, type ImageInput, type MediaKind } from './r2'
 
 const BASE_URL = (process.env.PUBLIC_BASE_URL || 'https://hub.owlcreative.club').replace(/\/$/, '')
 
@@ -68,9 +68,11 @@ interface PostRow {
   id: string; client_id: string; title: string; caption: string | null; content_type: string | null; platform: string; status: string
   scheduled_date: string | null; scheduled_time: string | null; media_url: string | null; media_urls: string[] | null
   rejection_reason: string | null; rejection_images: string[] | null; caption_edited_by_client: boolean | null
-  source: string | null; source_at: string | null; created_at: string; updated_at: string | null
+  source: string | null; source_at: string | null; created_at: string; updated_at: string | null; cover_url: string | null
 }
-const POST_COLS = 'id, client_id, title, caption, content_type, platform, status, scheduled_date, scheduled_time, media_url, media_urls, rejection_reason, rejection_images, caption_edited_by_client, source, source_at, created_at, updated_at'
+const POST_COLS = 'id, client_id, title, caption, content_type, platform, status, scheduled_date, scheduled_time, media_url, media_urls, rejection_reason, rejection_images, caption_edited_by_client, source, source_at, created_at, updated_at, cover_url'
+
+const isVideoUrl = (u: string) => /\.(mp4|mov)$/i.test(u.split('?')[0])
 
 function images(p: Pick<PostRow, 'media_url' | 'media_urls'>): string[] {
   return p.media_urls?.length ? p.media_urls : p.media_url ? [p.media_url] : []
@@ -89,6 +91,8 @@ function shapePost(p: PostRow) {
     status: p.status,
     status_descricao: STATUS_LABEL[p.status] ?? p.status,
     imagens: images(p),
+    midia: images(p).map(u => ({ url: u, tipo: isVideoUrl(u) ? 'video' : 'imagem' })),
+    capa: p.cover_url,
     comentario_do_cliente: p.rejection_reason,
     imagens_do_cliente: p.rejection_images ?? [],
     legenda_ajustada_pelo_cliente: !!p.caption_edited_by_client,
@@ -106,16 +110,40 @@ async function getPost(db: DB, id: unknown): Promise<PostRow> {
   return data as PostRow
 }
 
-async function storeAll(list: unknown): Promise<string[]> {
-  if (!Array.isArray(list) || list.length === 0) return fail('Envie pelo menos uma imagem em "imagens".')
-  if (list.length > MAX_IMAGES) return fail(`No máximo ${MAX_IMAGES} imagens por post.`)
+async function storeAll(list: unknown): Promise<{ urls: string[]; kinds: MediaKind[]; created: string[] }> {
+  if (!Array.isArray(list) || list.length === 0) return fail('Envie pelo menos uma mídia em "imagens" (imagem ou vídeo).')
+  if (list.length > MAX_IMAGES) return fail(`No máximo ${MAX_IMAGES} arquivos por post.`)
   const urls: string[] = []
+  const kinds: MediaKind[] = []
+  const created: string[] = [] // gravadas agora a partir de base64 (as de "url" já existiam)
   for (let i = 0; i < list.length; i++) {
     const item = list[i]
-    if (!item || typeof item !== 'object') return fail(`Imagem ${i + 1}: formato inválido (esperado objeto com nome_arquivo, conteudo_base64 e mime).`)
-    urls.push(await storeImage(item as ImageInput, `Imagem ${i + 1}`))
+    if (!item || typeof item !== 'object') return fail(`Mídia ${i + 1}: formato inválido (esperado objeto com url, ou nome_arquivo + conteudo_base64 + mime).`)
+    try {
+      const m = await storeMedia(item as ImageInput, `Mídia ${i + 1}`)
+      urls.push(m.url); kinds.push(m.kind)
+      if (!(item as ImageInput).url) created.push(m.url)
+    } catch (e) {
+      await deleteImages(created) // não deixa sobra do que já foi salvo nesta chamada
+      throw e
+    }
   }
-  return urls
+  return { urls, kinds, created }
+}
+
+// Vídeo só em story e reels, e sozinho no post (1 arquivo)
+function checkMediaRules(contentType: string | null, kinds: MediaKind[]): void {
+  if (!kinds.includes('video')) return
+  if (contentType !== 'stories' && contentType !== 'reels') return fail('Vídeo só pode ser usado em post do formato story ou reels.')
+  if (kinds.length !== 1) return fail('Post com vídeo leva 1 arquivo só (o vídeo). Para ter capa, use o campo "capa".')
+}
+
+// Capa opcional do vídeo: sempre uma imagem
+async function storeCover(v: unknown): Promise<string> {
+  if (!v || typeof v !== 'object') return fail('"capa" deve ser um objeto com url (de uma imagem já enviada) ou conteudo_base64 + mime.')
+  const m = await storeMedia(v as ImageInput, 'Capa')
+  if (m.kind !== 'image') { await deleteImages([m.url]); return fail('A capa precisa ser uma imagem (JPEG ou PNG), não um vídeo.') }
+  return m.url
 }
 
 function parseFormat(v: unknown): string {
@@ -133,12 +161,12 @@ export interface Tool {
 
 const imageItemSchema = {
   type: 'object',
-  description: 'Uma imagem. Use conteudo_base64 (ideal) ou url de uma imagem já enviada com enviar_imagem.',
+  description: 'Uma mídia. Imagem: conteudo_base64 (+ mime) ou url. Vídeo (só story/reels): url devolvida por gerar_url_upload depois do PUT do arquivo.',
   properties: {
     nome_arquivo: { type: 'string', description: 'Nome do arquivo, ex.: post-1.jpg' },
     conteudo_base64: { type: 'string', description: 'Conteúdo da imagem em base64 (sem o prefixo data:). JPEG ou PNG, até 5 MB.' },
     mime: { type: 'string', enum: ['image/jpeg', 'image/png'], description: 'Tipo da imagem.' },
-    url: { type: 'string', description: 'URL devolvida por enviar_imagem (alternativa ao base64).' },
+    url: { type: 'string', description: 'url_publica devolvida por gerar_url_upload (imagem ou vídeo já enviado), enviar_imagem ou pelo upload por arquivo.' },
   },
 }
 
@@ -165,7 +193,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'listar_posts',
-    description: 'Lista os posts do calendário editorial de um cliente, com data, formato, legenda, status, comentário do cliente e URLs das imagens. Filtros opcionais por período e status.',
+    description: 'Lista os posts do calendário editorial de um cliente, com data, formato, legenda, status, comentário do cliente e URLs das mídias (imagens/vídeo) e da capa. Filtros opcionais por período e status.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -196,6 +224,39 @@ export const TOOLS: Tool[] = [
     },
   },
   {
+    name: 'gerar_url_upload',
+    description: 'Gera uma URL para enviar um arquivo GRANDE (vídeo de reels/story até 500 MB, ou imagem até 25 MB) direto para o armazenamento do Hub, sem passar pelo limite de ~4 MB das outras chamadas. Passos: (1) chame esta ferramenta; (2) faça um PUT do arquivo em "url_upload" com o header Content-Type igual ao "mime" informado (ex.: curl -X PUT -H "Content-Type: video/mp4" --upload-file video.mp4 "<url_upload>"); (3) use a "url_publica" em criar_post/atualizar_post, no campo imagens[].url. A url_upload vale por 30 minutos. Vídeo só pode ser usado em post do formato story ou reels.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cliente_id: { type: 'string', description: 'Id do cliente dono do post (de listar_clientes).' },
+        nome_arquivo: { type: 'string', description: 'Nome do arquivo, ex.: reels-promo.mp4' },
+        mime: { type: 'string', enum: ['video/mp4', 'video/quicktime', 'image/jpeg', 'image/png'], description: 'Tipo do arquivo. O PUT precisa usar exatamente este Content-Type.' },
+        tamanho: { type: 'number', description: 'Tamanho do arquivo em bytes.' },
+      },
+      required: ['cliente_id', 'nome_arquivo', 'mime', 'tamanho'],
+      additionalProperties: false,
+    },
+    async run(a) {
+      const db = createServiceClient()
+      const client = await getClient(db, a.cliente_id)
+      str(a.nome_arquivo, 'nome_arquivo', 200)
+      if (typeof a.mime !== 'string') return fail('Informe "mime" (video/mp4, video/quicktime, image/jpeg ou image/png).')
+      const up = await createUploadUrl(a.mime, Number(a.tamanho))
+      return {
+        cliente: client.name,
+        tipo: up.tipo,
+        url_upload: up.url_upload,
+        metodo: 'PUT',
+        header_obrigatorio: { 'Content-Type': up.content_type },
+        url_publica: up.url_publica,
+        expira_em_minutos: up.expira_em_minutos,
+        exemplo_curl: `curl -X PUT -H "Content-Type: ${up.content_type}" --upload-file "${String(a.nome_arquivo).replace(/"/g, '')}" "<url_upload>"`,
+        proximo_passo: 'Depois do PUT (resposta 200), use url_publica em criar_post ou atualizar_post, em imagens[].url.',
+      }
+    },
+  },
+  {
     name: 'enviar_imagem',
     description: 'Envia UMA imagem para o armazenamento do Hub e devolve a URL. Use quando o carrossel for pesado: o limite de cada chamada é cerca de 4 MB, então envie as imagens uma por uma aqui e depois passe só as URLs em criar_post (campo "url").',
     inputSchema: {
@@ -211,7 +272,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'criar_post',
-    description: 'Cria um post no calendário editorial do cliente já como "aguardando aprovação do cliente" (ele aprova ou pede ajuste pelo link do hub). Salva as imagens no armazenamento do Hub. Só chame depois do Gustavo aprovar a arte. Retorna o id do post e o link do hub do cliente.',
+    description: 'Cria um post no calendário editorial do cliente já como "aguardando aprovação do cliente" (ele aprova ou pede ajuste pelo link do hub). Salva as mídias no armazenamento do Hub. Mídia = imagem (base64 ou url) ou, em story/reels, UM vídeo (url de gerar_url_upload), com "capa" opcional. Só chame depois do Gustavo aprovar a arte. Retorna o id do post e o link do hub do cliente.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -220,7 +281,8 @@ export const TOOLS: Tool[] = [
         formato: { type: 'string', enum: ['feed', 'carrossel', 'story', 'reels'], description: 'Formato do post.' },
         titulo: { type: 'string', description: 'Título interno do post.' },
         legenda: { type: 'string', description: 'Legenda completa do post.' },
-        imagens: { type: 'array', items: imageItemSchema, description: 'Imagens em ordem. Carrossel = várias; feed/story/reels = uma (a capa).' },
+        imagens: { type: 'array', items: imageItemSchema, description: 'Mídias em ordem. Carrossel = várias imagens; feed = uma imagem; story/reels = uma imagem OU um vídeo (url de gerar_url_upload).' },
+        capa: { ...imageItemSchema, description: 'Capa opcional (imagem JPEG/PNG), pensada para vídeo de story/reels. Use url ou conteudo_base64 + mime.' },
         horario: { type: 'string', description: 'Horário de publicação HH:MM, opcional.' },
       },
       required: ['cliente_id', 'data_publicacao', 'formato', 'titulo', 'legenda', 'imagens'],
@@ -234,8 +296,21 @@ export const TOOLS: Tool[] = [
       const title = str(a.titulo, 'titulo', 200)
       const caption = str(a.legenda, 'legenda', 5000)
       if (a.horario !== undefined && !isTime(a.horario)) return fail('"horario" deve estar no formato HH:MM.')
-      const urls = await storeAll(a.imagens)
-      if (content_type === 'carrossel' && urls.length < 2) return fail('Carrossel precisa de pelo menos 2 imagens.')
+      const media = await storeAll(a.imagens)
+      const urls = media.urls
+      let coverUrl: string | null = null
+      let coverCreated = false
+      try {
+        if (content_type === 'carrossel' && urls.length < 2) return fail('Carrossel precisa de pelo menos 2 imagens.')
+        checkMediaRules(content_type, media.kinds)
+        if (a.capa !== undefined && a.capa !== null) {
+          coverUrl = await storeCover(a.capa)
+          coverCreated = !(a.capa as ImageInput).url
+        }
+      } catch (e) {
+        await deleteImages(media.created)
+        throw e
+      }
 
       const now = new Date().toISOString()
       const { data, error } = await db.from('content_posts').insert({
@@ -249,12 +324,13 @@ export const TOOLS: Tool[] = [
         scheduled_time: a.horario ?? null,
         media_url: urls[0],
         media_urls: urls,
+        cover_url: coverUrl,
         source: 'claude',
         source_at: now,
       }).select(POST_COLS).single()
       if (error || !data) {
-        await deleteImages(urls)
-        return fail(`Erro ao criar o post: ${error?.message ?? 'desconhecido'}. Se for sobre a coluna "source", rode o SQL da migration 054.`)
+        await deleteImages([...media.created, ...(coverCreated && coverUrl ? [coverUrl] : [])])
+        return fail(`Erro ao criar o post: ${error?.message ?? 'desconhecido'}. Se for sobre as colunas "source" ou "cover_url", rode o SQL das migrations 054 e 055.`)
       }
       const vis = clientVisibility(client, a.data_publicacao)
       return {
@@ -270,7 +346,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'atualizar_post',
-    description: 'Ajusta um post existente: troca legenda, título, data, horário, formato e/ou substitui TODA a lista de imagens. Por padrão o post volta para "aguardando aprovação do cliente" (use reenviar_para_aprovacao=false para não mudar o status). Não mexe em posts já publicados.',
+    description: 'Ajusta um post existente: troca legenda, título, data, horário, formato, a capa e/ou substitui TODA a lista de mídias (imagens ou o vídeo). Por padrão o post volta para "aguardando aprovação do cliente" (use reenviar_para_aprovacao=false para não mudar o status). Não mexe em posts já publicados.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -280,7 +356,8 @@ export const TOOLS: Tool[] = [
         data_publicacao: { type: 'string', description: 'AAAA-MM-DD' },
         horario: { type: 'string', description: 'HH:MM' },
         formato: { type: 'string', enum: ['feed', 'carrossel', 'story', 'reels'] },
-        imagens: { type: 'array', items: imageItemSchema, description: 'Nova lista COMPLETA de imagens (substitui a anterior).' },
+        imagens: { type: 'array', items: imageItemSchema, description: 'Nova lista COMPLETA de mídias (substitui a anterior). Vídeo só em story/reels.' },
+        capa: { ...imageItemSchema, description: 'Nova capa (imagem JPEG/PNG), opcional.' },
         reenviar_para_aprovacao: { type: 'boolean', description: 'Padrão true: volta o status para aguardando aprovação.' },
       },
       required: ['post_id'],
@@ -300,13 +377,32 @@ export const TOOLS: Tool[] = [
 
       let oldImages: string[] = []
       let newUrls: string[] | null = null
-      if (a.imagens !== undefined) {
-        newUrls = await storeAll(a.imagens)
-        const finalType = (update.content_type as string | undefined) ?? post.content_type
-        if (finalType === 'carrossel' && newUrls.length < 2) { await deleteImages(newUrls.filter(u => !images(post).includes(u))); return fail('Carrossel precisa de pelo menos 2 imagens.') }
-        oldImages = images(post)
-        update.media_url = newUrls[0]
-        update.media_urls = newUrls
+      let created: string[] = []
+      let newCover: string | null = null
+      let coverCreated = false
+      const finalType = (update.content_type as string | undefined) ?? post.content_type
+      try {
+        if (a.imagens !== undefined) {
+          const media = await storeAll(a.imagens)
+          newUrls = media.urls
+          created = media.created
+          if (finalType === 'carrossel' && newUrls.length < 2) return fail('Carrossel precisa de pelo menos 2 imagens.')
+          checkMediaRules(finalType, media.kinds)
+          oldImages = images(post)
+          update.media_url = newUrls[0]
+          update.media_urls = newUrls
+        } else if (a.formato !== undefined) {
+          // só mudou o formato: confere se a mídia que já está no post continua valendo nele
+          checkMediaRules(finalType, images(post).map(u => (isVideoUrl(u) ? 'video' : 'image')))
+        }
+        if (a.capa !== undefined && a.capa !== null) {
+          newCover = await storeCover(a.capa)
+          coverCreated = !(a.capa as ImageInput).url
+          update.cover_url = newCover
+        }
+      } catch (e) {
+        await deleteImages(created)
+        throw e
       }
       if (Object.keys(update).length === 0) return fail('Nada para atualizar: informe pelo menos um campo além de post_id.')
 
@@ -316,11 +412,12 @@ export const TOOLS: Tool[] = [
 
       const { data, error } = await db.from('content_posts').update(update).eq('id', post.id).select(POST_COLS).single()
       if (error || !data) {
-        if (newUrls) await deleteImages(newUrls.filter(u => !oldImages.includes(u)))
+        await deleteImages([...created, ...(coverCreated && newCover ? [newCover] : [])])
         return fail(`Erro ao atualizar o post: ${error?.message ?? 'desconhecido'}`)
       }
-      // imagens trocadas saem do armazenamento (as que continuam na lista ficam)
+      // mídias e capa trocadas saem do armazenamento (as que continuam ficam)
       if (newUrls) await deleteImages(oldImages.filter(u => !newUrls!.includes(u)))
+      if (newCover && post.cover_url && post.cover_url !== newCover) await deleteImages([post.cover_url])
 
       const { data: c } = await db.from('clients').select(CLIENT_COLS).eq('id', post.client_id).single()
       return {
@@ -376,7 +473,7 @@ export const TOOLS: Tool[] = [
       }
       const { error } = await db.from('content_posts').delete().eq('id', post.id)
       if (error) return fail(`Erro ao excluir: ${error.message}`)
-      await deleteImages(images(post).filter(isOurUrl))
+      await deleteImages([...images(post), ...(post.cover_url ? [post.cover_url] : [])].filter(isOurUrl))
       return { excluido: true, post_id: post.id, titulo: post.title }
     },
   },

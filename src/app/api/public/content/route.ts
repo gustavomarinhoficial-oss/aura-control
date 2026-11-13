@@ -17,11 +17,17 @@ export async function GET(request: Request) {
   const client = await findClientByShare<{ id: string; name: string; content_unlocked_month: string | null; content_approval_enabled: boolean; project_sharing_enabled: boolean }>(supabase, token, 'id, name, content_unlocked_month, content_approval_enabled, project_sharing_enabled')
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
 
-  const { data: allPosts, error } = await supabase
+  const COLS = 'id, title, caption, platform, content_type, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, caption_edited_by_client, created_at'
+  const fetchPosts = (cols: string) => supabase
     .from('content_posts')
-    .select('id, title, caption, platform, content_type, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, caption_edited_by_client, created_at')
+    .select(cols)
     .eq('client_id', client.id)
     .order('scheduled_date', { ascending: true, nullsFirst: false })
+  // cover_url = capa do vídeo (migration 055); sem a coluna ainda, segue sem ela
+  let res = await fetchPosts(`${COLS}, cover_url`)
+  if (res.error) res = await fetchPosts(COLS)
+  const allPosts = res.data as unknown as { scheduled_date: string | null }[] | null
+  const error = res.error
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

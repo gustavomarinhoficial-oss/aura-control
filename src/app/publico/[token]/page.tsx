@@ -20,6 +20,7 @@ interface Post {
   published_at: string | null
   media_url: string | null
   media_urls: string[] | null
+  cover_url?: string | null
   rejection_reason: string | null
   rejection_images: string[] | null
   caption_edited_by_client: boolean
@@ -283,7 +284,7 @@ function PostCard({ post, onApprove, onReject, onCaptionSave, acting, canReview 
           className="relative w-full aspect-[4/3] bg-[#0d0d0d] block group"
         >
           {isVideoUrl(media[0]) ? (
-            <video src={videoPosterSrc(media[0])} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+            <video src={post.cover_url ? media[0] : videoPosterSrc(media[0])} poster={post.cover_url ?? undefined} className="w-full h-full object-cover" muted playsInline preload="metadata" />
           ) : (
             <img src={media[0]} alt={post.title} className="w-full h-full object-cover" />
           )}

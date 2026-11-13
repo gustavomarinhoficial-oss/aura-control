@@ -35,6 +35,7 @@ interface ContentPost {
   notes: string | null
   media_url: string | null
   media_urls: string[] | null
+  cover_url?: string | null
   rejection_reason: string | null
   rejection_images: string[] | null
   caption_edited_by_client: boolean
@@ -1252,7 +1253,7 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
                           return thumb ? (
                             <div className="relative">
                               {isVideoUrl(thumb) ? (
-                                <video src={videoPosterSrc(thumb)} className="w-full h-14 object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
+                                <video src={post.cover_url ? thumb : videoPosterSrc(thumb)} poster={post.cover_url ?? undefined} className="w-full h-14 object-cover pointer-events-none" muted playsInline preload="metadata" draggable={false} />
                               ) : (
                                 <img src={toDirectImageUrl(thumb)} alt="" draggable={false} className="w-full h-14 object-cover pointer-events-none"
                                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
