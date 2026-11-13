@@ -1,5 +1,5 @@
 import { ToolError } from './errors'
-import { S3Client, PutObjectCommand, DeleteObjectsCommand, HeadObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, HeadObjectCommand, CopyObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 
 // Mesmo bucket e mesma pasta (posts/) que o Hub já usa pras imagens do calendário editorial.
@@ -124,8 +124,22 @@ export async function verifyUploaded(url: string, label: string): Promise<MediaK
   } catch {
     throw new ToolError(`${label}: esse arquivo ainda não foi enviado (ou a url expirou). Faça o PUT do arquivo na url_upload e tente de novo.`)
   }
-  const type = (head.ContentType ?? '').toLowerCase()
+  let type = (head.ContentType ?? '').toLowerCase()
   const size = head.ContentLength ?? 0
+  // O R2 não obriga o Content-Type do PUT. Se veio sem ele (ou errado) mas o nome do arquivo é de um tipo
+  // permitido, corrige o tipo no próprio R2 (cópia no mesmo lugar) em vez de obrigar a reenviar um vídeo pesado.
+  if (!VIDEO_EXT[type] && !MIME_EXT[type]) {
+    const ext = key.split('.').pop()?.toLowerCase() ?? ''
+    const fixed = ext === 'mp4' ? 'video/mp4' : ext === 'mov' ? 'video/quicktime' : ext === 'jpg' ? 'image/jpeg' : ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : null
+    if (fixed) {
+      try {
+        await client(c).send(new CopyObjectCommand({ Bucket: c.R2_BUCKET_NAME, Key: key, CopySource: `${c.R2_BUCKET_NAME}/${encodeURIComponent(key).replace(/%2F/g, '/')}`, ContentType: fixed, MetadataDirective: 'REPLACE' }))
+        type = fixed
+      } catch {
+        // segue: cai no erro de tipo abaixo
+      }
+    }
+  }
   const kind: MediaKind | null = VIDEO_EXT[type] ? 'video' : MIME_EXT[type] ? 'image' : null
   if (!kind) {
     await deleteImages([url])
