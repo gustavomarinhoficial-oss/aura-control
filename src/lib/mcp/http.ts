@@ -7,13 +7,14 @@ const UNAUTHORIZED = () => NextResponse.json({ error: 'Não autorizado.' }, { st
 // POST: mensagens JSON-RPC. O token vem na URL (/mcp/<token>) ou no header Authorization: Bearer <token>.
 export async function postMcp(request: Request, urlToken?: string): Promise<Response> {
   const bearer = request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1]
-  if (!(await verifyToken(urlToken ?? bearer))) return UNAUTHORIZED()
+  const scopes = await verifyToken(urlToken ?? bearer)
+  if (!scopes) return UNAUTHORIZED()
 
   const body = await request.json().catch(() => undefined)
   if (body === undefined) {
     return NextResponse.json({ jsonrpc: '2.0', id: null, error: { code: -32700, message: 'JSON inválido.' } }, { status: 400 })
   }
-  const out = await handleRpc(body)
+  const out = await handleRpc(body, scopes)
   if (out === null) return new Response(null, { status: 202 })
   return NextResponse.json(out)
 }

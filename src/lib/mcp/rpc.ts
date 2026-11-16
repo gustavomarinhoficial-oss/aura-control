@@ -1,4 +1,5 @@
-import { TOOLS } from './tools'
+import { TOOLS, type Tool } from './tools'
+import { FINANCE_TOOLS } from './financeTools'
 import { ToolError } from './errors'
 
 // Servidor MCP mínimo, transporte Streamable HTTP, sem sessão (cada POST é independente).
@@ -13,7 +14,13 @@ type RpcResponse = { jsonrpc: '2.0'; id: string | number | null; result?: unknow
 const ok = (id: RpcRequest['id'], result: unknown): RpcResponse => ({ jsonrpc: '2.0', id: id ?? null, result })
 const err = (id: RpcRequest['id'], code: number, message: string): RpcResponse => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } })
 
-async function handleOne(msg: RpcRequest): Promise<RpcResponse | null> {
+// Cada token só enxerga as ferramentas dos seus escopos (conteúdo e/ou financeiro)
+function toolsFor(scopes: string[]): Tool[] {
+  return [...(scopes.includes('conteudo') ? TOOLS : []), ...(scopes.includes('financeiro') ? FINANCE_TOOLS : [])]
+}
+
+async function handleOne(msg: RpcRequest, scopes: string[]): Promise<RpcResponse | null> {
+  const tools = toolsFor(scopes)
   if (!msg || typeof msg !== 'object' || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') {
     return err(msg?.id, -32600, 'Requisição inválida.')
   }
@@ -29,16 +36,19 @@ async function handleOne(msg: RpcRequest): Promise<RpcResponse | null> {
         protocolVersion: SUPPORTED.includes(wanted) ? wanted : SUPPORTED[0],
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
-        instructions: 'Conector do OWL Hub para subir posts aprovados no calendário editorial dos clientes e ler o status de aprovação. Fluxo: listar_clientes → criar_post (só depois do Gustavo aprovar a arte) → ver_status para saber se o cliente aprovou ou pediu ajuste → atualizar_post para ajustes.',
+        instructions: [
+          scopes.includes('conteudo') ? 'Conteúdo: subir posts aprovados no calendário editorial dos clientes e ler o status de aprovação. Fluxo: listar_clientes → criar_post (só depois do Gustavo aprovar a arte) → ver_status → atualizar_post para ajustes.' : '',
+          scopes.includes('financeiro') ? 'Financeiro (OWL e FDMC): fin_criar_despesa, fin_criar_receita, fin_listar, fin_marcar_pago e fin_resumo_mes. Sempre confirme valor, data, empresa e categoria com o Gustavo antes de lançar ou marcar como pago. Datas em AAAA-MM-DD (fuso de Brasília).' : '',
+        ].filter(Boolean).join(' '),
       })
     }
     case 'ping':
       return ok(msg.id, {})
     case 'tools/list':
-      return ok(msg.id, { tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) })
+      return ok(msg.id, { tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) })
     case 'tools/call': {
       const name = typeof params?.name === 'string' ? params.name : ''
-      const tool = TOOLS.find(t => t.name === name)
+      const tool = tools.find(t => t.name === name)
       if (!tool) return err(msg.id, -32602, `Ferramenta desconhecida: ${name || '(vazio)'}`)
       const args = params?.arguments && typeof params.arguments === 'object' ? (params.arguments as Record<string, unknown>) : {}
       try {
@@ -56,10 +66,10 @@ async function handleOne(msg: RpcRequest): Promise<RpcResponse | null> {
 }
 
 // Aceita uma mensagem ou um lote. Devolve null quando só havia notificações (resposta 202, sem corpo).
-export async function handleRpc(body: unknown): Promise<RpcResponse | RpcResponse[] | null> {
+export async function handleRpc(body: unknown, scopes: string[]): Promise<RpcResponse | RpcResponse[] | null> {
   if (Array.isArray(body)) {
-    const out = (await Promise.all(body.map(handleOne))).filter((r): r is RpcResponse => r !== null)
+    const out = (await Promise.all(body.map(m => handleOne(m, scopes)))).filter((r): r is RpcResponse => r !== null)
     return out.length ? out : null
   }
-  return handleOne(body as RpcRequest)
+  return handleOne(body as RpcRequest, scopes)
 }
