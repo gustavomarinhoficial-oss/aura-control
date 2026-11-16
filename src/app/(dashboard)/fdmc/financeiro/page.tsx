@@ -55,6 +55,7 @@ const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   marketing:    { label: 'Marketing',      color: '#f472b6' },
   pessoal:      { label: 'Pessoal',        color: '#fb923c' },
   comida:       { label: 'Comida',         color: '#facc15' },
+  transporte:   { label: 'Transporte (Uber, combustível, estacionamento)', color: '#4ade80' },
   assinaturas:  { label: 'Assinaturas',    color: '#a78bfa' },
   reinvestimento: { label: 'Reinvestimento (equipamentos, melhorias)', color: '#38bdf8' },
   outro:        { label: 'Outro',          color: '#6b7280' },
