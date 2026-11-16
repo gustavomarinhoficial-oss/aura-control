@@ -28,9 +28,11 @@ export async function GET() {
       .reduce((s, c) => s + Number(c.amount), 0)
     const monthExp = (expensesRes.data ?? []).filter(e => e.due_date?.startsWith(key))
     // Pró-labore vai separado: não conta como despesa nem reduz o lucro.
-    const expenses = monthExp.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao').reduce((s, e) => s + Number(e.amount), 0)
+    const expenses = monthExp.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao' && e.category !== 'reinvestimento').reduce((s, e) => s + Number(e.amount), 0)
+    // Reinvestimento (equipamentos, melhorias) vai à parte: sai do caixa, mas não é custo da operação
+    const reinvestimento = monthExp.filter(e => e.category === 'reinvestimento').reduce((s, e) => s + Number(e.amount), 0)
     const prolabore = monthExp.filter(e => e.category === 'prolabore').reduce((s, e) => s + Number(e.amount), 0)
-    return { label, key, revenue, expenses, prolabore, profit: revenue - expenses }
+    return { label, key, revenue, expenses, prolabore, reinvestimento, profit: revenue - expenses }
   })
 
   return NextResponse.json(result)

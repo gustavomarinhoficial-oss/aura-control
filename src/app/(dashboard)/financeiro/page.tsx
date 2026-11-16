@@ -13,6 +13,8 @@ import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashC
 import { FreelancerPackages } from '@/components/domain/financeiro/FreelancerPackages'
 import { NewChargeModal } from '@/components/domain/NewChargeModal'
 import { MoneyInput } from '@/components/ui/MoneyInput'
+import { AssetsTab } from '@/components/domain/financeiro/AssetsTab'
+import { MonthClosing } from '@/components/domain/financeiro/MonthClosing'
 import { PaymentMode, EMPTY_PAYMENT, paymentPayload, type PaymentState } from '@/components/domain/financeiro/PaymentMode'
 import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
@@ -40,7 +42,7 @@ interface Expense {
   installments_total?: number | null
 }
 
-interface HistoricoPoint { label: string; key: string; revenue: number; expenses: number; prolabore: number; profit: number }
+interface HistoricoPoint { label: string; key: string; revenue: number; expenses: number; prolabore: number; reinvestimento?: number; profit: number }
 
 // ── constantes ──────────────────────────────────────────────────────────────
 const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
@@ -55,7 +57,7 @@ const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   pessoal:    { label: 'Pessoal',       color: '#fb923c' },
   comida:     { label: 'Comida',        color: '#facc15' },
   assinaturas:{ label: 'Assinaturas',   color: '#a78bfa' },
-  equipamentos:{ label: 'Equipamentos', color: '#38bdf8' },
+  reinvestimento:{ label: 'Reinvestimento (equipamentos, melhorias)', color: '#38bdf8' },
   outro:      { label: 'Outro',         color: '#6b7280' },
 }
 
@@ -463,7 +465,7 @@ export default function FinanceiroPage() {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
-  const [tab, setTab] = useState<'visao' | 'receitas' | 'despesas' | 'vencimentos'>('visao')
+  const [tab, setTab] = useState<'visao' | 'receitas' | 'despesas' | 'vencimentos' | 'patrimonio'>('visao')
 
   const [charges, setCharges] = useState<ChargeWithStatus[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
@@ -527,7 +529,9 @@ export default function FinanceiroPage() {
   // ── cálculos de despesa ──────────────────────────────────────────────────
   // Pró-labore fica separado: não é despesa da operação, então não entra no lucro nem na margem.
   // Aplicação/aporte também não é despesa: é dinheiro que foi guardado, não custo da operação.
-  const despesasOp = expenses.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao')
+  // Reinvestimento (equipamentos, materiais, melhorias) também fica fora do custo da operação: aparece à parte no fechamento.
+  const despesasOp = expenses.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao' && e.category !== 'reinvestimento')
+  const reinvestimentos = expenses.filter(e => e.category === 'reinvestimento')
   const prolabores = expenses.filter(e => e.category === 'prolabore')
   const aplicacoes = expenses.filter(e => e.category === 'aplicacao')
   const despesaTotal  = despesasOp.reduce((s, e) => s + Number(e.amount), 0)
@@ -680,7 +684,7 @@ export default function FinanceiroPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-1 w-fit flex-wrap">
-        {([['visao', 'Visão geral'], ['receitas', 'Receitas'], ['despesas', 'Despesas'], ['vencimentos', 'Vencimentos']] as const).map(([k, lbl]) => (
+        {([['visao', 'Visão geral'], ['receitas', 'Receitas'], ['despesas', 'Despesas'], ['vencimentos', 'Vencimentos'], ['patrimonio', 'Patrimônio']] as const).map(([k, lbl]) => (
           <button key={k} onClick={() => setTab(k)}
             className={`px-4 py-1.5 text-xs font-medium rounded-md transition-colors ${tab === k ? 'bg-[#2a2a2a] text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
             {lbl}
@@ -691,6 +695,11 @@ export default function FinanceiroPage() {
       {/* ── Tab: Visão Geral ───────────────────────────────────────────────── */}
       {tab === 'visao' && (
         <div className="space-y-5">
+          <MonthClosing
+            monthName={monthName}
+            revenue={{ real: receita, prev: withStatus.filter(c => c.status !== 'encerrado').reduce((s, c) => s + Number(c.amount), 0) }}
+            items={expenses.filter(e => e.category !== 'aplicacao').map(e => ({ amount: Number(e.amount), paid: !!e.paid_at, reinvest: e.category === 'reinvestimento' }))}
+          />
 
           {/* Gráfico comparativo 6 meses */}
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
@@ -721,9 +730,10 @@ export default function FinanceiroPage() {
                     formatter={(v: unknown) => [formatBRL(Number(v)), '']}
                   />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 12 }}
-                    formatter={v => v === 'revenue' ? 'Receita' : 'Despesas'} />
+                    formatter={v => v === 'revenue' ? 'Receita' : v === 'reinvestimento' ? 'Reinvestimento' : 'Despesas'} />
                   <Bar dataKey="revenue" fill="url(#gRev)" radius={[4, 4, 0, 0]} name="revenue" />
                   <Bar dataKey="expenses" fill="url(#gExp)" radius={[4, 4, 0, 0]} name="expenses" />
+                  <Bar dataKey="reinvestimento" fill="#38bdf8" fillOpacity={0.7} radius={[4, 4, 0, 0]} name="reinvestimento" />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -763,7 +773,7 @@ export default function FinanceiroPage() {
               {historico.slice().reverse().map(h => (
                 <div key={h.key} className="px-5 py-4 flex items-center gap-4">
                   <span className="text-sm text-muted-foreground capitalize w-20">{h.label}</span>
-                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-5 gap-4 text-sm">
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Receita</p>
                       <p className="font-medium text-[#22c55e]">{formatBRL(h.revenue)}</p>
@@ -775,6 +785,10 @@ export default function FinanceiroPage() {
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Pró-labore</p>
                       <p className="font-medium text-[#efefef]">{formatBRL(h.prolabore ?? 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Reinvestimento</p>
+                      <p className="font-medium text-[#38bdf8]">{formatBRL(h.reinvestimento ?? 0)}</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Lucro</p>
@@ -884,6 +898,8 @@ export default function FinanceiroPage() {
         </div>
       )}
 
+      {tab === 'patrimonio' && <AssetsTab onChanged={load} />}
+
       {/* ── Tab: Despesas ─────────────────────────────────────────────────── */}
       {tab === 'despesas' && (
         <div className="space-y-4">
@@ -897,7 +913,7 @@ export default function FinanceiroPage() {
               </button>
             </div>
           )}
-          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }, { title: 'Aplicações / aportes', list: aplicacoes }].filter(g => g.list.length > 0).map(group => (
+          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }, { title: 'Reinvestimento', list: reinvestimentos }, { title: 'Aplicações / aportes', list: aplicacoes }].filter(g => g.list.length > 0).map(group => (
             <div key={group.title} className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-1">{group.title}</p>
             <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">

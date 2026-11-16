@@ -11,6 +11,7 @@ import {
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { CashFlowPanel } from '@/components/domain/financeiro/CashFlowPanel'
 import { MoneyInput } from '@/components/ui/MoneyInput'
+import { MonthClosing } from '@/components/domain/financeiro/MonthClosing'
 import { PaymentMode, EMPTY_PAYMENT, paymentPayload, type PaymentState } from '@/components/domain/financeiro/PaymentMode'
 import { AvailableCashCard } from '@/components/domain/financeiro/AvailableCashCard'
 
@@ -55,7 +56,7 @@ const EXPENSE_CATEGORIES: Record<string, { label: string; color: string }> = {
   pessoal:      { label: 'Pessoal',        color: '#fb923c' },
   comida:       { label: 'Comida',         color: '#facc15' },
   assinaturas:  { label: 'Assinaturas',    color: '#a78bfa' },
-  equipamentos: { label: 'Equipamentos',   color: '#38bdf8' },
+  reinvestimento: { label: 'Reinvestimento (equipamentos, melhorias)', color: '#38bdf8' },
   outro:        { label: 'Outro',          color: '#6b7280' },
 }
 
@@ -163,7 +164,9 @@ export default function FdmcFinanceiroPage() {
   const receitas = entries.filter(e => e.type === 'receita')
   const despesasAll = entries.filter(e => e.type === 'despesa')
   // Aplicação/aporte não é despesa: é dinheiro guardado, não custo da operação.
-  const despesasOp = despesasAll.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao')
+  // Reinvestimento (equipamentos, melhorias) também fica fora do custo da operação: aparece à parte no fechamento.
+  const despesasOp = despesasAll.filter(e => e.category !== 'prolabore' && e.category !== 'aplicacao' && e.category !== 'reinvestimento')
+  const reinvestimentos = despesasAll.filter(e => e.category === 'reinvestimento')
   const prolabores = despesasAll.filter(e => e.category === 'prolabore')
   const aplicacoes = despesasAll.filter(e => e.category === 'aplicacao')
 
@@ -328,6 +331,11 @@ export default function FdmcFinanceiroPage() {
       {/* ── Visão geral ─────────────────────────────────────────────────── */}
       {tab === 'visao' && (
         <div className="space-y-5">
+          <MonthClosing
+            monthName={monthName}
+            revenue={{ real: receita, prev: receitas.reduce((s, e) => s + Number(e.amount), 0) }}
+            items={despesasAll.filter(e => e.category !== 'aplicacao').map(e => ({ amount: Number(e.amount), paid: !!e.paid_at, reinvest: e.category === 'reinvestimento' }))}
+          />
           <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
             <div className="flex items-center gap-2 mb-5"><TrendingUp size={14} className="text-[#efefef]" /><h2 className="text-sm font-medium">Receita vs Despesas — últimos 6 meses</h2></div>
             {historico.length === 0 ? (
@@ -432,7 +440,7 @@ export default function FdmcFinanceiroPage() {
               <button onClick={() => setModal({ type: 'despesa' })} className="flex items-center gap-1 text-xs text-[#efefef]"><Plus size={12} /> Adicionar despesa</button>
             </div>
           )}
-          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }, { title: 'Aplicações / aportes', list: aplicacoes }].filter(g => g.list.length > 0).map(group => (
+          {[{ title: 'Despesas', list: despesasOp }, { title: 'Pró-labore', list: prolabores }, { title: 'Reinvestimento', list: reinvestimentos }, { title: 'Aplicações / aportes', list: aplicacoes }].filter(g => g.list.length > 0).map(group => (
             <div key={group.title} className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-muted-foreground px-1">{group.title}</p>
               <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl overflow-hidden">
