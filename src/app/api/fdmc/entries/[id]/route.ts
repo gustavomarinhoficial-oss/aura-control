@@ -47,6 +47,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (key in body) update[key] = body[key]
   }
   if ('amount' in update) update.amount = Number(update.amount)
+  // Data em que o dinheiro caiu/saiu de verdade, separada da data do lançamento (que define o mês em que conta).
+  // null = volta para pendente; AAAA-MM-DD = pago/recebido nesse dia.
+  if ('paid_date' in body) {
+    if (body.paid_date === null || body.paid_date === '') update.paid_at = null
+    else if (typeof body.paid_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.paid_date)) update.paid_at = `${body.paid_date}T12:00:00-03:00`
+    else return NextResponse.json({ error: 'Data de pagamento inválida' }, { status: 400 })
+  }
 
   const { data, error } = await supabase.from('fdmc_entries').update(update).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

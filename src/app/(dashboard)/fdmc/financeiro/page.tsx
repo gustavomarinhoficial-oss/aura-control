@@ -76,6 +76,8 @@ const EMPTY_MOVEMENT_FORM = {
 }
 
 const todayStr = () => new Date().toISOString().split('T')[0]
+// paid_at é timestamp: converte para o dia no fuso de Brasília (AAAA-MM-DD)
+const isoToLocalDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 const inputCls = 'w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors'
 
 type EntryStatus = 'pago' | 'pendente' | 'atrasado'
@@ -231,6 +233,11 @@ export default function FdmcFinanceiroPage() {
           <div className="text-right shrink-0">
             <p className={`text-sm font-semibold ${isReceita ? 'text-[#22c55e]' : ''}`}>{formatBRL(Number(e.amount))}</p>
             <p className="text-xs text-muted-foreground mt-0.5">{formatDate(e.entry_date)}</p>
+            {e.paid_at && isoToLocalDate(e.paid_at) !== e.entry_date && (
+              <p className="text-[11px] text-[#22c55e]/80 mt-0.5" title="Data em que o dinheiro caiu/saiu de verdade">
+                {isReceita ? 'caiu em' : 'pago em'} {formatDate(isoToLocalDate(e.paid_at))}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center justify-between gap-2">
@@ -533,9 +540,10 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
     recurrence_end_date: '',
     notes: src?.notes ?? '',
   })
-  const [alreadyPaid, setAlreadyPaid] = useState(false)
-  const [paidDate, setPaidDate] = useState(form.entry_date)
-  const [paidTouched, setPaidTouched] = useState(false)
+  const initialPaidDate = initial?.paid_at ? isoToLocalDate(initial.paid_at) : ''
+  const [alreadyPaid, setAlreadyPaid] = useState(!!initialPaidDate)
+  const [paidDate, setPaidDate] = useState(initialPaidDate || form.entry_date)
+  const [paidTouched, setPaidTouched] = useState(!!initialPaidDate)
   const [applyForward, setApplyForward] = useState(false)
   const [effectiveDate, setEffectiveDate] = useState(initial?.entry_date ?? todayStr())
   const [saving, setSaving] = useState(false)
@@ -565,6 +573,8 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
         amount: amountNum,
         ...(isRecurringEdit && amountChanged && applyForward ? { effective_date: effectiveDate } : {}),
         ...(!initial && alreadyPaid ? { paid_at: new Date(paidDate + 'T12:00:00').toISOString() } : {}),
+        // Na edição, só manda a data de pagamento se ela mudou (não mexe em quem já estava certo)
+        ...(initial && (alreadyPaid ? paidDate : '') !== initialPaidDate ? { paid_date: alreadyPaid ? paidDate : null } : {}),
       }),
     })
     if (res.ok) { onSaved(); return }
@@ -595,10 +605,11 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
               <MoneyInput value={form.amount} onValueChange={v => setForm(f => ({ ...f, amount: v }))} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs text-muted-foreground mb-1">Vencimento</label>
+              <label className="block text-xs text-muted-foreground mb-1">Data do lançamento</label>
               <input type="date" value={form.entry_date} onChange={e => { const v = e.target.value; setForm(f => ({ ...f, entry_date: v })); if (!paidTouched) setPaidDate(v) }} className={inputCls} />
             </div>
           </div>
+          <p className="text-[11px] text-muted-foreground -mt-1">A data do lançamento define em qual mês ele conta. Se o dinheiro {type === 'receita' ? 'caiu' : 'saiu'} em outro dia, marque abaixo e informe a data real.</p>
           <div>
             <label className="block text-xs text-muted-foreground mb-1">Categoria</label>
             <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={inputCls}>
@@ -606,20 +617,18 @@ function EntryModal({ type, initial, prefill, defaultDate, onClose, onSaved }: {
             </select>
           </div>
 
-          {!initial && (
-            <div className="rounded-lg border border-[#2a2a2a] p-3 space-y-2">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={alreadyPaid} onChange={e => { setAlreadyPaid(e.target.checked); if (e.target.checked && !paidTouched) setPaidDate(form.entry_date) }} className="accent-[#22c55e]" />
-                {type === 'receita' ? 'Já foi recebida' : 'Já está paga'}
-              </label>
-              {alreadyPaid && (
-                <div>
-                  <label className="block text-xs text-muted-foreground mb-1">{type === 'receita' ? 'Data do recebimento' : 'Data do pagamento'}</label>
-                  <input type="date" value={paidDate} onChange={e => { setPaidDate(e.target.value); setPaidTouched(true) }} className={inputCls} />
-                </div>
-              )}
-            </div>
-          )}
+          <div className="rounded-lg border border-[#2a2a2a] p-3 space-y-2">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={alreadyPaid} onChange={e => { setAlreadyPaid(e.target.checked); if (e.target.checked && !paidTouched) setPaidDate(form.entry_date) }} className="accent-[#22c55e]" />
+              {type === 'receita' ? 'Já foi recebida' : 'Já está paga'}
+            </label>
+            {alreadyPaid && (
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">{type === 'receita' ? 'Data em que o dinheiro caiu' : 'Data em que foi pago'}</label>
+                <input type="date" value={paidDate} onChange={e => { setPaidDate(e.target.value); setPaidTouched(true) }} className={inputCls} />
+              </div>
+            )}
+          </div>
 
           {!initial && (
             <PaymentMode value={payment} onChange={setPayment} amount={form.amount} firstDate={form.entry_date} inputCls={inputCls} allowInstallments={type === 'despesa'} />
