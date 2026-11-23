@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Check, Edit2, Loader2, Megaphone, Wallet, CalendarDays, Clock, Users, Target } from 'lucide-react'
 import { AdPreview } from './AdPreview'
 import {
-  OBJECTIVES, CAMPAIGN_STATUS, APPROVAL_STATUS, CLIENT_CAN_REVIEW, countCreatives, formatBudget, formatPeriod,
+  OBJECTIVES, CAMPAIGN_STATUS, APPROVAL_STATUS, CLIENT_CAN_REVIEW, countCreatives, formatPeriod,
   type AdCampaign, type AdCreative,
 } from '@/lib/ads/constants'
 
@@ -30,28 +30,52 @@ export function PublicAds({ token, clientName, logoUrl, campaigns, canReview, on
     )
   }
   return (
-    <div className="space-y-8">
-      {campaigns.map(c => <CampaignBlock key={c.id} campaign={c} token={token} clientName={clientName} logoUrl={logoUrl} canReview={canReview} onUpdated={onUpdated} />)}
+    <div className="space-y-10">
+      {campaigns.length > 1 && (
+        <p className="text-xs text-[#7a7a7a] px-1">
+          {campaigns.length} campanhas · cada bloco abaixo é um conjunto de anúncios separado, com verba e público próprios.
+        </p>
+      )}
+      {campaigns.map((c, i) => (
+        <CampaignBlock key={c.id} campaign={c} index={i} total={campaigns.length} token={token} clientName={clientName} logoUrl={logoUrl} canReview={canReview} onUpdated={onUpdated} />
+      ))}
     </div>
   )
 }
 
-function CampaignBlock({ campaign, token, clientName, logoUrl, canReview, onUpdated }: {
-  campaign: PublicCampaign; token: string; clientName: string; logoUrl?: string | null; canReview: boolean; onUpdated: (c: PublicCreative) => void
+function CampaignBlock({ campaign, index, total, token, clientName, logoUrl, canReview, onUpdated }: {
+  campaign: PublicCampaign; index: number; total: number; token: string; clientName: string; logoUrl?: string | null; canReview: boolean; onUpdated: (c: PublicCreative) => void
 }) {
   const st = CAMPAIGN_STATUS[campaign.status]
   const counts = countCreatives(campaign.creatives)
   const open = CLIENT_CAN_REVIEW.includes(campaign.status)
+  const daily = campaign.budget_type === 'diaria'
+  // Cada campanha é uma "caixa" própria (conjunto de anúncios): cabeçalho com a verba em destaque
+  // e, dentro dela, os criativos. Assim fica claro onde termina uma campanha e começa a outra.
   return (
-    <section className="space-y-3">
-      <div className="bg-[#161616] border border-[#262626] rounded-xl p-4 space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-sm font-semibold leading-snug">{campaign.name}</h2>
+    <section className="rounded-2xl border border-[#2e2e2e] bg-[#0b0b0b] overflow-hidden" style={{ borderTopColor: st.color, borderTopWidth: 3 }}>
+      <div className="bg-[#141414] border-b border-[#262626] p-4 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8a8a8a]">
+            <Megaphone size={12} /> Campanha {total > 1 ? `${index + 1} de ${total}` : ''}
+          </p>
           <span className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: st.color + '22', color: st.color }}>{st.label}</span>
         </div>
+        <h2 className="text-base font-semibold leading-snug -mt-1">{campaign.name}</h2>
+
+        <div className="rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/30 px-4 py-3 flex items-center gap-3">
+          <Wallet size={20} className="text-[#4ade80] shrink-0" />
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#86efac]">{daily ? 'Verba diária' : 'Verba total da campanha'}</p>
+            <p className="text-2xl font-bold text-white leading-tight">
+              {campaign.budget_amount == null ? '—' : campaign.budget_amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              {daily && campaign.budget_amount != null && <span className="text-sm font-medium text-[#a8a8a8]"> /dia</span>}
+            </p>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs text-[#a8a8a8]">
           <Info icon={Target} label="Objetivo" value={OBJECTIVES[campaign.objective]} />
-          <Info icon={Wallet} label="Verba" value={formatBudget(campaign.budget_type, campaign.budget_amount)} />
           <Info icon={CalendarDays} label="Período" value={formatPeriod(campaign.start_date, campaign.end_date)} />
           {campaign.schedule && <Info icon={Clock} label="Dias e horários" value={campaign.schedule} />}
           {campaign.audience && <Info icon={Users} label="Público" value={campaign.audience} wide />}
@@ -63,15 +87,23 @@ function CampaignBlock({ campaign, token, clientName, logoUrl, canReview, onUpda
           </p>
         )}
       </div>
-      {campaign.creatives.length === 0 ? (
-        <p className="text-xs text-[#7a7a7a] px-1">Os criativos desta campanha ainda estão sendo preparados.</p>
-      ) : (
-        <div className="space-y-5">
-          {campaign.creatives.map(cr => (
-            <CreativeReview key={cr.id} creative={cr} token={token} clientName={clientName} logoUrl={logoUrl} canReview={canReview && open} onUpdated={onUpdated} />
-          ))}
-        </div>
-      )}
+
+      <div className="p-4 space-y-4">
+        {campaign.creatives.length === 0 ? (
+          <p className="text-xs text-[#7a7a7a]">Os criativos desta campanha ainda estão sendo preparados.</p>
+        ) : (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6b6b6b]">
+              Anúncios desta campanha ({campaign.creatives.length})
+            </p>
+            <div className="space-y-6">
+              {campaign.creatives.map(cr => (
+                <CreativeReview key={cr.id} creative={cr} token={token} clientName={clientName} logoUrl={logoUrl} canReview={canReview && open} onUpdated={onUpdated} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </section>
   )
 }
