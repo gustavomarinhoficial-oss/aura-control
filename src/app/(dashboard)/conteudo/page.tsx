@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Plus, X, ChevronLeft, ChevronRight, ChevronDown, List, CalendarDays,
   Trash2, BarChart2, TrendingUp, ImageIcon, Share2, Copy, Check, RefreshCw,
-  Download, Play, ExternalLink, Link2, Sparkles, ShieldCheck, ShieldOff,
+  Download, Play, ExternalLink, Link2, Sparkles, ShieldCheck, ShieldOff, Search,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils/format'
 import { VideoPackageCounter } from '@/components/domain/conteudo/VideoPackageCounter'
@@ -1317,12 +1317,15 @@ function ContentCalendar({ posts, month, year, onPostClick, onPostMoved }: {
 }
 
 // â"€â"€ ContentList â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
-function ContentList({ posts, showClient, onPostClick }: {
+function ContentList({ posts, showClient, onPostClick, expandPast = false }: {
   posts: ContentPost[]
   showClient: boolean
   onPostClick: (p: ContentPost) => void
+  expandPast?: boolean
 }) {
-  const [showPast, setShowPast] = useState(false)
+  const [showPastState, setShowPast] = useState(false)
+  // com filtro ou pesquisa, os anteriores já aparecem abertos (é lá que fica o conteúdo de meses atrás)
+  const showPast = showPastState || expandPast
 
   if (posts.length === 0) {
     return (
@@ -1747,6 +1750,14 @@ function ShareModal({ client, onClose }: { client: Client; onClose: () => void }
 }
 
 // ── ConteudoPage ─────────────────────────────────────────────────────────────
+// Pesquisa sem diferenciar acento nem maiúscula ("promocao" acha "Promoção")
+const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+function monthKey(p: ContentPost) { return postDate(p)?.slice(0, 7) ?? null }
+function monthLabel(key: string) {
+  const [y, m] = key.split('-').map(Number)
+  return `${MONTH_NAMES[m - 1]} ${y}`
+}
+
 export default function ConteudoPage() {
   const router = useRouter()
   const [clients, setClients]         = useState<Client[]>([])
@@ -1764,6 +1775,11 @@ export default function ConteudoPage() {
   })
   const [selectedPost, setSelectedPost]     = useState<ContentPost | null>(null)
   const [showNew, setShowNew]               = useState(false)
+  // filtros: tipo (reels, stories, feed...), status, mês (na lista) e pesquisa pelo nome/legenda
+  const [typeFilter, setTypeFilter]         = useState<string | null>(null)
+  const [statusFilter, setStatusFilter]     = useState('')
+  const [listMonth, setListMonth]           = useState('')
+  const [search, setSearch]                 = useState('')
   const [showShare, setShowShare]           = useState(false)
   const loadClients = useCallback(async () => {
     const res = await fetch('/api/clients').catch(() => null)
@@ -1873,6 +1889,22 @@ export default function ConteudoPage() {
         .filter(x => x.c.status === 'ativo' || x.list.length > 0)
         .sort((a, b) => a.c.name.localeCompare(b.c.name))
     : []
+
+  // ── filtros ──
+  const searching = search.trim() !== ''
+  const q = norm(search.trim())
+  const matchSearch = (p: ContentPost) => !searching || norm(`${p.title} ${p.caption ?? ''} ${p.clients?.name ?? ''}`).includes(q)
+  const matchStatus = (p: ContentPost) => !statusFilter || p.status === statusFilter
+  const matchType = (p: ContentPost) => typeFilter === null || (p.content_type ?? '') === typeFilter
+  // mês só filtra na lista e na pesquisa (no calendário e nas métricas o mês é o das setas)
+  const useListMonth = viewMode === 'lista' || searching
+  const matchMonth = (p: ContentPost) => !useListMonth || !listMonth || monthKey(p) === listMonth
+  const baseForTypes = posts.filter(p => matchSearch(p) && matchStatus(p) && matchMonth(p))
+  const filteredPosts = baseForTypes.filter(matchType)
+  const typeCounts = typeBreakdown(baseForTypes)
+  const monthOptions = Array.from(new Set(posts.map(monthKey).filter((k): k is string => !!k))).sort().reverse()
+  const hasFilters = typeFilter !== null || !!statusFilter || !!listMonth || searching
+  function clearFilters() { setTypeFilter(null); setStatusFilter(''); setListMonth(''); setSearch('') }
 
   return (
     <>
@@ -2143,14 +2175,75 @@ export default function ConteudoPage() {
             )}
           </div>
 
+          {/* filtros: pesquisa, tipo de conteúdo, status e mês */}
+          <div className="bg-[#111111] border border-[#1f1f1f] rounded-xl p-3 mb-4 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Pesquisar pelo nome ou legenda (em todos os meses)"
+                  className="w-full bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg pl-9 pr-8 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors placeholder:text-muted-foreground/60"
+                />
+                {searching && (
+                  <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground" aria-label="Limpar pesquisa"><X size={13} /></button>
+                )}
+              </div>
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                className="bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]">
+                <option value="">Todos os status</option>
+                {STATUSES.map(st => <option key={st.key} value={st.key}>{st.label}</option>)}
+              </select>
+              {useListMonth && (
+                <select value={listMonth} onChange={e => setListMonth(e.target.value)}
+                  className="bg-[#0d0d0d] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef]">
+                  <option value="">Todos os meses</option>
+                  {monthOptions.map(k => <option key={k} value={k}>{monthLabel(k)}</option>)}
+                </select>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button onClick={() => setTypeFilter(null)}
+                className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${typeFilter === null ? 'bg-[#efefef] text-[#111] border-[#efefef]' : 'border-[#2a2a2a] text-muted-foreground hover:text-foreground'}`}>
+                Todos <span className="opacity-60">{baseForTypes.length}</span>
+              </button>
+              {TYPE_GROUPS.map(g => {
+                const count = typeCounts.find(t => t.key === g.key)?.count ?? 0
+                if (count === 0 && typeFilter !== g.key) return null
+                const active = typeFilter === g.key
+                return (
+                  <button key={g.key || 'none'} onClick={() => setTypeFilter(active ? null : g.key)}
+                    style={active ? { background: g.color, borderColor: g.color, color: '#111' } : { color: g.color, borderColor: g.color + '40', background: g.color + '14' }}
+                    className="text-xs font-medium px-2.5 py-1 rounded-full border transition-colors">
+                    {g.label} <span className="opacity-70">{count}</span>
+                  </button>
+                )
+              })}
+              {hasFilters && (
+                <button onClick={clearFilters} className="text-xs text-muted-foreground hover:text-foreground ml-auto flex items-center gap-1"><X size={12} /> Limpar filtros</button>
+              )}
+            </div>
+            {searching && viewMode !== 'lista' && (
+              <p className="text-[11px] text-muted-foreground">Pesquisando em todos os meses: o resultado aparece em lista. Apague a pesquisa para voltar ao {viewMode === 'calendario' ? 'calendário' : 'painel de métricas'}.</p>
+            )}
+          </div>
+
           {/* content area */}
           {loading ? (
             <div className="flex items-center justify-center h-40">
               <div className="w-6 h-6 border-2 border-[#efefef] border-t-transparent rounded-full animate-spin" />
             </div>
+          ) : searching || viewMode === 'lista' ? (
+            <ContentList
+              posts={filteredPosts}
+              showClient={isAllClients}
+              onPostClick={setSelectedPost}
+              expandPast={hasFilters}
+            />
           ) : viewMode === 'calendario' ? (
             <ContentCalendar
-              posts={posts}
+              posts={filteredPosts}
               month={currentMonth.month}
               year={currentMonth.year}
               onPostClick={setSelectedPost}
@@ -2158,17 +2251,11 @@ export default function ConteudoPage() {
             />
           ) : viewMode === 'metricas' ? (
             <MetricasView
-              posts={posts}
+              posts={filteredPosts}
               month={currentMonth.month}
               year={currentMonth.year}
             />
-          ) : (
-            <ContentList
-              posts={posts}
-              showClient={isAllClients}
-              onPostClick={setSelectedPost}
-            />
-          )}
+          ) : null}
 
       {selectedPost && (
         <PostPanel
