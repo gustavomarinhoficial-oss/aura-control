@@ -5,8 +5,9 @@ import { useParams } from 'next/navigation'
 import {
   Check, X, RefreshCw, Loader2, CalendarDays, ChevronDown, ChevronRight,
   ChevronLeft, List, AlertCircle, Expand, Play, Paperclip, Lock, Edit2,
-  CheckSquare, Square, ListTodo, CalendarClock,
+  CheckSquare, Square, ListTodo, CalendarClock, Megaphone,
 } from 'lucide-react'
+import { PublicAds, type PublicCampaign } from '@/components/domain/ads/PublicAds'
 
 interface Post {
   id: string
@@ -660,7 +661,9 @@ export default function PublicCalendarPage() {
   const [hiddenCount, setHiddenCount] = useState(0)
   const [canReview, setCanReview] = useState(false)
   const [canViewSchedule, setCanViewSchedule] = useState(false)
-  const [activeSection, setActiveSection] = useState<'conteudo' | 'cronograma'>('conteudo')
+  const [activeSection, setActiveSection] = useState<'conteudo' | 'cronograma' | 'anuncios'>('conteudo')
+  const [ads, setAds] = useState<PublicCampaign[]>([])
+  const [adsCanReview, setAdsCanReview] = useState(false)
   const [projects, setProjects] = useState<ScheduleProject[]>([])
   const [loadingProjects, setLoadingProjects] = useState(false)
 
@@ -679,6 +682,17 @@ export default function PublicCalendarPage() {
   }, [token])
 
   useEffect(() => { load() }, [load])
+
+  // Anúncios (Criativos de Tráfego): a aba só aparece se o cliente tiver alguma campanha liberada
+  useEffect(() => {
+    fetch(`/api/public/ads?token=${token}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        setAds(data && Array.isArray(data.campaigns) ? data.campaigns : [])
+        setAdsCanReview(data?.canReview === true)
+      })
+      .catch(() => {})
+  }, [token])
 
   useEffect(() => {
     if (!canViewSchedule) return
@@ -758,12 +772,14 @@ export default function PublicCalendarPage() {
           </button>
         </div>
         <p className="text-xs text-[#7a7a7a] mb-4">
-          {activeSection === 'cronograma'
+          {activeSection === 'anuncios'
+            ? adsCanReview ? 'Veja como cada anúncio vai aparecer e aprove ou peça ajuste.' : 'Veja como cada anúncio vai aparecer.'
+            : activeSection === 'cronograma'
             ? 'Acompanhe o andamento dos projetos em produção.'
             : canReview ? 'Acompanhe, aprove ou reprove os posts planejados.' : 'Acompanhe os posts planejados.'}
         </p>
 
-        {canViewSchedule && (
+        {(canViewSchedule || ads.length > 0) && (
           <div className="flex items-center bg-[#161616] border border-[#262626] rounded-xl p-1 gap-1 mb-5 w-fit">
             <button
               onClick={() => setActiveSection('conteudo')}
@@ -771,16 +787,34 @@ export default function PublicCalendarPage() {
             >
               Conteúdo
             </button>
+            {canViewSchedule && (
             <button
               onClick={() => setActiveSection('cronograma')}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'cronograma' ? 'bg-[#efefef] text-[#111111]' : 'text-[#8a8a8a] hover:text-white'}`}
             >
               <ListTodo size={13} /> Cronograma
             </button>
+            )}
+            {ads.length > 0 && (
+            <button
+              onClick={() => setActiveSection('anuncios')}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${activeSection === 'anuncios' ? 'bg-[#efefef] text-[#111111]' : 'text-[#8a8a8a] hover:text-white'}`}
+            >
+              <Megaphone size={13} /> Anúncios
+            </button>
+            )}
           </div>
         )}
 
-        {activeSection === 'cronograma' ? (
+        {activeSection === 'anuncios' ? (
+          <PublicAds
+            token={token}
+            clientName={client.name}
+            campaigns={ads}
+            canReview={adsCanReview}
+            onUpdated={cr => setAds(list => list.map(c => ({ ...c, creatives: c.creatives.map(x => x.id === cr.id ? { ...x, ...cr } : x) })))}
+          />
+        ) : activeSection === 'cronograma' ? (
           <ScheduleView projects={projects} loading={loadingProjects} />
         ) : (
         <>

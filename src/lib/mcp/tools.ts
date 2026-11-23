@@ -225,7 +225,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: 'gerar_url_upload',
-    description: 'Gera uma URL para enviar um arquivo GRANDE (vídeo de reels/story até 500 MB, ou imagem até 25 MB) direto para o armazenamento do Hub, sem passar pelo limite de ~4 MB das outras chamadas. Passos: (1) chame esta ferramenta; (2) faça um PUT do arquivo em "url_upload" com o header Content-Type igual ao "mime" informado (ex.: curl -X PUT -H "Content-Type: video/mp4" --upload-file video.mp4 "<url_upload>"); (3) use a "url_publica" em criar_post/atualizar_post, no campo imagens[].url. A url_upload vale por 30 minutos. Vídeo só pode ser usado em post do formato story ou reels.',
+    description: 'Gera uma URL para enviar um arquivo GRANDE (vídeo de reels/story até 500 MB, ou imagem até 25 MB) direto para o armazenamento do Hub, sem passar pelo limite de ~4 MB das outras chamadas. Passos: (1) chame esta ferramenta; (2) faça um PUT do arquivo em "url_upload" com o header Content-Type igual ao "mime" informado (ex.: curl -X PUT -H "Content-Type: video/mp4" --upload-file video.mp4 "<url_upload>"); (3) use a "url_publica" em criar_post/atualizar_post (campo imagens[].url) ou em criar_criativo_trafego/atualizar_criativo_trafego (campo midia[].url). A url_upload vale por 30 minutos. No calendário editorial, vídeo só em post do formato story ou reels.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -252,7 +252,7 @@ export const TOOLS: Tool[] = [
         url_publica: up.url_publica,
         expira_em_minutos: up.expira_em_minutos,
         exemplo_curl: `curl -X PUT -H "Content-Type: ${up.content_type}" --upload-file "${String(a.nome_arquivo).replace(/"/g, '')}" "<url_upload>"`,
-        proximo_passo: 'Depois do PUT (resposta 200), use url_publica em criar_post ou atualizar_post, em imagens[].url.',
+        proximo_passo: 'Depois do PUT (resposta 200), use url_publica em criar_post/atualizar_post (imagens[].url) ou em criar_criativo_trafego/atualizar_criativo_trafego (midia[].url).',
       }
     },
   },

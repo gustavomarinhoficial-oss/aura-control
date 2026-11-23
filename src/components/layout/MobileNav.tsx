@@ -11,6 +11,7 @@ import {
   Layers, DollarSign, Target, CheckSquare,
   CalendarClock, Brain, Settings, LogOut,
   MoreHorizontal, X, FileBarChart, Handshake, Wallet, Megaphone,
+  Clapperboard,
 } from 'lucide-react'
 
 const ALL_PINNED = [
@@ -25,6 +26,7 @@ const ALL_PINNED = [
 const ALL_MORE_NAV = [
   { href: '/projetos',     label: 'Cronograma',     icon: Layers,       roles: ['admin', 'julia', 'mariana'] },
   { href: '/trafego',      label: 'Tráfego',        icon: Megaphone,    roles: ['admin'] },
+  { href: '/criativos',    label: 'Criativos',      icon: Clapperboard, roles: ['admin'] },
   { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign,   roles: ['admin'] },
   { href: '/caixa',        label: 'Reserva',         icon: Wallet,       roles: ['admin'] },
   { href: '/relatorios',   label: 'Relatórios',     icon: FileBarChart, roles: ['admin'] },

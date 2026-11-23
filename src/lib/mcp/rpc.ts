@@ -1,5 +1,6 @@
 import { TOOLS, type Tool } from './tools'
 import { FINANCE_TOOLS } from './financeTools'
+import { AD_TOOLS } from './adTools'
 import { ToolError } from './errors'
 
 // Servidor MCP mínimo, transporte Streamable HTTP, sem sessão (cada POST é independente).
@@ -16,7 +17,7 @@ const err = (id: RpcRequest['id'], code: number, message: string): RpcResponse =
 
 // Cada token só enxerga as ferramentas dos seus escopos (conteúdo e/ou financeiro)
 function toolsFor(scopes: string[]): Tool[] {
-  return [...(scopes.includes('conteudo') ? TOOLS : []), ...(scopes.includes('financeiro') ? FINANCE_TOOLS : [])]
+  return [...(scopes.includes('conteudo') ? [...TOOLS, ...AD_TOOLS] : []), ...(scopes.includes('financeiro') ? FINANCE_TOOLS : [])]
 }
 
 async function handleOne(msg: RpcRequest, scopes: string[]): Promise<RpcResponse | null> {
@@ -37,7 +38,7 @@ async function handleOne(msg: RpcRequest, scopes: string[]): Promise<RpcResponse
         capabilities: { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions: [
-          scopes.includes('conteudo') ? 'Conteúdo: subir posts aprovados no calendário editorial dos clientes e ler o status de aprovação. Fluxo: listar_clientes → criar_post (só depois do Gustavo aprovar a arte) → ver_status → atualizar_post para ajustes.' : '',
+          scopes.includes('conteudo') ? 'Conteúdo: subir posts aprovados no calendário editorial dos clientes e ler o status de aprovação. Fluxo: listar_clientes → criar_post (só depois do Gustavo aprovar a arte) → ver_status → atualizar_post para ajustes. Criativos de Tráfego (anúncios pagos, área separada do calendário): criar_campanha_trafego → gerar_url_upload + criar_criativo_trafego → ver_status_criativos; o cliente aprova na aba Anúncios do link.' : '',
           scopes.includes('financeiro') ? 'Financeiro (OWL e FDMC): fin_criar_despesa, fin_criar_receita, fin_listar, fin_marcar_pago e fin_resumo_mes. Sempre confirme valor, data, empresa e categoria com o Gustavo antes de lançar ou marcar como pago. Datas em AAAA-MM-DD (fuso de Brasília).' : '',
         ].filter(Boolean).join(' '),
       })
