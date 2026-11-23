@@ -1,14 +1,48 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react'
 import { CTAS, PLACEMENTS, isVideoUrl, destinationLabel, type AdCreative } from '@/lib/ads/constants'
 
 // Prévia do anúncio como aparece no Instagram: perfil + "Patrocinado", texto principal,
-// a mídia (vídeo tocando ou imagem, com setas quando tem mais de uma) e a barra com título e botão.
+// a mídia (vídeo que toca ao chegar nele na tela, ou imagem, com setas quando tem mais de uma) e a barra com título e botão.
 // Usada no Hub e no link público do cliente.
 
 type Creative = Pick<AdCreative, 'media_urls' | 'cover_url' | 'placement' | 'primary_text' | 'headline' | 'cta' | 'destination_type' | 'destination'>
+
+// Vídeo que só toca quando está no meio da tela (como no feed do Instagram):
+// ao chegar nele, recomeça do início e dá play; ao sair, pausa. Assim o cliente nunca
+// encontra o vídeo de sexta já no meio enquanto ainda via o de segunda.
+function ScrollVideo({ src, poster }: { src: string; poster?: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+    if (typeof IntersectionObserver === 'undefined') return
+    let wasVisible = false
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !wasVisible) {
+        wasVisible = true
+        video.currentTime = 0
+        video.play().catch(() => {}) // navegador pode bloquear: aí o cliente dá play no botão
+      } else if (!entry.isIntersecting && wasVisible) {
+        wasVisible = false
+        video.pause()
+      }
+    }, { rootMargin: '-35% 0px -35% 0px', threshold: 0 }) // faixa do meio da tela
+    observer.observe(video)
+    return () => observer.disconnect()
+  }, [src])
+  return (
+    <video
+      ref={ref}
+      src={src}
+      poster={poster}
+      className="absolute inset-0 w-full h-full object-contain"
+      muted loop playsInline controls preload="metadata"
+    />
+  )
+}
 
 export function AdPreview({ creative, clientName, logoUrl }: { creative: Creative; clientName: string; logoUrl?: string | null }) {
   const [index, setIndex] = useState(0)
@@ -56,13 +90,7 @@ export function AdPreview({ creative, clientName, logoUrl }: { creative: Creativ
         {!current ? (
           <div className="absolute inset-0 flex items-center justify-center text-xs text-[#6b6b6b]">Sem mídia</div>
         ) : isVideoUrl(current) ? (
-          <video
-            key={current}
-            src={current}
-            poster={creative.cover_url ?? undefined}
-            className="absolute inset-0 w-full h-full object-contain"
-            autoPlay muted loop playsInline controls preload="metadata"
-          />
+          <ScrollVideo key={current} src={current} poster={creative.cover_url ?? undefined} />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element
           <img key={current} src={current} alt="" className="absolute inset-0 w-full h-full object-contain" />
