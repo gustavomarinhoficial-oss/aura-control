@@ -25,7 +25,7 @@ export function AdPreview({ creative, clientName, logoUrl }: { creative: Creativ
       {/* perfil */}
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <div className="w-8 h-8 rounded-full p-[1.5px] bg-gradient-to-tr from-[#f59e0b] via-[#ef4444] to-[#a855f7] shrink-0">
-          <div className="w-full h-full rounded-full bg-black flex items-center justify-center overflow-hidden text-[11px] font-bold">
+          <div className={`w-full h-full rounded-full ${logoUrl ? 'bg-white' : 'bg-black'} flex items-center justify-center overflow-hidden text-[11px] font-bold`}>
             {logoUrl
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={logoUrl} alt="" className="w-full h-full object-cover" />

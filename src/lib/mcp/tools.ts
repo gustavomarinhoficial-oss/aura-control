@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/server'
 import { effectiveUnlockedMonth } from '@/lib/utils/contentUnlock'
 import { ToolError } from './errors'
-import { storeImage, storeMedia, createUploadUrl, deleteImages, isOurUrl, MAX_IMAGES, type ImageInput, type MediaKind } from './r2'
+import { storeImage, storeMedia, createUploadUrl, deleteImages, isOurUrl, verifyUploaded, MAX_IMAGES, type ImageInput, type MediaKind } from './r2'
 
 const BASE_URL = (process.env.PUBLIC_BASE_URL || 'https://hub.owlcreative.club').replace(/\/$/, '')
 
@@ -454,6 +454,30 @@ export const TOOLS: Tool[] = [
         atualizado_em: post.updated_at,
         post: shapePost(post),
       }
+    },
+  },
+  {
+    name: 'atualizar_logo_cliente',
+    description: 'Coloca ou troca a logo do cliente (aparece redonda, como foto de perfil, no Hub, no topo do link público e na prévia dos anúncios). Passos: gerar_url_upload com mime image/png ou image/jpeg, PUT da imagem na url_upload e depois chame esta ferramenta com a url_publica.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cliente_id: { type: 'string', description: 'Id do cliente (de listar_clientes).' },
+        url: { type: 'string', description: 'url_publica devolvida por gerar_url_upload (imagem PNG ou JPG já enviada).' },
+      },
+      required: ['cliente_id', 'url'],
+      additionalProperties: false,
+    },
+    async run(a) {
+      const db = createServiceClient()
+      const client = await getClient(db, a.cliente_id)
+      if (typeof a.url !== 'string' || !a.url.trim()) return fail('Informe "url" (a url_publica de gerar_url_upload).')
+      const url = a.url.trim()
+      const kind = await verifyUploaded(url, 'Logo')
+      if (kind !== 'image') return fail('A logo precisa ser uma imagem PNG ou JPG, não um vídeo.')
+      const { error } = await db.from('clients').update({ logo_url: url }).eq('id', client.id)
+      if (error) return fail(`Erro ao salvar a logo: ${error.message}`)
+      return { cliente: client.name, logo_url: url, link_hub_do_cliente: publicLink(client) }
     },
   },
   {

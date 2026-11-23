@@ -13,9 +13,10 @@ export type PublicCampaign = Omit<AdCampaign, 'client_id' | 'notes' | 'source' |
 
 // Aba "Anúncios" do link público: campanhas do cliente e cada criativo com a prévia,
 // para aprovar ou pedir ajuste com comentário.
-export function PublicAds({ token, clientName, campaigns, canReview, onUpdated }: {
+export function PublicAds({ token, clientName, logoUrl, campaigns, canReview, onUpdated }: {
   token: string
   clientName: string
+  logoUrl?: string | null
   campaigns: PublicCampaign[]
   canReview: boolean
   onUpdated: (creative: PublicCreative) => void
@@ -30,13 +31,13 @@ export function PublicAds({ token, clientName, campaigns, canReview, onUpdated }
   }
   return (
     <div className="space-y-8">
-      {campaigns.map(c => <CampaignBlock key={c.id} campaign={c} token={token} clientName={clientName} canReview={canReview} onUpdated={onUpdated} />)}
+      {campaigns.map(c => <CampaignBlock key={c.id} campaign={c} token={token} clientName={clientName} logoUrl={logoUrl} canReview={canReview} onUpdated={onUpdated} />)}
     </div>
   )
 }
 
-function CampaignBlock({ campaign, token, clientName, canReview, onUpdated }: {
-  campaign: PublicCampaign; token: string; clientName: string; canReview: boolean; onUpdated: (c: PublicCreative) => void
+function CampaignBlock({ campaign, token, clientName, logoUrl, canReview, onUpdated }: {
+  campaign: PublicCampaign; token: string; clientName: string; logoUrl?: string | null; canReview: boolean; onUpdated: (c: PublicCreative) => void
 }) {
   const st = CAMPAIGN_STATUS[campaign.status]
   const counts = countCreatives(campaign.creatives)
@@ -67,7 +68,7 @@ function CampaignBlock({ campaign, token, clientName, canReview, onUpdated }: {
       ) : (
         <div className="space-y-5">
           {campaign.creatives.map(cr => (
-            <CreativeReview key={cr.id} creative={cr} token={token} clientName={clientName} canReview={canReview && open} onUpdated={onUpdated} />
+            <CreativeReview key={cr.id} creative={cr} token={token} clientName={clientName} logoUrl={logoUrl} canReview={canReview && open} onUpdated={onUpdated} />
           ))}
         </div>
       )}
@@ -84,8 +85,8 @@ function Info({ icon: Icon, label, value, wide }: { icon: typeof Target; label: 
   )
 }
 
-function CreativeReview({ creative, token, clientName, canReview, onUpdated }: {
-  creative: PublicCreative; token: string; clientName: string; canReview: boolean; onUpdated: (c: PublicCreative) => void
+function CreativeReview({ creative, token, clientName, logoUrl, canReview, onUpdated }: {
+  creative: PublicCreative; token: string; clientName: string; logoUrl?: string | null; canReview: boolean; onUpdated: (c: PublicCreative) => void
 }) {
   const [asking, setAsking] = useState(false)
   const [comment, setComment] = useState('')
@@ -114,7 +115,7 @@ function CreativeReview({ creative, token, clientName, canReview, onUpdated }: {
         <span className="text-[11px] font-medium px-2 py-0.5 rounded-full shrink-0" style={{ background: st.color + '22', color: st.color }}>{st.label}</span>
       </div>
       <div className="max-w-[400px] mx-auto w-full">
-        <AdPreview creative={creative} clientName={clientName} />
+        <AdPreview creative={creative} clientName={clientName} logoUrl={logoUrl} />
       </div>
       {creative.client_comment && (
         <div className="text-xs bg-[#fb923c]/10 border border-[#fb923c]/25 text-[#fdba74] rounded-lg px-3 py-2 whitespace-pre-wrap">

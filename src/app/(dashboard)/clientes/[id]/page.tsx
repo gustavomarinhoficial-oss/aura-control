@@ -13,11 +13,13 @@ import {
   ArrowLeft, Edit2, Check, X, Plus, CheckCircle, XCircle,
   Mail, Phone, Calendar, FileText, TrendingUp, DollarSign, AlertCircle,
   MessageCircle, Copy, Trash2, Clock, Upload, Download, File,
-  Eye, Folder, ChevronLeft, Sparkles
+  Eye, Folder, ChevronLeft, Sparkles, Loader2
 } from 'lucide-react'
 import { DiagnosticoTab } from '@/components/domain/onboarding/DiagnosticoTab'
 import type { Client, Service, ClientStatusHistory, Charge, Task } from '@/lib/supabase/types'
 import { MoneyInput } from '@/components/ui/MoneyInput'
+import { ClientAvatar } from '@/components/domain/ClientAvatar'
+import { uploadImage } from '@/lib/utils/uploadImage'
 
 interface EditorialLine {
   id: string
@@ -401,9 +403,7 @@ export default function ClientProfilePage() {
 
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#efefef]/30 to-[#efefef]/10 border border-[#efefef]/20 flex items-center justify-center">
-              <span className="text-lg font-bold text-[#efefef]">{client.name.charAt(0).toUpperCase()}</span>
-            </div>
+            <ClientAvatar name={client.name} logoUrl={client.logo_url} size={48} className="border border-[#efefef]/20" />
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-xl font-semibold tracking-tight">{client.name}</h1>
@@ -1387,6 +1387,7 @@ export default function ClientProfilePage() {
               <button onClick={() => setEditing(false)} className="text-muted-foreground hover:text-foreground"><X size={16} /></button>
             </div>
             <div className="space-y-3">
+              <LogoField name={form.name ?? client.name} value={form.logo_url ?? null} onChange={url => setForm(f => ({ ...f, logo_url: url }))} />
               <Field label="Nome" value={form.name ?? ''} onChange={v => setForm(f => ({ ...f, name: v }))} />
               <Field label="Email" value={form.email ?? ''} onChange={v => setForm(f => ({ ...f, email: v }))} type="email" />
               <Field label="Telefone" value={form.phone ?? ''} onChange={v => setForm(f => ({ ...f, phone: v }))} />
@@ -1517,6 +1518,37 @@ function Field({ label, value, onChange, type = 'text' }: { label: string; value
     <div>
       <label className="block text-xs text-muted-foreground mb-1">{label}</label>
       <input type={type} value={value} onChange={e => onChange(e.target.value)} className="w-full bg-[#111111] border border-[#2a2a2a] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#efefef] transition-colors" />
+    </div>
+  )
+}
+
+// Logo do cliente (PNG ou JPG), redonda como foto de perfil. Vai pro R2 e é salva junto com o resto do cliente.
+function LogoField({ name, value, onChange }: { name: string; value: string | null; onChange: (url: string | null) => void }) {
+  const ref = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState('')
+  async function pick(file: File | undefined) {
+    if (!file) return
+    setError('')
+    if (!/\.(png|jpe?g)$/i.test(file.name) && !['image/png', 'image/jpeg'].includes(file.type)) { setError('Use uma imagem PNG ou JPG.'); return }
+    setUploading(true)
+    try { onChange(await uploadImage(file, file.type === 'image/png' || /\.png$/i.test(file.name) ? 'logo' : 'avatar')) }
+    catch (e) { setError(e instanceof Error ? e.message : 'Erro ao enviar a logo') }
+    setUploading(false)
+  }
+  return (
+    <div>
+      <label className="block text-xs text-muted-foreground mb-1">Logo</label>
+      <div className="flex items-center gap-3">
+        <ClientAvatar name={name} logoUrl={value} size={48} className="border border-[#2a2a2a]" />
+        <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
+          className="text-xs px-3 py-2 rounded-lg border border-[#2a2a2a] hover:border-[#efefef] disabled:opacity-50 flex items-center gap-1.5">
+          {uploading && <Loader2 size={12} className="animate-spin" />}{value ? 'Trocar logo' : 'Enviar logo'}
+        </button>
+        {value && !uploading && <button type="button" onClick={() => onChange(null)} className="text-xs text-muted-foreground hover:text-[#ef4444]">Remover</button>}
+        <input ref={ref} type="file" accept="image/png,image/jpeg" className="hidden" onChange={e => { pick(e.target.files?.[0]); e.target.value = '' }} />
+      </div>
+      {error && <p className="text-[11px] text-[#ef4444] mt-1">{error}</p>}
     </div>
   )
 }

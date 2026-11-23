@@ -12,7 +12,7 @@ import {
   type AdCampaign, type AdCreative, type CampaignStatus,
 } from '@/lib/ads/constants'
 
-interface ClientInfo { id: string; name: string; share_slug: string | null; share_token: string | null; content_approval_enabled: boolean | null }
+interface ClientInfo { id: string; name: string; logo_url?: string | null; share_slug: string | null; share_token: string | null; content_approval_enabled: boolean | null }
 
 const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
 
@@ -150,7 +150,7 @@ export default function CampaignPage() {
                     <button onClick={() => removeCreative(c)} className="p-1.5 rounded-lg text-muted-foreground hover:text-[#ef4444] hover:bg-[#ef4444]/5" title="Apagar"><Trash2 size={12} /></button>
                   </div>
                 </div>
-                <AdPreview creative={c} clientName={client?.name ?? ''} />
+                <AdPreview creative={c} clientName={client?.name ?? ''} logoUrl={client?.logo_url} />
                 {c.client_comment && (
                   <div className="text-xs bg-[#fb923c]/10 border border-[#fb923c]/25 text-[#fdba74] rounded-lg px-3 py-2 whitespace-pre-wrap flex gap-2">
                     <MessageSquare size={12} className="shrink-0 mt-0.5" />
@@ -173,6 +173,7 @@ export default function CampaignPage() {
         <CreativeForm
           campaignId={campaign.id}
           clientName={client?.name ?? ''}
+          logoUrl={client?.logo_url}
           initial={creativeModal.initial}
           onClose={() => setCreativeModal(null)}
           onSaved={() => { setCreativeModal(null); load() }}

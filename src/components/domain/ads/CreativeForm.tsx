@@ -39,9 +39,10 @@ type Form = {
   cta: AdCreative['cta']; destination_type: '' | NonNullable<AdCreative['destination_type']>; destination: string; approval_status: AdCreative['approval_status']
 }
 
-export function CreativeForm({ campaignId, clientName, initial, onClose, onSaved }: {
+export function CreativeForm({ campaignId, clientName, logoUrl, initial, onClose, onSaved }: {
   campaignId: string
   clientName: string
+  logoUrl?: string | null
   initial?: AdCreative
   onClose: () => void
   onSaved: (c: AdCreative) => void
@@ -225,7 +226,7 @@ export function CreativeForm({ campaignId, clientName, initial, onClose, onSaved
 
           <div>
             <p className="text-xs text-muted-foreground mb-2">Prévia</p>
-            <AdPreview creative={{ ...form, destination_type: form.destination_type || null }} clientName={clientName} />
+            <AdPreview creative={{ ...form, destination_type: form.destination_type || null }} clientName={clientName} logoUrl={logoUrl} />
           </div>
         </div>
 

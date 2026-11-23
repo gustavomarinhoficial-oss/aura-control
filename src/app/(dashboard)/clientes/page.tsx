@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { ClientAvatar } from '@/components/domain/ClientAvatar'
 import { useRouter } from 'next/navigation'
 import { formatBRL, formatDate } from '@/lib/utils/format'
 import { Plus, Search, ChevronRight } from 'lucide-react'
@@ -137,12 +138,7 @@ export default function ClientesPage() {
             className="block bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl px-4 py-4 flex items-center gap-3 hover:border-[#3a3a3a] active:bg-[#222] transition-colors"
           >
             {/* avatar */}
-            <div className="w-10 h-10 rounded-full bg-[#efefef]/15 flex items-center justify-center shrink-0 overflow-hidden">
-              {c.logo_url
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={c.logo_url} alt="" className="w-full h-full object-contain" />
-                : <span className="text-sm font-bold text-[#efefef]">{c.name[0].toUpperCase()}</span>}
-            </div>
+            <ClientAvatar name={c.name} logoUrl={c.logo_url} size={40} />
             {/* info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate">{c.name}</p>

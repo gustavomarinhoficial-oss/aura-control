@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
   const supabase = createServiceClient()
 
-  const client = await findClientByShare<{ id: string; name: string; content_unlocked_month: string | null; content_approval_enabled: boolean; project_sharing_enabled: boolean }>(supabase, token, 'id, name, content_unlocked_month, content_approval_enabled, project_sharing_enabled')
+  const client = await findClientByShare<{ id: string; name: string; logo_url?: string | null; content_unlocked_month: string | null; content_approval_enabled: boolean; project_sharing_enabled: boolean }>(supabase, token, 'id, name, logo_url, content_unlocked_month, content_approval_enabled, project_sharing_enabled')
   if (!client) return NextResponse.json({ error: 'Link inválido' }, { status: 404 })
 
   const COLS = 'id, title, caption, platform, content_type, status, scheduled_date, scheduled_time, published_at, media_url, media_urls, rejection_reason, rejection_images, caption_edited_by_client, created_at'
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   const hiddenCount = (allPosts?.length ?? 0) - posts.length
 
   return NextResponse.json({
-    client: { id: client.id, name: client.name },
+    client: { id: client.id, name: client.name, logo_url: client.logo_url ?? null },
     posts,
     unlockedMonth,
     hiddenCount,

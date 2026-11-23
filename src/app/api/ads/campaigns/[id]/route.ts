@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: Params) {
     if (!campaign) return NextResponse.json({ error: 'Campanha não encontrada' }, { status: 404 })
     const [{ data: creatives, error: crErr }, { data: client }] = await Promise.all([
       db.from('ad_creatives').select(CREATIVE_COLS).eq('campaign_id', id).order('position').order('created_at'),
-      db.from('clients').select('id, name, share_slug, share_token, content_approval_enabled').eq('id', campaign.client_id).single(),
+      db.from('clients').select('id, name, logo_url, share_slug, share_token, content_approval_enabled').eq('id', campaign.client_id).single(),
     ])
     dbError(crErr)
     return NextResponse.json({ campaign, creatives: creatives ?? [], client })

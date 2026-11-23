@@ -8,6 +8,7 @@ import {
   CheckSquare, Square, ListTodo, CalendarClock, Megaphone,
 } from 'lucide-react'
 import { PublicAds, type PublicCampaign } from '@/components/domain/ads/PublicAds'
+import { ClientAvatar } from '@/components/domain/ClientAvatar'
 
 interface Post {
   id: string
@@ -28,7 +29,7 @@ interface Post {
   created_at: string
 }
 
-interface ClientInfo { id: string; name: string }
+interface ClientInfo { id: string; name: string; logo_url?: string | null }
 
 interface CheckItem { id: string; title: string; done: boolean; date?: string | null }
 interface ScheduleProject {
@@ -758,9 +759,12 @@ export default function PublicCalendarPage() {
     <div className="min-h-screen bg-[#0d0d0d] text-white">
       <div className="max-w-2xl mx-auto px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))]">
         <div className="flex items-center justify-between mb-1">
-          <div>
-            <p className="text-[10px] tracking-[0.25em] text-[#efefef] uppercase font-semibold">Calendário de conteúdo</p>
-            <h1 className="text-2xl font-bold tracking-tight mt-0.5">{client.name}</h1>
+          <div className="flex items-center gap-3 min-w-0">
+            <ClientAvatar name={client.name} logoUrl={client.logo_url} size={48} className="border border-[#262626]" />
+            <div className="min-w-0">
+              <p className="text-[10px] tracking-[0.25em] text-[#efefef] uppercase font-semibold">Calendário de conteúdo</p>
+              <h1 className="text-2xl font-bold tracking-tight mt-0.5 truncate">{client.name}</h1>
+            </div>
           </div>
           <button
             onClick={() => load(true)}
@@ -810,6 +814,7 @@ export default function PublicCalendarPage() {
           <PublicAds
             token={token}
             clientName={client.name}
+            logoUrl={client.logo_url}
             campaigns={ads}
             canReview={adsCanReview}
             onUpdated={cr => setAds(list => list.map(c => ({ ...c, creatives: c.creatives.map(x => x.id === cr.id ? { ...x, ...cr } : x) })))}
