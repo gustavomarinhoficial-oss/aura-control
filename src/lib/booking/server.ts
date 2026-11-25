@@ -8,7 +8,7 @@ import { isTime, slotRange, toMin, todayBR, formatDateLong, type BookingLink, ty
 type DB = ReturnType<typeof createServiceClient>
 export type LinkWithClient = BookingLink & { clients: { name: string } | null }
 
-export const LINK_COLS = 'id, slug, title, client_id, member_ids, duration_min, step_min, buffer_min, notice_hours, mode, weekly, slots, start_date, end_date, window_days, location, message, max_bookings, active'
+export const LINK_COLS = '*'
 
 export class BookingError extends Error {}
 
@@ -20,7 +20,7 @@ export async function bookingRoute(fn: () => Promise<Response>): Promise<Respons
     if (e instanceof BookingError) return NextResponse.json({ error: e.message }, { status: 400 })
     const msg = e instanceof Error ? e.message : 'Erro interno'
     const missing = /booking_link/.test(msg) && /does not exist|schema cache/.test(msg)
-    return NextResponse.json({ error: missing ? 'Falta rodar o SQL da migration 060 (agendamento) no Supabase.' : msg }, { status: 500 })
+    return NextResponse.json({ error: missing ? 'Falta rodar o SQL do agendamento no Supabase (migrations 060 a 062).' : msg }, { status: 500 })
   }
 }
 
@@ -83,25 +83,27 @@ export function parseLink(b: Record<string, unknown>, partial = false): Record<s
   if (has('location')) u.location = text('location', 300)
   if (has('message')) u.message = text('message', 600)
   if (has('max_bookings')) u.max_bookings = b.max_bookings == null ? null : int(b.max_bookings, 'Limite de marcações', 1, 100)
+  if (has('min_people')) u.min_people = int(b.min_people ?? 2, 'Pessoas livres', 1, 10)
   if (partial && 'active' in b) u.active = b.active === true
   return u
 }
 
-// O que ocupa a agenda da OWL de quem vai (FDMC não bloqueia). Compromisso sem participante segura o horário de todos.
+// O que ocupa a agenda da OWL (FDMC não bloqueia): toda captação, e as reuniões de quem vai ou sem participante
 export async function loadBusy(db: DB, memberIds: string[], from: string, to: string): Promise<Busy[]> {
   const { data, error } = await db.from('meetings')
-    .select('meeting_date, start_time, end_time, meeting_attendees(member_id)')
+    .select('meeting_date, start_time, end_time, type, meeting_attendees(member_id)')
     .eq('workspace', 'owl')
     .gte('meeting_date', from).lte('meeting_date', to)
     .neq('status', 'cancelada')
     .limit(1000)
   if (error) throw new Error(error.message)
   return (data ?? [])
-    .filter(m => {
-      const ids = (m.meeting_attendees as { member_id: string }[] | null) ?? []
-      return ids.length === 0 || ids.some(a => memberIds.includes(a.member_id))
-    })
-    .map(m => ({ date: m.meeting_date, start: m.start_time?.slice(0, 5) ?? null, end: m.end_time?.slice(0, 5) ?? null }))
+    .map(m => ({
+      date: m.meeting_date as string, start: (m.start_time?.slice(0, 5) ?? null) as string | null, end: (m.end_time?.slice(0, 5) ?? null) as string | null,
+      type: (m.type === 'captacao' ? 'captacao' : 'reuniao') as Busy['type'],
+      members: ((m.meeting_attendees as { member_id: string }[] | null) ?? []).map(a => a.member_id),
+    }))
+    .filter(b => b.type === 'captacao' || b.members.length === 0 || b.members.some(id => memberIds.includes(id)))
 }
 
 export function linkBusy(db: DB, link: BookingLink): Promise<Busy[]> {

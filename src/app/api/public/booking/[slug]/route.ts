@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { isFull, linkBookings, linkBusy, loadLink, notifyBooking } from '@/lib/booking/server'
+import { syncGoogle } from '@/lib/google/sync'
 import { freeDays, isTime, toMin, toTime, todayBR } from '@/lib/booking/slots'
+
+// a sincronização com o Google roda depois da resposta
+export const maxDuration = 60
 
 type Ctx = { params: Promise<{ slug: string }> }
 
@@ -65,6 +69,7 @@ export async function POST(request: Request, { params }: Ctx) {
     return bad('Não foi possível marcar agora. Tente de novo.', 500)
   }
 
+  after(() => syncGoogle())
   const end = toTime(toMin(time) + link.duration_min)
   // a Vercel pode congelar a função depois da resposta: espera os avisos antes
   await notifyBooking(link, { meetingId, who, date, time, end, location, notes })

@@ -23,12 +23,14 @@ export interface BookingLink {
   location: string | null
   message: string | null
   max_bookings: number | null
+  min_people: number
   active: boolean
 }
 
-export type SlotRules = Pick<BookingLink, 'duration_min' | 'step_min' | 'buffer_min' | 'notice_hours' | 'mode' | 'weekly' | 'slots' | 'start_date' | 'end_date' | 'window_days'>
+export type SlotRules = Pick<BookingLink, 'duration_min' | 'step_min' | 'buffer_min' | 'notice_hours' | 'mode' | 'weekly' | 'slots' | 'start_date' | 'end_date' | 'window_days' | 'member_ids' | 'min_people'>
 
-export interface Busy { date: string; start: string | null; end: string | null }
+// members vazio = sem participante definido (ex.: criado no Google)
+export interface Busy { date: string; start: string | null; end: string | null; type: 'reuniao' | 'captacao'; members: string[] }
 
 // livre = aparece pro cliente; retirado = tirado/não escolhido pela equipe; ocupado = bate com a agenda; cedo = dentro da antecedência mínima
 export type SlotState = 'livre' | 'retirado' | 'ocupado' | 'cedo'
@@ -69,15 +71,22 @@ export function slotRange(r: Pick<SlotRules, 'start_date' | 'end_date' | 'window
   return { from, to: to > max ? max : to }
 }
 
-function isBusy(date: string, startMin: number, rules: Pick<SlotRules, 'duration_min' | 'buffer_min'>, busy: Busy[]): boolean {
+// Duas captações nunca ao mesmo tempo. Reunião só bloqueia se não sobrar gente suficiente livre pra ir
+// (min_people). Mesma conta da função book_capture_slot no banco.
+function isBusy(date: string, startMin: number, rules: Pick<SlotRules, 'duration_min' | 'buffer_min' | 'member_ids' | 'min_people'>, busy: Busy[]): boolean {
   const end = startMin + rules.duration_min
-  return busy.some(b => {
+  const hits = busy.filter(b => {
     if (b.date !== date) return false
     if (!b.start) return true // compromisso sem horário: segura o dia
     const bs = toMin(b.start)
     const be = b.end ? toMin(b.end) : bs + DEFAULT_MEETING_MIN
     return startMin < be + rules.buffer_min && end + rules.buffer_min > bs
   })
+  if (hits.some(b => b.type === 'captacao')) return true
+  const team = new Set(rules.member_ids)
+  const out = new Set(hits.flatMap(b => b.members).filter(id => team.has(id))).size
+  const unknown = hits.some(b => b.start && b.members.length === 0) ? 1 : 0 // sem participante: conta como uma pessoa
+  return team.size - out - unknown < Math.min(rules.min_people ?? 2, team.size)
 }
 
 // Todos os horários do período com o estado de cada um (a tela do Hub mostra todos; o cliente, só os livres)

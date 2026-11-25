@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAttendees } from '@/lib/utils/meetings'
+import { syncGoogle } from '@/lib/google/sync'
 
 const SELECT_WITH_ATTENDEES = '*, clients(id, name), leads(id, company_name), meeting_attendees(members(*))'
+
+// a sincronização com o Google roda depois da resposta
+export const maxDuration = 60
 
 function todayBR(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
@@ -51,6 +55,8 @@ export async function POST(request: Request) {
 
   const { data: meeting, error } = await supabase.from('meetings').insert(insert).select('*, clients(id, name), leads(id, company_name)').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  after(() => syncGoogle())
 
   const attendeeIds: string[] = Array.isArray(body.attendee_ids) ? body.attendee_ids.filter(Boolean) : []
   if (attendeeIds.length > 0) {

@@ -1,3 +1,5 @@
+import { after } from 'next/server'
+import { syncGoogle } from '@/lib/google/sync'
 import { createServiceClient } from '@/lib/supabase/server'
 import { JULIA_TASK_MEMBERS, type Role } from '@/lib/roles'
 
@@ -249,6 +251,7 @@ const createMeeting: OmarTool = {
         .insert(attendeeIds.map(member_id => ({ meeting_id: data.id, member_id })))
       if (aErr) return { error: aErr.message }
     }
+    after(() => syncGoogle())
     return { success: true, meeting: data }
   },
 }
@@ -304,6 +307,7 @@ const updateMeeting: OmarTool = {
       .eq('id', input.meeting_id)
       .single()
     if (error) return { error: error.message }
+    after(() => syncGoogle())
     return { success: true, meeting: data }
   },
 }

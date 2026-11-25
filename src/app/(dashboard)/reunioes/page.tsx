@@ -7,6 +7,7 @@ import {
   Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
   AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users, Link2,
 } from 'lucide-react'
+import { GoogleSyncBadge } from '@/components/domain/reunioes/GoogleSyncBadge'
 import { MeetingsCalendar } from '@/components/domain/reunioes/MeetingsCalendar'
 import { VoiceDictation, type VoiceDraft } from '@/components/domain/reunioes/VoiceDictation'
 import { formatDate } from '@/lib/utils/format'
@@ -514,6 +515,7 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
           <p className="text-sm text-muted-foreground mt-1">
             {upcoming.length} próxima{upcoming.length !== 1 ? 's' : ''}
           </p>
+          {workspace === 'owl' && <GoogleSyncBadge onSynced={load} />}
         </div>
         <div className="flex items-start gap-2 flex-wrap justify-end">
           <VoiceDictation me={ROLE_NAME[role] || ''} onResult={applyVoice} />

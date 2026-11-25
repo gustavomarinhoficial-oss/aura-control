@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { flattenAttendees } from '@/lib/utils/meetings'
+import { syncGoogle } from '@/lib/google/sync'
 
 const SELECT_WITH_ATTENDEES = '*, clients(id, name), leads(id, company_name), meeting_attendees(members(*))'
+
+// a sincronização com o Google roda depois da resposta
+export const maxDuration = 60
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -30,6 +34,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
+  after(() => syncGoogle())
+
   if (body.attendee_ids !== undefined) {
     const attendeeIds: string[] = Array.isArray(body.attendee_ids) ? body.attendee_ids.filter(Boolean) : []
     const { error: delErr } = await supabase.from('meeting_attendees').delete().eq('meeting_id', id)
@@ -52,5 +58,6 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   const supabase = createServiceClient()
   const { error } = await supabase.from('meetings').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  after(() => syncGoogle())
   return NextResponse.json({ ok: true })
 }

@@ -57,6 +57,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
     location: initial?.location ?? '',
     message: initial?.message ?? '',
     max_bookings: initial ? initial.max_bookings : null as number | null,
+    min_people: initial?.min_people ?? 2,
   })
   // Cada modo guarda a própria lista, então trocar de um pro outro não perde o que já foi marcado
   const [removed, setRemoved] = useState<string[]>(initial?.mode === 'semanal' ? initial.slots : [])
@@ -77,6 +78,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
     // horário da semana ainda sendo digitado não entra na prévia
     weekly: Object.fromEntries(Object.entries(form.weekly).map(([d, rs]) => [d, rs.filter(([a, b]) => a && b && toMin(b) > toMin(a))])) as Weekly,
     slots: marks, start_date: form.start_date || null, end_date: form.end_date || null, window_days: form.window_days,
+    member_ids: form.member_ids, min_people: form.min_people,
   }
   const { from, to } = slotRange(rules, now)
   const memberKey = form.member_ids.join(',')
@@ -147,7 +149,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
           </div>
 
           <div>
-            <Label hint="(a agenda dessas pessoas bloqueia os horários)">Quem vai</Label>
+            <Label>Quem vai</Label>
             <div className="flex flex-wrap gap-1.5">
               {members.map(m => {
                 const on = form.member_ids.includes(m.id)
@@ -159,6 +161,15 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
                 )
               })}
             </div>
+            {form.member_ids.length > 1 && (
+              <div className="mt-3">
+                <Label>Para marcar, precisam estar livres</Label>
+                <select value={Math.min(form.min_people, form.member_ids.length)} onChange={e => set('min_people', Number(e.target.value))} className={inputCls}>
+                  {form.member_ids.map((_, i) => i + 1).map(v => <option key={v} value={v}>{v === form.member_ids.length ? `Todas as ${v} pessoas` : v === 1 ? 'Pelo menos 1 pessoa' : `Pelo menos ${v} pessoas`}</option>)}
+                </select>
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-1.5">Outra captação no mesmo horário sempre bloqueia. Reunião só bloqueia se não sobrar gente livre (sem participante definido, conta como 1 pessoa ocupada).</p>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
