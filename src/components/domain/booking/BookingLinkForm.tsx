@@ -47,7 +47,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
     member_ids: initial?.member_ids ?? defaultMembers,
     duration_min: initial?.duration_min ?? 180,
     step_min: initial?.step_min ?? 60,
-    buffer_min: initial?.buffer_min ?? 30,
+    buffer_min: initial?.buffer_min ?? 0,
     notice_hours: initial?.notice_hours ?? 24,
     mode: initial?.mode ?? 'semanal',
     weekly: initial?.weekly ?? DEFAULT_WEEKLY,
@@ -56,7 +56,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
     window_days: initial?.window_days ?? 30,
     location: initial?.location ?? '',
     message: initial?.message ?? '',
-    max_bookings: initial ? initial.max_bookings : 1,
+    max_bookings: initial ? initial.max_bookings : null as number | null,
   })
   // Cada modo guarda a própria lista, então trocar de um pro outro não perde o que já foi marcado
   const [removed, setRemoved] = useState<string[]>(initial?.mode === 'semanal' ? initial.slots : [])
@@ -230,7 +230,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
                 return (
                   <div key={day} className="flex items-start gap-3 px-3 py-2">
                     <label className="flex items-center gap-2 text-sm w-16 shrink-0 py-1.5 cursor-pointer">
-                      <input type="checkbox" checked={on} onChange={() => setDay(day, on ? [] : [['09:00', '18:00']])} className="accent-[#efefef]" />
+                      <input type="checkbox" checked={on} onChange={() => setDay(day, on ? [] : [['11:00', '17:00']])} className="accent-[#efefef]" />
                       <span className={on ? '' : 'text-muted-foreground'}>{label}</span>
                     </label>
                     <div className="flex-1 space-y-1.5">

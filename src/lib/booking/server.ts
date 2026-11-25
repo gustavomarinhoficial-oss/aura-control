@@ -87,10 +87,11 @@ export function parseLink(b: Record<string, unknown>, partial = false): Record<s
   return u
 }
 
-// Tudo que ocupa a agenda de quem vai (OWL e FDMC). Compromisso sem participante segura o horário de todos.
+// O que ocupa a agenda da OWL de quem vai (FDMC não bloqueia). Compromisso sem participante segura o horário de todos.
 export async function loadBusy(db: DB, memberIds: string[], from: string, to: string): Promise<Busy[]> {
   const { data, error } = await db.from('meetings')
     .select('meeting_date, start_time, end_time, meeting_attendees(member_id)')
+    .eq('workspace', 'owl')
     .gte('meeting_date', from).lte('meeting_date', to)
     .neq('status', 'cancelada')
     .limit(1000)
@@ -123,10 +124,10 @@ export async function linkBookings(db: DB, linkId: string): Promise<Booked[]> {
   return (data ?? []) as Booked[]
 }
 
-// Mesma conta do banco (book_capture_slot): com limite conta tudo; sem limite, até 10 futuras
+// Mesma conta do banco (book_capture_slot): com limite conta tudo; sem limite, até 40 futuras
 export function isFull(link: Pick<BookingLink, 'max_bookings'>, booked: Booked[]): boolean {
   if (link.max_bookings !== null) return booked.length >= link.max_bookings
-  return booked.filter(b => b.meeting_date >= todayBR()).length >= 10
+  return booked.filter(b => b.meeting_date >= todayBR()).length >= 40
 }
 
 const ALERT_SETTINGS_ID = '00000000-0000-0000-0000-000000000001'

@@ -35,8 +35,10 @@ export type SlotState = 'livre' | 'retirado' | 'ocupado' | 'cedo'
 export interface Slot { time: string; state: SlotState }
 export interface DaySlots { date: string; slots: Slot[] }
 
+// Padrão da OWL: captação de 3h, começando às 11h, 12h, 13h ou 14h; segunda e quarta só às 14h.
+// Com 3h e sem folga, quem marca às 11h ainda deixa o das 14h livre.
 export const DEFAULT_WEEKLY: Weekly = {
-  1: [['09:00', '18:00']], 2: [['09:00', '18:00']], 3: [['09:00', '18:00']], 4: [['09:00', '18:00']], 5: [['09:00', '18:00']],
+  1: [['14:00', '17:00']], 2: [['11:00', '17:00']], 3: [['14:00', '17:00']], 4: [['11:00', '17:00']], 5: [['11:00', '17:00']],
 }
 const DEFAULT_MEETING_MIN = 60 // compromisso sem término ocupa 1 hora (igual ao calendário)
 const LAST_MINUTE = 23 * 60 + 59
