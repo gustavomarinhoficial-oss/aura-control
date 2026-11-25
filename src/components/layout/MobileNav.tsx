@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { NotificationsToggle } from '@/components/domain/NotificationsToggle'
-import { getRole, type Role } from '@/lib/roles'
+import { getRole, DISABLED_NAV, type Role } from '@/lib/roles'
 import {
   LayoutDashboard, Kanban, Newspaper, Users,
   Layers, DollarSign, Target, CheckSquare,
@@ -14,35 +14,47 @@ import {
   Clapperboard,
 } from 'lucide-react'
 
-const ALL_PINNED = [
-  { href: '/dashboard', label: 'Home',     icon: LayoutDashboard, roles: ['all'] },
-  { href: '/pipeline',  label: 'Pipeline', icon: Kanban,          roles: ['admin'] },
-  { href: '/conteudo',  label: 'Conteúdo', icon: Newspaper,       roles: ['all'] },
-  { href: '/clientes',  label: 'Clientes', icon: Users,           roles: ['admin', 'mariana'] },
-  { href: '/metas',     label: 'Metas',    icon: Target,          roles: ['julia'] },
-  { href: '/tarefas',   label: 'Tarefas',  icon: CheckSquare,     roles: ['julia', 'mariana'] },
+// Barra de baixo: Gustavo, Gabriel e Thomas têm o Dashboard no meio (Conteúdo, Tarefas, Dashboard, Financeiro, Mais)
+const PINNED_ADMIN = [
+  { href: '/conteudo',   label: 'Conteúdo',   icon: Newspaper },
+  { href: '/tarefas',    label: 'Tarefas',    icon: CheckSquare },
+  { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
+  { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
+]
+const PINNED_JULIA = [
+  { href: '/dashboard', label: 'Home',     icon: LayoutDashboard },
+  { href: '/conteudo',  label: 'Conteúdo', icon: Newspaper },
+  { href: '/metas',     label: 'Metas',    icon: Target },
+  { href: '/tarefas',   label: 'Tarefas',  icon: CheckSquare },
+]
+const PINNED_MARIANA = [
+  { href: '/dashboard', label: 'Home',     icon: LayoutDashboard },
+  { href: '/conteudo',  label: 'Conteúdo', icon: Newspaper },
+  { href: '/clientes',  label: 'Clientes', icon: Users },
+  { href: '/tarefas',   label: 'Tarefas',  icon: CheckSquare },
 ]
 
+// Gaveta "Mais"
 const ALL_MORE_NAV = [
-  { href: '/projetos',     label: 'Cronograma',     icon: Layers,       roles: ['admin', 'julia', 'mariana'] },
+  { href: '/clientes',     label: 'Clientes',       icon: Users,        roles: ['admin'] },
   { href: '/trafego',      label: 'Tráfego',        icon: Megaphone,    roles: ['admin'] },
   { href: '/criativos',    label: 'Criativos',      icon: Clapperboard, roles: ['admin'] },
-  { href: '/financeiro',   label: 'Financeiro',     icon: DollarSign,   roles: ['admin'] },
+  { href: '/influenciadores', label: 'Influenciadores', icon: Handshake, roles: ['admin', 'mariana'] },
+  { href: '/reunioes',     label: 'Reuniões',       icon: CalendarClock,roles: ['all'] },
+  { href: '/pipeline',     label: 'Pipeline',       icon: Kanban,       roles: ['admin'] },
+  { href: '/projetos',     label: 'Cronograma',     icon: Layers,       roles: ['admin', 'julia', 'mariana'] },
+  { href: '/ia',           label: 'Central IA',     icon: Brain,        roles: ['admin', 'julia', 'mariana'] },
   { href: '/caixa',        label: 'Reserva',         icon: Wallet,       roles: ['admin'] },
   { href: '/relatorios',   label: 'Relatórios',     icon: FileBarChart, roles: ['admin'] },
   { href: '/metas',        label: 'Metas',          icon: Target,       roles: ['admin', 'mariana'] },
-  { href: '/tarefas',      label: 'Tarefas',        icon: CheckSquare,  roles: ['admin'] },
-  { href: '/influenciadores', label: 'Influenciadores', icon: Handshake, roles: ['admin', 'mariana'] },
-  { href: '/ia',           label: 'Central IA',     icon: Brain,        roles: ['admin', 'julia', 'mariana'] },
-  { href: '/reunioes',     label: 'Reuniões',       icon: CalendarClock,roles: ['all'] },
   { href: '/configuracoes',label: 'Config.',        icon: Settings,     roles: ['admin'] },
   { href: '/fdmc/financeiro', label: 'FDMC Financeiro', icon: DollarSign,    roles: ['gustavo', 'gabriel'] },
   { href: '/fdmc/tarefas',    label: 'FDMC Tarefas',    icon: CheckSquare,   roles: ['gustavo', 'gabriel'] },
   { href: '/fdmc/reunioes',   label: 'FDMC Reuniões',   icon: CalendarClock, roles: ['gustavo', 'gabriel'] },
   { href: '/fdmc/ia',         label: 'FDMC Central IA', icon: Brain,         roles: ['gustavo', 'gabriel'] },
-]
+].filter(n => !DISABLED_NAV.includes(n.href))
 
-function navFor(items: typeof ALL_PINNED, role: Role) {
+function navFor(items: typeof ALL_MORE_NAV, role: Role) {
   return items.filter(n => {
     if (n.roles.includes('all')) return true
     if (role === 'julia' || role === 'mariana') return n.roles.includes(role)
@@ -81,7 +93,7 @@ export function MobileNav() {
     router.refresh()
   }
 
-  const PINNED   = navFor(ALL_PINNED, role)
+  const PINNED   = role === 'julia' ? PINNED_JULIA : role === 'mariana' ? PINNED_MARIANA : PINNED_ADMIN
   const MORE_NAV = navFor(ALL_MORE_NAV, role)
 
   const isMoreActive = MORE_NAV.some(n =>

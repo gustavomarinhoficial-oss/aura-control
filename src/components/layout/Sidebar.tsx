@@ -4,29 +4,29 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, canAccessFdmc, type Role } from '@/lib/roles'
+import { getRole, ROLE_NAME, JULIA_NAV, MARIANA_NAV, DISABLED_NAV, canAccessFdmc, type Role } from '@/lib/roles'
 import { OwlMark } from '@/components/ui/OwlMark'
 import { NotificationsToggle } from '@/components/domain/NotificationsToggle'
 import { LayoutDashboard, Users, DollarSign, Target, LogOut, CheckSquare, Settings, CalendarClock, Kanban, Layers, Newspaper, Brain, Download, FileBarChart, Handshake, Wallet, Megaphone, Clapperboard } from 'lucide-react'
 
 const ALL_NAV = [
   { href: '/dashboard',      label: 'Dashboard',      icon: LayoutDashboard },
-  { href: '/pipeline',       label: 'Pipeline',       icon: Kanban },
   { href: '/clientes',       label: 'Clientes',       icon: Users },
-  { href: '/projetos',       label: 'Cronograma',     icon: Layers },
   { href: '/conteudo',       label: 'Conteúdo',       icon: Newspaper },
+  { href: '/tarefas',        label: 'Tarefas',        icon: CheckSquare },
+  { href: '/financeiro',     label: 'Financeiro',     icon: DollarSign },
   { href: '/trafego',       label: 'Tráfego',        icon: Megaphone },
   { href: '/criativos',      label: 'Criativos',      icon: Clapperboard },
   { href: '/influenciadores',label: 'Influenciadores',icon: Handshake },
+  { href: '/pipeline',       label: 'Pipeline',       icon: Kanban },
+  { href: '/projetos',       label: 'Cronograma',     icon: Layers },
   { href: '/ia',             label: 'Central IA',     icon: Brain },
-  { href: '/financeiro',     label: 'Financeiro',     icon: DollarSign },
   { href: '/caixa',          label: 'Reserva',         icon: Wallet },
   { href: '/relatorios',     label: 'Relatórios',     icon: FileBarChart },
   { href: '/metas',          label: 'Metas',          icon: Target },
-  { href: '/tarefas',        label: 'Tarefas',        icon: CheckSquare },
   { href: '/reunioes',       label: 'Reuniões',       icon: CalendarClock },
   { href: '/configuracoes', label: 'Config.',         icon: Settings },
-]
+].filter(n => !DISABLED_NAV.includes(n.href))
 
 const FDMC_NAV = [
   { href: '/fdmc/financeiro', label: 'Financeiro', icon: DollarSign },

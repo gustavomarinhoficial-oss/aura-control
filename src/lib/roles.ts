@@ -30,6 +30,10 @@ export const ROLE_NAME: Record<Role, string> = {
   default: '',
 }
 
+// Abas desativadas por enquanto: somem do menu de todo mundo (os dados e as páginas continuam lá).
+// Para reativar, é só tirar daqui.
+export const DISABLED_NAV = ['/projetos', '/ia', '/relatorios']
+
 // Rotas visíveis para a Julia, na ordem que aparece na sidebar
 export const JULIA_NAV = [
   '/dashboard',
