@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // Nomes que já são rotas do app: um cliente nunca pode ficar com um desses como link.
 export const RESERVED_SLUGS = new Set([
   'api', 'mcp', 'login', 'publico', 'diagnostico', 'dashboard', 'clientes', 'financeiro', 'tarefas', 'conteudo', 'calendario',
-  'reunioes', 'projetos', 'metas', 'ia', 'pipeline', 'relatorios', 'configuracoes', 'caixa', 'trafego', 'criativos', 'fdmc',
+  'reunioes', 'projetos', 'metas', 'ia', 'pipeline', 'relatorios', 'configuracoes', 'caixa', 'trafego', 'criativos', 'fdmc', 'agendar',
   'influenciadores', 'onboarding', 'admin', 'app', 'favicon.ico', 'icon', 'apple-icon', 'manifest.webmanifest', 'sw.js', 'robots.txt',
 ])
 

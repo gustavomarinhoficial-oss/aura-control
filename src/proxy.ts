@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
   // /<nome-da-empresa> (um segmento só, que não seja rota do app) é a página pública de aprovação.
   const firstSegment = pathname.split('/')[1] ?? ''
   const isClientSlugRoute = pathname.split('/').filter(Boolean).length === 1 && !RESERVED_SLUGS.has(firstSegment.toLowerCase()) && !firstSegment.includes('.')
-  const isPublicRoute = pathname.startsWith('/publico/') || isClientSlugRoute
+  const isPublicRoute = pathname.startsWith('/publico/') || pathname.startsWith('/agendar/') || isClientSlugRoute
   const isRoot        = pathname === '/'
   // Rotas de API que precisam continuar acessíveis sem sessão: usadas pela
   // página pública de aprovação do cliente (token próprio), ou já protegidas

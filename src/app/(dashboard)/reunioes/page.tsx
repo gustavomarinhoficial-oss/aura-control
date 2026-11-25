@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import {
   Plus, Clock, CheckCircle2, XCircle, MapPin, Trash2, Edit2,
-  AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users,
+  AlertCircle, ChevronDown, ChevronRight, CalendarClock, Video, Users, Link2,
 } from 'lucide-react'
 import { MeetingsCalendar } from '@/components/domain/reunioes/MeetingsCalendar'
 import { VoiceDictation, type VoiceDraft } from '@/components/domain/reunioes/VoiceDictation'
@@ -516,6 +517,11 @@ export function ReunioesView({ workspace = 'owl' }: { workspace?: 'owl' | 'fdmc'
         </div>
         <div className="flex items-start gap-2 flex-wrap justify-end">
           <VoiceDictation me={ROLE_NAME[role] || ''} onResult={applyVoice} />
+          {workspace === 'owl' && (
+            <Link href="/reunioes/agendamento" className="flex items-center gap-2 border border-[#2a2a2a] hover:border-[#3a3a3a] text-sm px-4 py-2 rounded-lg transition-colors">
+              <Link2 size={14} /> Links de agendamento
+            </Link>
+          )}
           <button
             onClick={() => { setCreateInit(undefined); setVoiceTranscript(''); setShowNew(true) }}
             className="flex items-center gap-2 bg-[#efefef] hover:bg-[#d9d9d9] text-[#111111] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
