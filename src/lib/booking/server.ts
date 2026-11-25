@@ -6,7 +6,7 @@ import { isUuid } from '@/lib/ads/server'
 import { isTime, slotRange, toMin, todayBR, formatDateLong, type BookingLink, type Busy, type Weekly } from './slots'
 
 type DB = ReturnType<typeof createServiceClient>
-export type LinkWithClient = BookingLink & { clients: { name: string; logo_url: string | null } | null }
+export type LinkWithClient = BookingLink & { clients: { name: string } | null }
 
 export const LINK_COLS = 'id, slug, title, client_id, member_ids, duration_min, step_min, buffer_min, notice_hours, mode, weekly, slots, start_date, end_date, window_days, location, message, max_bookings, active'
 
@@ -111,7 +111,7 @@ export function linkBusy(db: DB, link: BookingLink): Promise<Busy[]> {
 
 export async function loadLink(db: DB, slug: string): Promise<LinkWithClient | null> {
   if (!/^[a-z0-9-]{3,80}$/.test(slug)) return null
-  const { data } = await db.from('booking_links').select(`${LINK_COLS}, clients(name, logo_url)`).eq('slug', slug).maybeSingle()
+  const { data } = await db.from('booking_links').select(`${LINK_COLS}, clients(name)`).eq('slug', slug).maybeSingle()
   return data as unknown as LinkWithClient | null
 }
 

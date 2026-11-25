@@ -29,7 +29,7 @@ export async function GET(_: Request, { params }: Ctx) {
   })
 }
 
-// POST { date, time, name, phone?, company?, location?, notes? } — marca a captação na agenda
+// POST { date, time, name, company?, location?, notes? } — marca a captação na agenda
 export async function POST(request: Request, { params }: Ctx) {
   const { slug } = await params
   const body = await request.json().catch(() => ({}))
@@ -44,18 +44,17 @@ export async function POST(request: Request, { params }: Ctx) {
   if (!link.active) return closed()
 
   const date = text('date', 10), time = text('time', 5)
-  const name = text('name', 120), phone = text('phone', 40), company = text('company', 120)
+  const name = text('name', 120), company = text('company', 120)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !isTime(time)) return bad('Escolha o dia e o horário.')
   if (!name) return bad('Informe seu nome.')
-  if (!link.client_id && (!company || !phone)) return bad('Informe a empresa e o WhatsApp.')
-  const location = link.location ?? text('location', 300)
-  if (!location) return bad('Informe o local da captação.')
+  if (!link.client_id && !company) return bad('Informe a empresa.')
+  const location = link.location ?? (text('location', 300) || null)
 
   const free = freeDays(link, await linkBusy(db, link))
   if (!free.find(d => d.date === date)?.times.includes(time)) return taken()
 
   const who = link.clients?.name ?? company
-  const notes = [`Marcado pelo link por ${name}${phone ? ` (${phone})` : ''}`, text('notes', 1000)].filter(Boolean).join('\n')
+  const notes = [`Marcado pelo link por ${name}`, text('notes', 1000)].filter(Boolean).join('\n')
   const { data: meetingId, error } = await db.rpc('book_capture_slot', {
     p_link: link.id, p_date: date, p_start: toMin(time), p_title: `${link.title} - ${who}`, p_location: location, p_notes: notes,
   })

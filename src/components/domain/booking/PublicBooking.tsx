@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, CalendarCheck, CalendarPlus, CheckCircle2, ChevronLeft, ChevronRight, Clock, Loader2, MapPin } from 'lucide-react'
-import { ClientAvatar } from '@/components/domain/ClientAvatar'
 import { OwlMark } from '@/components/ui/OwlMark'
 import { formatDateLong, formatDuration, toMin, toTime, weekdayOf } from '@/lib/booking/slots'
 
 interface Booked { date: string; start: string | null; end: string | null; location: string | null }
 interface Info {
   title: string
-  client: { name: string; logo_url: string | null } | null
+  client: { name: string } | null
   duration_min: number
   location: string | null
   message: string | null
@@ -41,7 +40,7 @@ export function PublicBooking({ slug }: { slug: string }) {
   const [month, setMonth] = useState('')
   const [date, setDate] = useState<string | null>(null)
   const [time, setTime] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', phone: '', company: '', location: '', notes: '' })
+  const [form, setForm] = useState({ name: '', company: '', location: '', notes: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState<Booked | null>(null)
@@ -77,7 +76,7 @@ export function PublicBooking({ slug }: { slug: string }) {
 
   const header = (
     <header className="flex items-center gap-3.5">
-      <ClientAvatar name={info.client?.name ?? info.title} logoUrl={info.client?.logo_url} size={52} />
+      <div className="w-[52px] h-[52px] rounded-full bg-[#161616] border border-[#2a2a2a] flex items-center justify-center shrink-0"><OwlMark size={46} /></div>
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a8a8a]">Agendar {info.title.toLowerCase()}</p>
         <h1 className="text-xl font-bold leading-tight break-words">{info.client?.name ?? 'OWL Creative Club'}</h1>
@@ -154,8 +153,7 @@ export function PublicBooking({ slug }: { slug: string }) {
           <div className="space-y-3">
             {openLink && <Field label="Empresa"><input required autoComplete="organization" maxLength={120} value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} className={input} /></Field>}
             <Field label="Seu nome"><input required autoComplete="name" maxLength={120} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={input} /></Field>
-            <Field label={openLink ? 'WhatsApp' : 'WhatsApp (opcional)'}><input required={openLink} type="tel" autoComplete="tel" maxLength={40} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={input} /></Field>
-            {!info.location && <Field label="Local da captação"><input required maxLength={300} placeholder="Endereço completo" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className={input} /></Field>}
+            {!info.location && <Field label="Local da captação (opcional)"><input maxLength={300} placeholder="Ex.: escritório da empresa" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className={input} /></Field>}
             <Field label="Alguma observação? (opcional)"><textarea rows={3} maxLength={1000} placeholder="O que vamos gravar, quem vai participar…" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className={`${input} resize-none`} /></Field>
           </div>
           <button type="submit" disabled={saving} className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-[#efefef] text-[#111] font-semibold disabled:opacity-60">

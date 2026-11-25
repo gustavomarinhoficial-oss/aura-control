@@ -190,7 +190,7 @@ export function BookingLinkForm({ clients, members, initial, defaultMembers, onC
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label hint="(vazio: o cliente informa)">Local</Label>
+              <Label hint="(vazio: o cliente pode informar)">Local</Label>
               <input value={form.location} onChange={e => set('location', e.target.value)} placeholder="Ex.: endereço do cliente" className={inputCls} />
             </div>
             <div>
